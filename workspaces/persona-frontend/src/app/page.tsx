@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChevronRight, ArrowRight, Zap, Shield, Globe, Lock, CheckCircle } from 'lucide-react'
+import { ArrowRight, Zap, Shield, Globe, Lock, CheckCircle } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
 
@@ -256,7 +256,7 @@ export default function HomePage() {
               </h2>
               <p className="text-xl text-gray-600 mb-8">
                 Zero-knowledge proofs allow you to verify your identity without exposing personal information. 
-                It's like showing you're over 21 without revealing your birthdate.
+                It&apos;s like showing you&apos;re over 21 without revealing your birthdate.
               </p>
               
               <div className="space-y-4">

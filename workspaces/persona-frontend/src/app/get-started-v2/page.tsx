@@ -9,14 +9,12 @@ import {
   ChevronRight, 
   Wallet, 
   Mail, 
-  Phone, 
   Shield, 
   Key, 
   Download, 
   Copy, 
   User,
   Check,
-  AlertCircle,
   Fingerprint,
   Sparkles,
   Zap,
@@ -30,8 +28,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, PhoneVerificationCredential, ZKProof } from '@/lib/api-client'
-import * as bip39 from 'bip39'
+import { personaApiClient, PhoneVerificationCredential } from '@/lib/api-client'
 import confetti from 'canvas-confetti'
 
 type AuthMethod = 'social' | 'wallet' | 'email' | 'phone' | null
@@ -59,19 +56,16 @@ export default function GetStartedV2Page() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
   const [verifiableCredential, setVerifiableCredential] = useState<PhoneVerificationCredential | null>(null)
-  const [zkProof] = useState<ZKProof | null>(null)
-  const [verificationId, setVerificationId] = useState<string>('')
+  const [, setVerificationId] = useState<string>('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedSocial, setSelectedSocial] = useState<string>('')
   
   const { 
     register, 
     watch, 
-    setValue, 
     trigger,
     formState: { errors },
-    getValues,
-    reset
+    getValues
   } = useForm<FormData>({
     defaultValues: {
       firstName: '',
@@ -399,7 +393,7 @@ export default function GetStartedV2Page() {
                 onClick={() => setCurrentStep('method')}
                 className="mt-8 px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
               >
-                Let's Begin
+                Let&apos;s Begin
               </motion.button>
             </motion.div>
           )}
@@ -625,7 +619,7 @@ export default function GetStartedV2Page() {
                         </button>
                       </div>
                       <p className="text-sm text-gray-700">
-                        Great! Your wallet is connected. Let's continue setting up your profile.
+                        Great! Your wallet is connected. Let&apos;s continue setting up your profile.
                       </p>
                     </motion.div>
                   )}
@@ -702,7 +696,7 @@ export default function GetStartedV2Page() {
                       {authMethod === 'email' ? 'Email Setup' : 'Phone Setup'}
                     </h1>
                     <p className="text-xl text-black">
-                      We'll set this up in the next step
+                      We&apos;ll set this up in the next step
                     </p>
                   </div>
                   
@@ -947,7 +941,7 @@ export default function GetStartedV2Page() {
                 </motion.button>
 
                 <p className="text-center text-sm text-gray-600">
-                  Didn't receive the code? 
+                  Didn&apos;t receive the code? 
                   <button className="ml-1 text-blue-600 hover:underline">
                     Resend
                   </button>
@@ -1046,7 +1040,7 @@ export default function GetStartedV2Page() {
               </div>
 
               <div className="mt-12 p-6 bg-blue-50 rounded-2xl max-w-2xl mx-auto">
-                <h3 className="font-semibold text-black mb-2">What's Next?</h3>
+                <h3 className="font-semibold text-black mb-2">What&apos;s Next?</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                   <div className="text-left">
                     <p className="font-medium text-black">Add Credentials</p>
