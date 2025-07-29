@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useConnect, useAccount, useDisconnect, Connector } from 'wagmi'
 import { ChevronRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 
 interface WalletConnectionProps {
   onNext: () => void
@@ -127,9 +128,11 @@ export function WalletConnection({ onNext, onWalletConnected }: WalletConnection
             >
               <div className="flex items-center">
                 <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                  <img 
+                  <Image 
                     src={getWalletIcon(connector.name)} 
                     alt={`${connector.name} logo`}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 object-contain"
                     onError={(e) => {
                       // Fallback to emoji if image fails to load

@@ -8,11 +8,18 @@ import { WalletConnection } from '@/components/WalletConnection'
 
 type AuthMethod = 'wallet' | 'email' | 'phone' | null
 type OnboardingStep = 'method' | 'credentials' | 'verification' | 'keys' | 'complete'
+type UserData = {
+  email: string
+  phone: string
+  walletAddress: string
+  name: string
+  verificationCode: string
+}
 
 export default function GetStartedPage() {
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('method')
-  const [userData, setUserData] = useState({
+  const [userData, setUserData] = useState<UserData>({
     email: '',
     phone: '',
     walletAddress: '',
@@ -265,8 +272,8 @@ export default function GetStartedPage() {
 // Email Signup Component
 function EmailSignupComponent({ onNext, userData, setUserData }: {
   onNext: () => void
-  userData: any
-  setUserData: (data: any) => void
+  userData: UserData
+  setUserData: (data: UserData) => void
 }) {
   return (
     <div className="space-y-6">
@@ -308,8 +315,8 @@ function EmailSignupComponent({ onNext, userData, setUserData }: {
 // Phone Signup Component
 function PhoneSignupComponent({ onNext, userData, setUserData }: {
   onNext: () => void
-  userData: any
-  setUserData: (data: any) => void
+  userData: UserData
+  setUserData: (data: UserData) => void
 }) {
   return (
     <div className="space-y-6">
