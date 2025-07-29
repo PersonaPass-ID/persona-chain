@@ -2,8 +2,8 @@ import { http, createConfig } from 'wagmi'
 import { mainnet, base, optimism, arbitrum, polygon } from 'wagmi/chains'
 import { injected, metaMask, safe, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 
-// Get WalletConnect project ID from environment (you'll need to add this to .env.local)
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id'
+// Get Reown (formerly WalletConnect) project ID from environment
+const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || '946b25b33d5bf1a42b32971e742ce05d'
 
 export const config = createConfig({
   chains: [mainnet, base, optimism, arbitrum, polygon],
@@ -15,8 +15,8 @@ export const config = createConfig({
       metadata: {
         name: 'Persona Identity Platform',
         description: 'Zero-knowledge identity verification platform',
-        url: 'https://persona.example.com',
-        icons: ['https://persona.example.com/icon.png']
+        url: 'https://personapass.xyz',
+        icons: ['https://personapass.xyz/icon.png']
       }
     }),
     coinbaseWallet({

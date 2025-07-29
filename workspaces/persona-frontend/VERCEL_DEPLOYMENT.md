@@ -29,18 +29,29 @@
 Add the following environment variables in Vercel dashboard:
 
 ```bash
-# Required for WalletConnect integration
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_actual_project_id_here
+# Required for Reown (formerly WalletConnect) integration
+NEXT_PUBLIC_REOWN_PROJECT_ID=946b25b33d5bf1a42b32971e742ce05d
+
+# DigitalOcean Blockchain RPC URL
+NEXT_PUBLIC_RPC_URL=http://161.35.2.88:26657
+
+# AWS Application Load Balancer URL
+NEXT_PUBLIC_API_URL=https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com
+
+# Environment identifier
+NEXT_PUBLIC_ENVIRONMENT=production
 
 # Optional: Analytics and monitoring
 VERCEL_ANALYTICS_ID=your_analytics_id
 ```
 
-### Getting WalletConnect Project ID:
-1. Go to [WalletConnect Cloud](https://cloud.walletconnect.com/)
+### Getting Reown Project ID:
+1. Go to [Reown Cloud](https://cloud.reown.com/) (formerly WalletConnect Cloud)
 2. Create a new project
 3. Copy the Project ID
 4. Add it to Vercel environment variables
+
+**Note:** Your production Project ID is already configured: `946b25b33d5bf1a42b32971e742ce05d`
 
 ## Step 3: Custom Domain Setup
 
