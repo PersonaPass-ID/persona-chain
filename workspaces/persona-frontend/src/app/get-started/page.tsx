@@ -98,11 +98,8 @@ export default function GetStartedPage() {
       case 'method':
         canProceed = authMethod !== null
         if (canProceed) {
-          if (authMethod === 'wallet') {
-            setCurrentStep('verification') // Go directly to wallet connection
-          } else {
-            setCurrentStep('profile')
-          }
+          // Everyone needs to provide profile info
+          setCurrentStep('profile')
         }
         break
         
@@ -432,7 +429,7 @@ export default function GetStartedPage() {
                 <p className="text-xl text-black mb-2">
                   We only need the basics to create your verified digital identity.
                 </p>
-                <p className="text-lg text-gray-700">
+                <p className="text-lg text-black">
                   This information stays on your device and is never shared without your permission.
                 </p>
               </div>
@@ -447,7 +444,7 @@ export default function GetStartedPage() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                      <label className="block text-sm font-medium text-black mb-2">First Name</label>
                       <input
                         type="text"
                         {...register('firstName', { required: 'First name is required' })}
@@ -458,7 +455,7 @@ export default function GetStartedPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                      <label className="block text-sm font-medium text-black mb-2">Last Name</label>
                       <input
                         type="text"
                         {...register('lastName', { required: 'Last name is required' })}
@@ -470,7 +467,7 @@ export default function GetStartedPage() {
                     
                     {authMethod === 'email' && (
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <label className="block text-sm font-medium text-black mb-2">Email Address</label>
                         <input
                           type="email"
                           {...register('email', { 
@@ -489,7 +486,7 @@ export default function GetStartedPage() {
 
                     {authMethod === 'phone' && (
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <label className="block text-sm font-medium text-black mb-2">Phone Number</label>
                         <input
                           type="tel"
                           {...register('phone', { 
