@@ -73,7 +73,7 @@ class PersonaApiClient {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com'
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'
   }
 
   /**
@@ -199,11 +199,89 @@ class PersonaApiClient {
   }
 
   /**
+   * Create DID on blockchain
+   */
+  async createDID(walletAddress: string, firstName: string, lastName: string, authMethod: string, identifier: string): Promise<{
+    success: boolean
+    did?: string
+    txHash?: string
+    credential?: PhoneVerificationCredential
+    message?: string
+    error?: string
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/did/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress,
+          firstName,
+          lastName,
+          authMethod,
+          identifier
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to create DID:', error)
+      return {
+        success: false,
+        message: 'Failed to create DID on blockchain',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
+   * Get user credentials from blockchain
+   */
+  async getCredentials(walletAddress: string): Promise<{
+    success: boolean
+    credentials?: PhoneVerificationCredential[]
+    blockchain?: {
+      network: string
+      nodeUrl: string
+      totalCredentials: number
+      activeCredentials: number
+      latestBlockHeight: number
+    }
+    error?: string
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/credentials/${walletAddress}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to get credentials:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
    * Check service health
    */
   async checkHealth(): Promise<HealthCheckResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/issue-vc/phone/health`, {
+      const response = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

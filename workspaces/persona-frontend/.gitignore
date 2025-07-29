@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AWS Lambda
+aws/node_modules/
+aws/.serverless/
+aws/dist/
+aws/*.zip
+
+# Project specific
+*.log
+.nx/
+.serena/
+dist/

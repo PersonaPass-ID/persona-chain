@@ -1,0 +1,6 @@
+aws/
+aws/**
+*.log
+node_modules/
+.env.local
+.DS_Store

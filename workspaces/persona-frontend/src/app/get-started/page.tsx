@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
+import { useAccount } from 'wagmi'
 import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, Copy, User } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { WalletConnection } from '@/components/WalletConnection'
@@ -30,6 +31,7 @@ type FormData = {
 
 export default function GetStartedPage() {
   const router = useRouter()
+  const { isConnected, address } = useAccount()
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('method')
   const [isVerificationSent, setIsVerificationSent] = useState(false)
@@ -37,7 +39,7 @@ export default function GetStartedPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
   const [verifiableCredential, setVerifiableCredential] = useState<PhoneVerificationCredential | null>(null)
-  const [zkProof, setZkProof] = useState<ZKProof | null>(null)
+  const [zkProof] = useState<ZKProof | null>(null)
   const [, setVerificationId] = useState<string>('')
   
   const { 
@@ -105,9 +107,10 @@ export default function GetStartedPage() {
         break
         
       case 'profile':
-        // Validate only essential profile fields
-        const profileValid = await trigger(['firstName', 'lastName', 'acceptedTerms'])
-        if (profileValid) {
+        // CRITICAL FIX: Validate required name fields
+        const profileValid = await trigger(['firstName', 'lastName'])
+        const termsValid = await trigger(['acceptedTerms'])
+        if (profileValid && termsValid) {
           if (authMethod === 'email') {
             canProceed = await trigger(['email'])
           } else if (authMethod === 'phone') {
@@ -145,7 +148,12 @@ export default function GetStartedPage() {
         
       case 'verification':
         if (authMethod === 'wallet') {
-          canProceed = true  // Wallet connection is verification
+          // CRITICAL FIX: Actually validate wallet connection
+          canProceed = isConnected && address !== undefined
+          if (!canProceed) {
+            alert('Please connect your wallet to continue')
+            return
+          }
         } else {
           // Check if all 6 digits are filled
           const codes = getValues('verificationCode')
@@ -155,53 +163,56 @@ export default function GetStartedPage() {
         break
         
       case 'create-persona':
-        // Generate real DID on blockchain and VCs
+        // Create real DID on blockchain using AWS infrastructure
         setIsProcessing(true)
         try {
-          if (authMethod === 'phone') {
-            const phone = getValues('phone')
-            const codes = getValues('verificationCode')
-            const verificationCode = codes.join('')
-            
-            // Verify phone and get real VC + DID
-            const result = await personaApiClient.verifyPhoneCodeAndIssueVC(phone, verificationCode)
-            
-            if (result.success && result.credential) {
-              setVerifiableCredential(result.credential)
-              setGeneratedDID(personaApiClient.generateDID(phone, result.credential))
-              
-              // Generate ZK proof for privacy
-              if (result.credential) {
-                const zkProof = await personaApiClient.createZKProof(result.credential, ['phoneNumber', 'verificationTimestamp'])
-                if (zkProof) {
-                  setZkProof(zkProof)
-                }
-              }
-              
-              // Store credential securely
-              personaApiClient.storeCredential(result.credential)
-              
-              canProceed = true
-            } else {
-              // Fallback: Generate local DID if service is down
-              console.warn('Blockchain service unavailable, generating fallback DID')
-              const phone = getValues('phone')
-              const fallbackDID = personaApiClient.generateDID(phone)
-              setGeneratedDID(fallbackDID)
-              canProceed = true
-            }
+          // Get form data
+          const firstName = getValues('firstName')
+          const lastName = getValues('lastName')
+          
+          let identifier: string
+          let walletAddress: string
+          
+          if (authMethod === 'wallet') {
+            walletAddress = address || getValues('walletAddress')
+            identifier = walletAddress
+          } else if (authMethod === 'email') {
+            identifier = getValues('email')
+            walletAddress = identifier // Use email as fallback wallet address
+          } else if (authMethod === 'phone') {
+            identifier = getValues('phone')
+            walletAddress = identifier // Use phone as fallback wallet address
           } else {
-            // For wallet/email, create basic DID
-            const identifier = authMethod === 'wallet' ? getValues('walletAddress') : getValues('email')
-            const mockDID = personaApiClient.generateDID(identifier)
-            setGeneratedDID(mockDID)
+            throw new Error('Invalid auth method')
+          }
+          
+          // Create DID on blockchain using AWS Lambda
+          const result = await personaApiClient.createDID(
+            walletAddress,
+            firstName,
+            lastName,
+            authMethod,
+            identifier
+          )
+          
+          if (result.success && result.did) {
+            setGeneratedDID(result.did)
+            if (result.credential) {
+              setVerifiableCredential(result.credential)
+            }
+            canProceed = true
+          } else {
+            // Fallback: Generate local DID if AWS service is down
+            console.warn('Blockchain service unavailable, generating fallback DID')
+            const fallbackDID = personaApiClient.generateDID(identifier)
+            setGeneratedDID(fallbackDID)
             canProceed = true
           }
         } catch (error) {
           console.error('Error creating persona:', error)
           // Generate fallback DID even on error
           const identifier = authMethod === 'phone' ? getValues('phone') : 
-                           authMethod === 'wallet' ? getValues('walletAddress') : getValues('email')
+                           authMethod === 'wallet' ? (address || getValues('walletAddress')) : getValues('email')
           const fallbackDID = personaApiClient.generateDID(identifier)
           setGeneratedDID(fallbackDID)
           canProceed = true
