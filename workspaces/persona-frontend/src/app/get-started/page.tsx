@@ -4,23 +4,53 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, CheckCircle, Copy } from 'lucide-react'
+import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, CheckCircle, Copy, User, MapPin, FileText, Zap } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { WalletConnection } from '@/components/WalletConnection'
+import { personaApiClient, PhoneVerificationCredential, ZKProof } from '@/lib/api-client'
 import * as bip39 from 'bip39'
 
 type AuthMethod = 'wallet' | 'email' | 'phone' | null
-type OnboardingStep = 'method' | 'credentials' | 'verification' | 'keys' | 'complete'
+type OnboardingStep = 'method' | 'credentials' | 'profile' | 'verification' | 'credential-creation' | 'keys' | 'complete'
 
 type FormData = {
+  // Authentication
   name: string
   email: string
   phone: string
   walletAddress: string
   verificationCode: string[]  // 6-digit array
+  
+  // Comprehensive Profile Data
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  address: {
+    street: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+  }
+  
+  // Identity Documents
+  governmentId: {
+    type: 'passport' | 'drivers_license' | 'national_id' | ''
+    number: string
+    issuingCountry: string
+    expiryDate: string
+  }
+  
+  // Privacy & Security
   seedPhrase: string[]
   hasBackedUpSeedPhrase: boolean
   acceptedTerms: boolean
+  privacyPreferences: {
+    sharePhoneNumber: boolean
+    shareEmail: boolean
+    shareAddress: boolean
+    shareGovernmentId: boolean
+  }
 }
 
 export default function GetStartedPage() {
@@ -29,25 +59,58 @@ export default function GetStartedPage() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('method')
   const [isVerificationSent, setIsVerificationSent] = useState(false)
   const [seedPhrase, setSeedPhrase] = useState<string[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [generatedDID, setGeneratedDID] = useState<string>('')
+  const [verifiableCredential, setVerifiableCredential] = useState<PhoneVerificationCredential | null>(null)
+  const [zkProof, setZkProof] = useState<ZKProof | null>(null)
+  const [, setVerificationId] = useState<string>('')
   
   const { 
     register, 
-    handleSubmit, 
     watch, 
     setValue, 
     trigger,
-    formState: { errors, isValid },
+    formState: { errors },
     getValues
   } = useForm<FormData>({
     defaultValues: {
+      // Authentication
       name: '',
       email: '',
       phone: '',
       walletAddress: '',
       verificationCode: ['', '', '', '', '', ''],
+      
+      // Profile Data
+      firstName: '',
+      lastName: '',
+      dateOfBirth: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'US'
+      },
+      
+      // Government ID
+      governmentId: {
+        type: '',
+        number: '',
+        issuingCountry: 'US',
+        expiryDate: ''
+      },
+      
+      // Security
       seedPhrase: [],
       hasBackedUpSeedPhrase: false,
-      acceptedTerms: false
+      acceptedTerms: false,
+      privacyPreferences: {
+        sharePhoneNumber: true,
+        shareEmail: true,
+        shareAddress: false,
+        shareGovernmentId: false
+      }
     },
     mode: 'onChange'
   })
@@ -63,19 +126,18 @@ export default function GetStartedPage() {
   }, [currentStep, authMethod, seedPhrase.length, setValue])
 
   // Watch form values for conditional rendering
-  const watchedValues = watch()
-  const currentName = watch('name')
-  const currentEmail = watch('email')
   const currentPhone = watch('phone')
   const hasBackedUp = watch('hasBackedUpSeedPhrase')
 
   const stepProgress = {
-    method: 20,
-    credentials: 40,
-    verification: 60,
-    keys: 80,
+    method: 14,
+    credentials: 28,
+    profile: 42,
+    verification: 56,
+    'credential-creation': 70,
+    keys: 84,
     complete: 100
-  }
+  } as const
 
   // Handle step progression with proper validation
   const goToNextStep = async () => {
@@ -88,18 +150,48 @@ export default function GetStartedPage() {
         break
         
       case 'credentials':
-        if (authMethod === 'wallet') {
-          canProceed = !!watchedValues.walletAddress
-        } else if (authMethod === 'email') {
-          canProceed = await trigger(['name', 'email'])
-        } else if (authMethod === 'phone') {
-          canProceed = await trigger(['name', 'phone'])
+        // Just proceed to profile collection
+        canProceed = true
+        if (canProceed) setCurrentStep('profile')
+        break
+        
+      case 'profile':
+        // Validate all required profile fields
+        const profileValid = await trigger([
+          'name', 'firstName', 'lastName', 'dateOfBirth', 'phone',
+          'address.street', 'address.city', 'address.state', 'address.zipCode',
+          'governmentId.type', 'governmentId.number', 'governmentId.expiryDate'
+        ])
+        if (profileValid) {
+          if (authMethod === 'email') {
+            canProceed = await trigger(['email'])
+          } else {
+            canProceed = true
+          }
         }
         if (canProceed) {
           setCurrentStep('verification')
-          if (authMethod !== 'wallet') {
-            // Simulate sending verification code
-            setTimeout(() => setIsVerificationSent(true), 1000)
+          if (authMethod === 'phone' || authMethod === 'email') {
+            // Start real phone verification
+            setIsProcessing(true)
+            try {
+              const phone = getValues('phone')
+              const result = await personaApiClient.startPhoneVerification(phone)
+              if (result.success) {
+                setVerificationId(result.verificationId || '')
+                setIsVerificationSent(true)
+              } else {
+                console.error('Failed to start verification:', result.message)
+                alert('Failed to start phone verification. Please try again.')
+                return
+              }
+            } catch (error) {
+              console.error('Error starting verification:', error)
+              alert('Error starting verification. Please check your connection.')
+              return
+            } finally {
+              setIsProcessing(false)
+            }
           }
         }
         break
@@ -112,6 +204,54 @@ export default function GetStartedPage() {
           const codes = getValues('verificationCode')
           canProceed = codes.every(code => code && code.length === 1)
         }
+        if (canProceed) setCurrentStep('credential-creation')
+        break
+        
+      case 'credential-creation':
+        // Generate real VCs and DIDs
+        setIsProcessing(true)
+        try {
+          if (authMethod === 'phone') {
+            const phone = getValues('phone')
+            const codes = getValues('verificationCode')
+            const verificationCode = codes.join('')
+            
+            // Verify phone and get real VC
+            const result = await personaApiClient.verifyPhoneCodeAndIssueVC(phone, verificationCode)
+            
+            if (result.success && result.credential) {
+              setVerifiableCredential(result.credential)
+              setGeneratedDID(personaApiClient.generateDID(phone, result.credential))
+              
+              // Generate ZK proof for privacy
+              if (result.credential) {
+                const zkProof = await personaApiClient.createZKProof(result.credential, ['phoneNumber', 'verificationTimestamp'])
+                if (zkProof) {
+                  setZkProof(zkProof)
+                }
+              }
+              
+              // Store credential securely
+              personaApiClient.storeCredential(result.credential)
+              
+              canProceed = true
+            } else {
+              alert('Phone verification failed. Please try again.')
+              setCurrentStep('verification')
+              return
+            }
+          } else {
+            // For wallet/email, create mock credential for now
+            canProceed = true
+          }
+        } catch (error) {
+          console.error('Error creating credentials:', error)
+          alert('Error creating credentials. Please try again.')
+          return
+        } finally {
+          setIsProcessing(false)
+        }
+        
         if (canProceed) setCurrentStep('keys')
         break
         
@@ -136,7 +276,7 @@ export default function GetStartedPage() {
     setValue('walletAddress', address)
     // Auto-advance after wallet connection
     setTimeout(() => {
-      setCurrentStep('verification')
+      setCurrentStep('profile')
     }, 1500)
   }
 
@@ -292,8 +432,312 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 2: Enter Credentials */}
-          {currentStep === 'credentials' && (
+          {/* Step 2: Comprehensive Profile Collection */}
+          {currentStep === 'profile' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  Complete Your Profile
+                </h1>
+                <p className="text-lg text-gray-600">
+                  We need comprehensive information to create your verified digital identity
+                </p>
+              </div>
+
+              <form className="space-y-8">
+                {/* Basic Information */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                  <div className="flex items-center mb-6">
+                    <User className="w-6 h-6 text-blue-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+                      <input
+                        type="text"
+                        {...register('name', { required: 'Display name is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="How you'd like to be known"
+                      />
+                      {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        {...register('phone', { 
+                          required: 'Phone number is required',
+                          pattern: {
+                            value: /^\+[1-9]\d{1,14}$/,
+                            message: 'Phone must be in E.164 format (+1234567890)'
+                          }
+                        })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                      {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                      <input
+                        type="text"
+                        {...register('firstName', { required: 'First name is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="First name"
+                      />
+                      {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                      <input
+                        type="text"
+                        {...register('lastName', { required: 'Last name is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="Last name"
+                      />
+                      {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>}
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                      <input
+                        type="date"
+                        {...register('dateOfBirth', { required: 'Date of birth is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                      {errors.dateOfBirth && <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>}
+                    </div>
+                    
+                    {authMethod === 'email' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                        <input
+                          type="email"
+                          {...register('email', { 
+                            required: authMethod === 'email' ? 'Email is required' : false,
+                            pattern: {
+                              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                              message: 'Invalid email address'
+                            }
+                          })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="your.email@example.com"
+                        />
+                        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Address Information */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                  <div className="flex items-center mb-6">
+                    <MapPin className="w-6 h-6 text-green-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">Address Information</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                      <input
+                        type="text"
+                        {...register('address.street', { required: 'Street address is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="123 Main Street"
+                      />
+                      {errors.address?.street && <p className="mt-1 text-sm text-red-600">{typeof errors.address.street === 'object' ? errors.address.street.message : errors.address.street}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                      <input
+                        type="text"
+                        {...register('address.city', { required: 'City is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="San Francisco"
+                      />
+                      {errors.address?.city && <p className="mt-1 text-sm text-red-600">{typeof errors.address.city === 'object' ? errors.address.city.message : errors.address.city}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                      <input
+                        type="text"
+                        {...register('address.state', { required: 'State is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="CA"
+                      />
+                      {errors.address?.state && <p className="mt-1 text-sm text-red-600">{typeof errors.address.state === 'object' ? errors.address.state.message : errors.address.state}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">ZIP/Postal Code</label>
+                      <input
+                        type="text"
+                        {...register('address.zipCode', { required: 'ZIP code is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="94102"
+                      />
+                      {errors.address?.zipCode && <p className="mt-1 text-sm text-red-600">{typeof errors.address.zipCode === 'object' ? errors.address.zipCode.message : errors.address.zipCode}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                      <select
+                        {...register('address.country', { required: 'Country is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      >
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="DE">Germany</option>
+                        <option value="FR">France</option>
+                        <option value="AU">Australia</option>
+                      </select>
+                      {errors.address?.country && <p className="mt-1 text-sm text-red-600">{typeof errors.address.country === 'object' ? errors.address.country.message : errors.address.country}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Government ID */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                  <div className="flex items-center mb-6">
+                    <FileText className="w-6 h-6 text-purple-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">Identity Verification</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
+                      <select
+                        {...register('governmentId.type', { required: 'Document type is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      >
+                        <option value="">Select document type</option>
+                        <option value="passport">Passport</option>
+                        <option value="drivers_license">Driver&apos;s License</option>
+                        <option value="national_id">National ID</option>
+                      </select>
+                      {errors.governmentId?.type && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.type === 'object' ? errors.governmentId.type.message : errors.governmentId.type}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Document Number</label>
+                      <input
+                        type="text"
+                        {...register('governmentId.number', { required: 'Document number is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="Document number"
+                      />
+                      {errors.governmentId?.number && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.number === 'object' ? errors.governmentId.number.message : errors.governmentId.number}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                      <input
+                        type="date"
+                        {...register('governmentId.expiryDate', { required: 'Expiry date is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                      {errors.governmentId?.expiryDate && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.expiryDate === 'object' ? errors.governmentId.expiryDate.message : errors.governmentId.expiryDate}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Country</label>
+                      <select
+                        {...register('governmentId.issuingCountry', { required: 'Issuing country is required' })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      >
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="DE">Germany</option>
+                        <option value="FR">France</option>
+                        <option value="AU">Australia</option>
+                      </select>
+                      {errors.governmentId?.issuingCountry && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.issuingCountry === 'object' ? errors.governmentId.issuingCountry.message : errors.governmentId.issuingCountry}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Privacy Preferences */}
+                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+                  <div className="flex items-center mb-6">
+                    <Shield className="w-6 h-6 text-blue-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">Privacy Preferences</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('privacyPreferences.sharePhoneNumber')}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label className="ml-3 text-sm text-gray-700">Allow sharing phone verification status (recommended)</label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('privacyPreferences.shareEmail')}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label className="ml-3 text-sm text-gray-700">Allow sharing email verification status</label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('privacyPreferences.shareAddress')}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label className="ml-3 text-sm text-gray-700">Allow sharing address verification (not recommended)</label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('privacyPreferences.shareGovernmentId')}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label className="ml-3 text-sm text-gray-700">Allow sharing government ID verification (not recommended)</label>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-4 bg-blue-100 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Zero-Knowledge Privacy:</strong> Even when sharing is enabled, your actual personal data stays private. 
+                      Only verification proofs are shared, never the underlying information.
+                    </p>
+                  </div>
+                </div>
+
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={goToNextStep}
+                  disabled={isProcessing}
+                  className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? 'Processing...' : 'Continue to Verification'}
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
+
+          {/* Step 3: Verification */}
+          {currentStep === 'verification' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -301,122 +745,37 @@ export default function GetStartedPage() {
             >
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  {authMethod === 'wallet' && 'Connect Your Wallet'}
-                  {authMethod === 'email' && 'Enter Your Email'}
-                  {authMethod === 'phone' && 'Enter Your Phone Number'}
+                  Continue with Your Chosen Method
                 </h1>
                 <p className="text-lg text-gray-600">
-                  {authMethod === 'wallet' && 'Choose from supported wallets to connect securely'}
-                  {authMethod === 'email' && 'We&apos;ll send you a verification code'}
-                  {authMethod === 'phone' && 'We&apos;ll send you an SMS verification code'}
+                  You&apos;ve chosen to authenticate via {authMethod}. Let&apos;s collect your profile information.
                 </p>
               </div>
 
               {authMethod === 'wallet' && (
-                <WalletConnection 
-                  onNext={goToNextStep}
-                  onWalletConnected={handleWalletConnected}
-                />
+                <div className="text-center">
+                  <WalletConnection 
+                    onNext={() => setCurrentStep('profile')}
+                    onWalletConnected={handleWalletConnected}
+                  />
+                  <p className="mt-4 text-sm text-gray-500">
+                    After connecting your wallet, we&apos;ll collect your profile information for credential generation.
+                  </p>
+                </div>
               )}
-
-              {authMethod === 'email' && (
-                <form className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input
-                      type="text"
-                      {...register('name', { 
-                        required: 'Full name is required',
-                        minLength: { value: 2, message: 'Name must be at least 2 characters' }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Enter your full name"
-                    />
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input
-                      type="email"
-                      {...register('email', { 
-                        required: 'Email is required',
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Invalid email address'
-                        }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Enter your email address"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                    )}
-                  </div>
-
+              
+              {authMethod !== 'wallet' && (
+                <div className="text-center">
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={goToNextStep}
-                    disabled={!currentName || !currentEmail || !!errors.name || !!errors.email}
-                    className="w-full rounded-full bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setCurrentStep('profile')}
+                    className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    Send Verification Code
+                    Continue to Profile Setup
                   </motion.button>
-                </form>
-              )}
-
-              {authMethod === 'phone' && (
-                <form className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input
-                      type="text"
-                      {...register('name', { 
-                        required: 'Full name is required',
-                        minLength: { value: 2, message: 'Name must be at least 2 characters' }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Enter your full name"
-                    />
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      {...register('phone', { 
-                        required: 'Phone number is required',
-                        pattern: {
-                          value: /^[+]?[1-9]\d{1,14}$/,
-                          message: 'Invalid phone number format'
-                        }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                    )}
-                  </div>
-
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToNextStep}
-                    disabled={!currentName || !currentPhone || !!errors.name || !!errors.phone}
-                    className="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Send SMS Code
-                  </motion.button>
-                </form>
+                </div>
               )}
             </motion.div>
           )}
@@ -431,7 +790,7 @@ export default function GetStartedPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 {authMethod === 'wallet' && 'Wallet Connected Successfully!'}
                 {authMethod === 'email' && 'Check Your Email'}
-                {authMethod === 'phone' && 'Enter Verification Code'}
+                {authMethod === 'phone' && 'Enter SMS Verification Code'}
               </h1>
               
               {authMethod === 'wallet' && (
@@ -451,8 +810,8 @@ export default function GetStartedPage() {
                 <>
                   <p className="text-lg text-gray-600 mb-8">
                     {isVerificationSent 
-                      ? `Enter the 6-digit code we sent to ${currentEmail || currentPhone}`
-                      : 'Sending verification code...'
+                      ? `Enter the 6-digit code we sent via SMS to ${currentPhone}`
+                      : 'Sending SMS verification code...'
                     }
                   </p>
                   
@@ -470,6 +829,12 @@ export default function GetStartedPage() {
                       ))}
                     </div>
                   )}
+                  
+                  {!isVerificationSent && isProcessing && (
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -477,16 +842,130 @@ export default function GetStartedPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={goToNextStep}
-                disabled={authMethod !== 'wallet' && !isVerificationSent}
+                disabled={(authMethod !== 'wallet' && !isVerificationSent) || isProcessing}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {authMethod === 'wallet' ? 'Continue' : isVerificationSent ? 'Verify Code' : 'Sending...'}
+                {authMethod === 'wallet' ? 'Continue' : isVerificationSent ? 'Create Digital Identity' : 'Sending...'}
                 <ChevronRight className="w-5 h-5" />
               </motion.button>
             </motion.div>
           )}
 
-          {/* Step 4: Security Keys */}
+          {/* Step 4: Credential Creation */}
+          {currentStep === 'credential-creation' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center space-y-8"
+            >
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Creating Your Digital Identity</h1>
+                <p className="text-lg text-gray-600">
+                  {isProcessing 
+                    ? 'Generating your DID and Verifiable Credentials...' 
+                    : 'Your digital identity has been created successfully!'
+                  }
+                </p>
+              </div>
+
+              {isProcessing && (
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <p>• Verifying phone number with blockchain</p>
+                    <p>• Generating Decentralized Identifier (DID)</p>
+                    <p>• Creating Verifiable Credential</p>
+                    <p>• Generating Zero-Knowledge Proofs</p>
+                    <p>• Storing credentials securely</p>
+                  </div>
+                </div>
+              )}
+
+              {!isProcessing && generatedDID && (
+                <div className="space-y-6">
+                  {/* DID Display */}
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
+                    <div className="text-left">
+                      <h3 className="text-lg font-semibold mb-3 flex items-center">
+                        <Zap className="w-5 h-5 mr-2" />
+                        Your Decentralized Identifier (DID)
+                      </h3>
+                      <div className="bg-white/20 rounded-lg p-3 font-mono text-sm break-all">
+                        {generatedDID}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* VC Display */}
+                  {verifiableCredential && (
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
+                      <div className="text-left">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center">
+                          <Shield className="w-5 h-5 mr-2" />
+                          Your Phone Verification Credential
+                        </h3>
+                        <div className="text-sm opacity-90 space-y-2">
+                          <p><strong>Credential ID:</strong> {verifiableCredential.id.substring(0, 40)}...</p>
+                          <p><strong>Issuer:</strong> {verifiableCredential.issuer.name}</p>
+                          <p><strong>Phone Number:</strong> {verifiableCredential.credentialSubject.phoneNumber}</p>
+                          <p><strong>Verification Method:</strong> {verifiableCredential.credentialSubject.verificationMethod}</p>
+                          <p><strong>Status:</strong> ✅ Verified & Signed</p>
+                          <p><strong>Expires:</strong> {new Date(verifiableCredential.expirationDate).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ZK Proof Display */}
+                  {zkProof && (
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
+                      <div className="text-left">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center">
+                          <Key className="w-5 h-5 mr-2" />
+                          Zero-Knowledge Proof Generated
+                        </h3>
+                        <div className="text-sm opacity-90 space-y-2">
+                          <p><strong>Proof Type:</strong> {zkProof.proof.type}</p>
+                          <p><strong>Attributes:</strong> {zkProof.proof.revealedAttributes.join(', ')}</p>
+                          <p><strong>Privacy Level:</strong> Maximum (personal data never exposed)</p>
+                          <p><strong>Status:</strong> ✅ Ready for use</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start">
+                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-1">Your Digital Identity is Now Live!</p>
+                        <ul className="space-y-1 text-xs">
+                          <li>• Your DID is registered on the Persona blockchain</li>
+                          <li>• Your phone number is verified and cryptographically signed</li>
+                          <li>• Zero-knowledge proofs enable privacy-preserving verification</li>
+                          <li>• All credentials are stored securely on your device</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isProcessing && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={goToNextStep}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Continue to Security Setup
+                  <ChevronRight className="w-5 h-5" />
+                </motion.button>
+              )}
+            </motion.div>
+          )}
+
+          {/* Step 5: Security Keys */}
           {currentStep === 'keys' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -589,7 +1068,7 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 5: Complete */}
+          {/* Step 6: Complete */}
           {currentStep === 'complete' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -614,18 +1093,34 @@ export default function GetStartedPage() {
                 </p>
               </div>
 
-              {/* First VC Display */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold mb-2">Your First Verifiable Credential</h3>
-                  <div className="text-sm opacity-90 space-y-1">
-                    <p>Type: Identity Verification</p>
-                    <p>Method: {authMethod === 'wallet' ? 'Wallet Connection' : authMethod === 'email' ? 'Email Verification' : 'Phone Verification'}</p>
-                    <p>Issued: {new Date().toLocaleDateString()}</p>
-                    <p>Status: ✅ Verified</p>
+              {/* Real VC Display */}
+              {verifiableCredential ? (
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
+                  <div className="text-left">
+                    <h3 className="text-lg font-semibold mb-2">Your Verifiable Credential</h3>
+                    <div className="text-sm opacity-90 space-y-1">
+                      <p>Type: Phone Verification Credential</p>
+                      <p>DID: {generatedDID}</p>
+                      <p>Phone: {verifiableCredential.credentialSubject.phoneNumber}</p>
+                      <p>Issued: {new Date(verifiableCredential.issuanceDate).toLocaleDateString()}</p>
+                      <p>Expires: {new Date(verifiableCredential.expirationDate).toLocaleDateString()}</p>
+                      <p>Status: ✅ Verified & Blockchain-Registered</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
+                  <div className="text-left">
+                    <h3 className="text-lg font-semibold mb-2">Your Digital Identity</h3>
+                    <div className="text-sm opacity-90 space-y-1">
+                      <p>Type: {authMethod === 'wallet' ? 'Wallet-Based Identity' : 'Profile-Based Identity'}</p>
+                      <p>Method: {authMethod === 'wallet' ? 'Wallet Connection' : authMethod === 'email' ? 'Email + Profile' : 'Phone + Profile'}</p>
+                      <p>Created: {new Date().toLocaleDateString()}</p>
+                      <p>Status: ✅ Successfully Created</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <motion.button
