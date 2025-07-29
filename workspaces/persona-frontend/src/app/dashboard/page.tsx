@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { 
   Shield, 
@@ -14,27 +14,87 @@ import {
   LogOut,
   Copy,
   Download,
-  ExternalLink
+  ExternalLink,
+  Zap
 } from 'lucide-react'
-import { Navigation } from '@/components/Navigation'
+import { DashboardNavigation } from '@/components/DashboardNavigation'
+import { personaApiClient, PhoneVerificationCredential } from '@/lib/api-client'
+
+interface ProfileData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  authMethod: string
+  did: string
+  createdAt: string
+}
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const [activeSection, setActiveSection] = useState<'overview' | 'credentials' | 'security'>('overview')
+  const [userDID, setUserDID] = useState<string>('')
+  const [storedCredential, setStoredCredential] = useState<PhoneVerificationCredential | null>(null)
+  const [profileData, setProfileData] = useState<ProfileData | null>(null)
 
-  // Mock user data - in production this would come from your backend/blockchain
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Load stored credential
+      const credential = personaApiClient.getStoredCredential()
+      if (credential) {
+        setStoredCredential(credential)
+        setUserDID(credential.credentialSubject.id)
+      }
+
+      // Load profile data
+      const profile = localStorage.getItem('persona_profile')
+      if (profile) {
+        setProfileData(JSON.parse(profile))
+      }
+
+      // Load DID if stored separately
+      const did = localStorage.getItem('persona_did')
+      if (did && !userDID) {
+        setUserDID(did)
+      }
+    }
+  }, [userDID])
+
+  // User data with real info if available
   const userData = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    verificationMethod: isConnected ? 'Wallet Connection' : 'Email Verification',
-    joinDate: new Date().toLocaleDateString(),
-    totalCredentials: 1,
-    verifiedCredentials: 1
+    name: profileData?.firstName && profileData?.lastName 
+      ? `${profileData.firstName} ${profileData.lastName}` 
+      : 'John Doe',
+    email: profileData?.email || 'john.doe@example.com',
+    phone: profileData?.phone || storedCredential?.credentialSubject.phoneNumber || '+1 (555) 123-4567',
+    verificationMethod: storedCredential 
+      ? `${storedCredential.credentialSubject.verificationMethod} Verification`
+      : isConnected ? 'Wallet Connection' : 'Email Verification',
+    joinDate: storedCredential 
+      ? new Date(storedCredential.issuanceDate).toLocaleDateString()
+      : new Date().toLocaleDateString(),
+    totalCredentials: storedCredential ? 1 : 1,
+    verifiedCredentials: storedCredential ? 1 : 1,
+    did: userDID
   }
 
-  const credentials = [
+  const credentials = storedCredential ? [
+    {
+      id: 1,
+      type: storedCredential.type.includes('PhoneVerificationCredential') 
+        ? 'Phone Verification Credential' 
+        : 'Identity Verification',
+      issuer: storedCredential.issuer.name,
+      status: 'Verified',
+      issuedDate: new Date(storedCredential.issuanceDate).toLocaleDateString(),
+      expiryDate: new Date(storedCredential.expirationDate).toLocaleDateString(),
+      description: `Verified ${storedCredential.credentialSubject.verificationMethod} credential`,
+      credentialId: storedCredential.id,
+      phoneNumber: storedCredential.credentialSubject.phoneNumber
+    }
+  ] : [
     {
       id: 1,
       type: 'Identity Verification',
@@ -48,7 +108,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
-      <Navigation />
+      <DashboardNavigation />
       
       <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -193,6 +253,27 @@ export default function DashboardPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Verification Method</label>
                       <p className="text-gray-900">{userData.verificationMethod}</p>
                     </div>
+                    {userData.did && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-blue-600" />
+                          Your Decentralized Identifier (DID)
+                        </label>
+                        <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-200">
+                          <p className="text-gray-900 font-mono text-sm break-all flex-1">{userData.did}</p>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(userData.did)}
+                            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                            title="Copy DID"
+                          >
+                            <Copy className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This is your unique blockchain identity address - keep it safe!
+                        </p>
+                      </div>
+                    )}
                     {address && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Wallet Address</label>
