@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from '@/components/providers/wagmi-provider'
+import { PersonaNavbar } from '@/components/persona-navbar'
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +24,6 @@ export const metadata: Metadata = {
     title: "Persona | Zero-Knowledge Identity Protocol",
     description: "Revolutionary digital identity with privacy-first technology.",
   },
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
 };
 
@@ -40,12 +34,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}
-      >
-        <Providers>
+      <body className={`${inter.variable} antialiased`}>
+        <PersonaNavbar />
+        <main>
           {children}
-        </Providers>
+        </main>
       </body>
     </html>
   );
