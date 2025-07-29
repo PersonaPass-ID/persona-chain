@@ -4,14 +4,14 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, CheckCircle, Copy, User, Zap } from 'lucide-react'
+import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, Copy, User } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { WalletConnection } from '@/components/WalletConnection'
 import { personaApiClient, PhoneVerificationCredential, ZKProof } from '@/lib/api-client'
 import * as bip39 from 'bip39'
 
 type AuthMethod = 'wallet' | 'email' | 'phone' | null
-type OnboardingStep = 'method' | 'credentials' | 'profile' | 'verification' | 'did-education' | 'create-persona' | 'recovery-phrase' | 'complete'
+type OnboardingStep = 'method' | 'profile' | 'verification' | 'create-persona' | 'recovery-phrase' | 'complete'
 
 type FormData = {
   // Essential Authentication Info Only
@@ -65,27 +65,25 @@ export default function GetStartedPage() {
     mode: 'onChange'
   })
 
-  // Generate seed phrase when needed
+  // Generate seed phrase when needed - FOR ALL USERS (Web3 industry standard)
   useEffect(() => {
-    if (currentStep === 'recovery-phrase' && seedPhrase.length === 0 && authMethod !== 'wallet') {
+    if (currentStep === 'recovery-phrase' && seedPhrase.length === 0) {
       const mnemonic = bip39.generateMnemonic()
       const words = mnemonic.split(' ')
       setSeedPhrase(words)
       setValue('seedPhrase', words)
     }
-  }, [currentStep, authMethod, seedPhrase.length, setValue])
+  }, [currentStep, seedPhrase.length, setValue])
 
   // Watch form values for conditional rendering
   const currentPhone = watch('phone')
   const hasBackedUp = watch('hasBackedUpSeedPhrase')
 
   const stepProgress = {
-    method: 12,
-    credentials: 24,
-    profile: 36,
+    method: 16,
+    profile: 32,
     verification: 48,
-    'did-education': 60,
-    'create-persona': 72,
+    'create-persona': 66,
     'recovery-phrase': 84,
     complete: 100
   } as const
@@ -97,13 +95,13 @@ export default function GetStartedPage() {
     switch (currentStep) {
       case 'method':
         canProceed = authMethod !== null
-        if (canProceed) setCurrentStep('credentials')
-        break
-        
-      case 'credentials':
-        // Just proceed to profile collection
-        canProceed = true
-        if (canProceed) setCurrentStep('profile')
+        if (canProceed) {
+          if (authMethod === 'wallet') {
+            setCurrentStep('verification') // Go directly to wallet connection
+          } else {
+            setCurrentStep('profile')
+          }
+        }
         break
         
       case 'profile':
@@ -153,12 +151,6 @@ export default function GetStartedPage() {
           const codes = getValues('verificationCode')
           canProceed = codes.every(code => code && code.length === 1)
         }
-        if (canProceed) setCurrentStep('did-education')
-        break
-        
-      case 'did-education':
-        // Just proceed to persona creation
-        canProceed = true
         if (canProceed) setCurrentStep('create-persona')
         break
         
@@ -221,11 +213,8 @@ export default function GetStartedPage() {
         break
         
       case 'recovery-phrase':
-        if (authMethod === 'wallet') {
-          canProceed = true  // Wallet manages keys
-        } else {
-          canProceed = hasBackedUp
-        }
+        // ALL users must backup recovery phrase (Web3 industry standard)
+        canProceed = hasBackedUp
         if (canProceed) setCurrentStep('complete')
         break
         
@@ -342,7 +331,7 @@ export default function GetStartedPage() {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setAuthMethod('wallet')
-                    setCurrentStep('credentials')
+                    setCurrentStep('verification')
                   }}
                   className="w-full p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 text-left"
                 >
@@ -364,7 +353,7 @@ export default function GetStartedPage() {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setAuthMethod('email')
-                    setCurrentStep('credentials')
+                    setCurrentStep('profile')
                   }}
                   className="w-full p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-300 text-left"
                 >
@@ -386,7 +375,7 @@ export default function GetStartedPage() {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setAuthMethod('phone')
-                    setCurrentStep('credentials')
+                    setCurrentStep('profile')
                   }}
                   className="w-full p-6 bg-white rounded-2xl border-2 border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all duration-300 text-left"
                 >
@@ -549,51 +538,8 @@ export default function GetStartedPage() {
           )}
 
 
-          {/* Step 2: Method Setup - Wallet Connection or Continue */}
-          {currentStep === 'credentials' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Continue with Your Chosen Method
-                </h1>
-                <p className="text-lg text-gray-600">
-                  You&apos;ve chosen to authenticate via {authMethod}. Let&apos;s collect your profile information.
-                </p>
-              </div>
 
-              {authMethod === 'wallet' && (
-                <div className="text-center">
-                  <WalletConnection 
-                    onNext={() => setCurrentStep('profile')}
-                    onWalletConnected={handleWalletConnected}
-                  />
-                  <p className="mt-4 text-sm text-gray-500">
-                    After connecting your wallet, we&apos;ll collect your profile information for credential generation.
-                  </p>
-                </div>
-              )}
-              
-              {authMethod !== 'wallet' && (
-                <div className="text-center">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setCurrentStep('profile')}
-                    className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    Continue to Profile Setup
-                  </motion.button>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Step 4: Phone/Email Verification */}
+          {/* Step 3: Phone/Email/Wallet Verification */}
           {currentStep === 'verification' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -601,21 +547,17 @@ export default function GetStartedPage() {
               className="text-center space-y-6"
             >
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {authMethod === 'wallet' && 'Wallet Connected Successfully!'}
+                {authMethod === 'wallet' && 'Connect Your Wallet'}
                 {authMethod === 'email' && 'Check Your Email'}
                 {authMethod === 'phone' && 'Enter SMS Verification Code'}
               </h1>
               
               {authMethod === 'wallet' && (
-                <div className="flex justify-center mb-8">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
-                  >
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </motion.div>
+                <div className="mb-8">
+                  <WalletConnection 
+                    onNext={() => setCurrentStep('profile')}
+                    onWalletConnected={handleWalletConnected}
+                  />
                 </div>
               )}
               
@@ -664,96 +606,6 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 4: DID Education */}
-          {currentStep === 'did-education' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-8"
-            >
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">What is a DID?</h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your Decentralized Identifier (DID) is your unique digital identity on the blockchain
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-                    <User className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Digital Identity</h3>
-                  <p className="text-sm text-gray-600">
-                    A unique identifier that represents you across the internet, owned and controlled by you alone.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                    <Shield className="w-6 h-6 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Privacy & Control</h3>
-                  <p className="text-sm text-gray-600">
-                    You control what information to share and with whom, using zero-knowledge proofs for privacy.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                    <Zap className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Verifiable Credentials</h3>
-                  <p className="text-sm text-gray-600">
-                    Attach verified credentials like phone numbers, emails, or IDs to prove things about yourself.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-200">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">What You Can Do With Your DID:</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Create verifiable credentials</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Generate zero-knowledge proofs</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Share verified information privately</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Access DeFi and Web3 services</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Build your digital reputation</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">Control your data sovereignty</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={goToNextStep}
-                className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                I Understand - Create My Persona
-              </motion.button>
-            </motion.div>
-          )}
 
           {/* Step 5: Create Persona */}
           {currentStep === 'create-persona' && (
@@ -764,12 +616,12 @@ export default function GetStartedPage() {
             >
               <div className="text-center">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  {isProcessing ? 'Creating Your Persona...' : 'Your Persona is Ready!'}
+                  {isProcessing ? 'Creating Your Identity...' : 'Identity Created Successfully!'}
                 </h1>
                 <p className="text-lg text-gray-600">
                   {isProcessing 
-                    ? 'Generating your DID on the blockchain and creating your verifiable credentials...' 
-                    : 'Your decentralized identity has been created and registered on the blockchain!'
+                    ? 'Generating your decentralized identity and verifiable credentials...' 
+                    : 'Your DID and credentials are ready. Please save your DID hash below.'
                   }
                 </p>
               </div>
@@ -789,27 +641,62 @@ export default function GetStartedPage() {
 
               {!isProcessing && generatedDID && (
                 <div className="space-y-6">
-                  {/* DID Display */}
-                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
-                    <div className="text-left">
-                      <h3 className="text-lg font-semibold mb-3 flex items-center">
-                        <Zap className="w-5 h-5 mr-2" />
-                        Your Decentralized Identifier (DID)
-                      </h3>
-                      <div className="bg-white/20 rounded-lg p-4 font-mono text-sm break-all border-2 border-white/30">
+                  {/* PROMINENT DID Display with Storage Instructions */}
+                  <div className="bg-gray-900 rounded-2xl p-8 text-white border-2 border-blue-500">
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold mb-2 flex items-center justify-center">
+                        <Key className="w-6 h-6 mr-2" />
+                        Your DID Hash
+                      </h2>
+                      <p className="text-sm text-gray-300">
+                        This is your permanent digital identity address - SAVE IT NOW
+                      </p>
+                    </div>
+                    
+                    <div className="bg-black/50 rounded-lg p-6 mb-6 border border-gray-700">
+                      <div className="font-mono text-lg break-all text-center text-blue-300 mb-4">
                         {generatedDID}
                       </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="text-xs opacity-80">
-                          This is your unique blockchain address - save it somewhere safe!
-                        </p>
+                      <div className="flex gap-3 justify-center">
                         <button 
                           onClick={() => navigator.clipboard.writeText(generatedDID)}
-                          className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs transition-colors flex items-center space-x-1"
+                          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
                         >
-                          <Copy className="w-3 h-3" />
-                          <span>Copy</span>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy DID</span>
                         </button>
+                        <button 
+                          onClick={() => {
+                            const blob = new Blob([`Your Persona DID:\n${generatedDID}\n\nCreated: ${new Date().toISOString()}\n\nIMPORTANT: Store this DID hash safely. You'll need it to access your identity.`], { type: 'text/plain' })
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = 'persona-did.txt'
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            URL.revokeObjectURL(url)
+                          }}
+                          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <div className="text-yellow-400 mr-3 text-lg">⚠️</div>
+                        <div className="text-sm">
+                          <p className="font-semibold text-yellow-300 mb-2">CRITICAL: Save Your DID Hash</p>
+                          <ul className="space-y-1 text-gray-300 text-xs">
+                            <li>• Write it down on paper and store safely</li>
+                            <li>• Save it in your password manager</li>
+                            <li>• Email it to yourself as backup</li>
+                            <li>• This hash is required to prove your identity</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -852,16 +739,16 @@ export default function GetStartedPage() {
                     </div>
                   )}
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <div className="flex items-start">
-                      <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
-                      <div className="text-sm text-blue-800">
-                        <p className="font-medium mb-1">🎉 Your Persona is Live on the Blockchain!</p>
+                      <Shield className="w-5 h-5 text-green-600 mt-0.5 mr-3" />
+                      <div className="text-sm text-green-800">
+                        <p className="font-medium mb-1">✅ Identity Successfully Created</p>
                         <ul className="space-y-1 text-xs">
-                          <li>• Your DID is permanently registered on the Persona blockchain</li>
-                          <li>• Your {authMethod} credential is cryptographically verified</li>
-                          <li>• Zero-knowledge proofs enable privacy-preserving sharing</li>
-                          <li>• All credentials are stored securely on your device</li>
+                          <li>• DID registered and cryptographically verified</li>
+                          <li>• {authMethod === 'phone' ? 'Phone' : authMethod === 'email' ? 'Email' : 'Wallet'} credential issued and verified</li>
+                          <li>• Zero-knowledge proofs enabled for privacy</li>
+                          <li>• All data stored securely on your device</li>
                         </ul>
                       </div>
                     </div>
@@ -891,16 +778,13 @@ export default function GetStartedPage() {
               className="space-y-8"
             >
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Secure Your Account</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Back Up Your Recovery Phrase</h1>
                 <p className="text-lg text-gray-600">
-                  {authMethod === 'wallet' 
-                    ? 'Your wallet already manages your keys securely'
-                    : 'Save your recovery phrase to restore access if needed'
-                  }
+                  Save this 12-word recovery phrase to restore access to your account and credentials if needed
                 </p>
               </div>
 
-              {authMethod !== 'wallet' && seedPhrase.length > 0 && (
+              {seedPhrase.length > 0 && (
                 <>
                   {/* Recovery Phrase */}
                   <div className="bg-gray-900 rounded-2xl p-6">
@@ -979,10 +863,10 @@ export default function GetStartedPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={goToNextStep}
-                disabled={authMethod !== 'wallet' && !hasBackedUp}
+                disabled={!hasBackedUp}
                 className="w-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {authMethod === 'wallet' ? 'Complete Setup' : 'I Have Saved My Recovery Phrase'}
+                I Have Saved My Recovery Phrase
               </motion.button>
             </motion.div>
           )}
