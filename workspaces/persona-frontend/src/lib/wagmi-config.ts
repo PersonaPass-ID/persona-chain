@@ -20,7 +20,9 @@ export const config = createConfig({
       }
     }),
     coinbaseWallet({
-      appName: 'Persona Identity Platform'
+      appName: 'Persona Identity Platform',
+      appLogoUrl: 'https://personapass.xyz/icon.png',
+      preference: 'smartWalletOnly'
     }),
     safe(),
   ],

@@ -736,8 +736,8 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 3: Verification */}
-          {currentStep === 'verification' && (
+          {/* Step 2: Method Setup - Wallet Connection or Continue */}
+          {currentStep === 'credentials' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -780,7 +780,7 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 3: Verification */}
+          {/* Step 4: Phone/Email Verification */}
           {currentStep === 'verification' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
