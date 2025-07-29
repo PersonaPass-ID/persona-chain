@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, CheckCircle, Copy, User, MapPin, FileText, Zap } from 'lucide-react'
+import { ChevronRight, Wallet, Mail, Phone, Shield, Key, Download, CheckCircle, Copy, User, Zap } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { WalletConnection } from '@/components/WalletConnection'
 import { personaApiClient, PhoneVerificationCredential, ZKProof } from '@/lib/api-client'
@@ -14,43 +14,18 @@ type AuthMethod = 'wallet' | 'email' | 'phone' | null
 type OnboardingStep = 'method' | 'credentials' | 'profile' | 'verification' | 'credential-creation' | 'keys' | 'complete'
 
 type FormData = {
-  // Authentication
-  name: string
+  // Essential Authentication Info Only
+  firstName: string
+  lastName: string
   email: string
   phone: string
   walletAddress: string
   verificationCode: string[]  // 6-digit array
   
-  // Comprehensive Profile Data
-  firstName: string
-  lastName: string
-  dateOfBirth: string
-  address: {
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    country: string
-  }
-  
-  // Identity Documents
-  governmentId: {
-    type: 'passport' | 'drivers_license' | 'national_id' | ''
-    number: string
-    issuingCountry: string
-    expiryDate: string
-  }
-  
-  // Privacy & Security
+  // Basic Security
   seedPhrase: string[]
   hasBackedUpSeedPhrase: boolean
   acceptedTerms: boolean
-  privacyPreferences: {
-    sharePhoneNumber: boolean
-    shareEmail: boolean
-    shareAddress: boolean
-    shareGovernmentId: boolean
-  }
 }
 
 export default function GetStartedPage() {
@@ -74,43 +49,18 @@ export default function GetStartedPage() {
     getValues
   } = useForm<FormData>({
     defaultValues: {
-      // Authentication
-      name: '',
+      // Essential Info Only
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       walletAddress: '',
       verificationCode: ['', '', '', '', '', ''],
       
-      // Profile Data
-      firstName: '',
-      lastName: '',
-      dateOfBirth: '',
-      address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'US'
-      },
-      
-      // Government ID
-      governmentId: {
-        type: '',
-        number: '',
-        issuingCountry: 'US',
-        expiryDate: ''
-      },
-      
       // Security
       seedPhrase: [],
       hasBackedUpSeedPhrase: false,
-      acceptedTerms: false,
-      privacyPreferences: {
-        sharePhoneNumber: true,
-        shareEmail: true,
-        shareAddress: false,
-        shareGovernmentId: false
-      }
+      acceptedTerms: false
     },
     mode: 'onChange'
   })
@@ -156,15 +106,13 @@ export default function GetStartedPage() {
         break
         
       case 'profile':
-        // Validate all required profile fields
-        const profileValid = await trigger([
-          'name', 'firstName', 'lastName', 'dateOfBirth', 'phone',
-          'address.street', 'address.city', 'address.state', 'address.zipCode',
-          'governmentId.type', 'governmentId.number', 'governmentId.expiryDate'
-        ])
+        // Validate only essential profile fields
+        const profileValid = await trigger(['firstName', 'lastName', 'acceptedTerms'])
         if (profileValid) {
           if (authMethod === 'email') {
             canProceed = await trigger(['email'])
+          } else if (authMethod === 'phone') {
+            canProceed = await trigger(['phone'])
           } else {
             canProceed = true
           }
@@ -432,7 +380,7 @@ export default function GetStartedPage() {
             </motion.div>
           )}
 
-          {/* Step 2: Comprehensive Profile Collection */}
+          {/* Step 2: Essential Profile Info */}
           {currentStep === 'profile' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -441,50 +389,22 @@ export default function GetStartedPage() {
             >
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Complete Your Profile
+                  Create Your Profile
                 </h1>
                 <p className="text-lg text-gray-600">
-                  We need comprehensive information to create your verified digital identity
+                  Just the essentials to get you started with your digital identity
                 </p>
               </div>
 
               <form className="space-y-8">
-                {/* Basic Information */}
+                {/* Essential Information Only */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center mb-6">
                     <User className="w-6 h-6 text-blue-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">Essential Information</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
-                      <input
-                        type="text"
-                        {...register('name', { required: 'Display name is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="How you'd like to be known"
-                      />
-                      {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                      <input
-                        type="tel"
-                        {...register('phone', { 
-                          required: 'Phone number is required',
-                          pattern: {
-                            value: /^\+[1-9]\d{1,14}$/,
-                            message: 'Phone must be in E.164 format (+1234567890)'
-                          }
-                        })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="+1 (555) 123-4567"
-                      />
-                      {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
-                    </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                       <input
@@ -507,16 +427,6 @@ export default function GetStartedPage() {
                       {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>}
                     </div>
                     
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                      <input
-                        type="date"
-                        {...register('dateOfBirth', { required: 'Date of birth is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                      {errors.dateOfBirth && <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>}
-                    </div>
-                    
                     {authMethod === 'email' && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
@@ -535,190 +445,47 @@ export default function GetStartedPage() {
                         {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                       </div>
                     )}
+
+                    {authMethod === 'phone' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input
+                          type="tel"
+                          {...register('phone', { 
+                            required: authMethod === 'phone' ? 'Phone number is required' : false,
+                            pattern: {
+                              value: /^\+[1-9]\d{1,14}$/,
+                              message: 'Phone must be in E.164 format (+1234567890)'
+                            }
+                          })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="+1 (555) 123-4567"
+                        />
+                        {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Address Information */}
+                {/* Terms & Privacy */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center mb-6">
-                    <MapPin className="w-6 h-6 text-green-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Address Information</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
-                      <input
-                        type="text"
-                        {...register('address.street', { required: 'Street address is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="123 Main Street"
-                      />
-                      {errors.address?.street && <p className="mt-1 text-sm text-red-600">{typeof errors.address.street === 'object' ? errors.address.street.message : errors.address.street}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                      <input
-                        type="text"
-                        {...register('address.city', { required: 'City is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="San Francisco"
-                      />
-                      {errors.address?.city && <p className="mt-1 text-sm text-red-600">{typeof errors.address.city === 'object' ? errors.address.city.message : errors.address.city}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                      <input
-                        type="text"
-                        {...register('address.state', { required: 'State is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="CA"
-                      />
-                      {errors.address?.state && <p className="mt-1 text-sm text-red-600">{typeof errors.address.state === 'object' ? errors.address.state.message : errors.address.state}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">ZIP/Postal Code</label>
-                      <input
-                        type="text"
-                        {...register('address.zipCode', { required: 'ZIP code is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="94102"
-                      />
-                      {errors.address?.zipCode && <p className="mt-1 text-sm text-red-600">{typeof errors.address.zipCode === 'object' ? errors.address.zipCode.message : errors.address.zipCode}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                      <select
-                        {...register('address.country', { required: 'Country is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      >
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="GB">United Kingdom</option>
-                        <option value="DE">Germany</option>
-                        <option value="FR">France</option>
-                        <option value="AU">Australia</option>
-                      </select>
-                      {errors.address?.country && <p className="mt-1 text-sm text-red-600">{typeof errors.address.country === 'object' ? errors.address.country.message : errors.address.country}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Government ID */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <div className="flex items-center mb-6">
-                    <FileText className="w-6 h-6 text-purple-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Identity Verification</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Document Type</label>
-                      <select
-                        {...register('governmentId.type', { required: 'Document type is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      >
-                        <option value="">Select document type</option>
-                        <option value="passport">Passport</option>
-                        <option value="drivers_license">Driver&apos;s License</option>
-                        <option value="national_id">National ID</option>
-                      </select>
-                      {errors.governmentId?.type && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.type === 'object' ? errors.governmentId.type.message : errors.governmentId.type}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Document Number</label>
-                      <input
-                        type="text"
-                        {...register('governmentId.number', { required: 'Document number is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="Document number"
-                      />
-                      {errors.governmentId?.number && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.number === 'object' ? errors.governmentId.number.message : errors.governmentId.number}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
-                      <input
-                        type="date"
-                        {...register('governmentId.expiryDate', { required: 'Expiry date is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                      {errors.governmentId?.expiryDate && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.expiryDate === 'object' ? errors.governmentId.expiryDate.message : errors.governmentId.expiryDate}</p>}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Country</label>
-                      <select
-                        {...register('governmentId.issuingCountry', { required: 'Issuing country is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      >
-                        <option value="US">United States</option>
-                        <option value="CA">Canada</option>
-                        <option value="GB">United Kingdom</option>
-                        <option value="DE">Germany</option>
-                        <option value="FR">France</option>
-                        <option value="AU">Australia</option>
-                      </select>
-                      {errors.governmentId?.issuingCountry && <p className="mt-1 text-sm text-red-600">{typeof errors.governmentId.issuingCountry === 'object' ? errors.governmentId.issuingCountry.message : errors.governmentId.issuingCountry}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Privacy Preferences */}
-                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
-                  <div className="flex items-center mb-6">
-                    <Shield className="w-6 h-6 text-blue-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Privacy Preferences</h3>
+                    <Shield className="w-6 h-6 text-green-600 mr-3" />
+                    <h3 className="text-xl font-semibold text-gray-900">Terms & Privacy</h3>
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center">
+                    <label className="flex items-start space-x-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        {...register('privacyPreferences.sharePhoneNumber')}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        {...register('acceptedTerms', { required: 'You must accept the terms to continue' })}
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <label className="ml-3 text-sm text-gray-700">Allow sharing phone verification status (recommended)</label>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        {...register('privacyPreferences.shareEmail')}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <label className="ml-3 text-sm text-gray-700">Allow sharing email verification status</label>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        {...register('privacyPreferences.shareAddress')}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <label className="ml-3 text-sm text-gray-700">Allow sharing address verification (not recommended)</label>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        {...register('privacyPreferences.shareGovernmentId')}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                      />
-                      <label className="ml-3 text-sm text-gray-700">Allow sharing government ID verification (not recommended)</label>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-4 bg-blue-100 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>Zero-Knowledge Privacy:</strong> Even when sharing is enabled, your actual personal data stays private. 
-                      Only verification proofs are shared, never the underlying information.
-                    </p>
+                      <span className="text-sm text-gray-700">
+                        I agree to the <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>. I understand that additional verification may be required later for advanced features.
+                      </span>
+                    </label>
+                    {errors.acceptedTerms && <p className="text-sm text-red-600 ml-7">{errors.acceptedTerms.message}</p>}
                   </div>
                 </div>
 
@@ -733,8 +500,19 @@ export default function GetStartedPage() {
                   {isProcessing ? 'Processing...' : 'Continue to Verification'}
                 </motion.button>
               </form>
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex items-start">
+                  <div className="text-blue-600 mr-3">💡</div>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Coming Soon</p>
+                    <p>Address verification and government ID can be added later to unlock additional features like KYC compliance and premium services.</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
+
 
           {/* Step 2: Method Setup - Wallet Connection or Continue */}
           {currentStep === 'credentials' && (
