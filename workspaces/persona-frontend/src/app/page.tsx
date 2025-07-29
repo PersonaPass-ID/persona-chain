@@ -60,7 +60,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="mx-auto mt-6 max-w-2xl text-xl leading-8 text-gray-700"
+            className="mx-auto mt-6 max-w-2xl text-xl leading-8 text-black"
           >
             Create secure, verifiable digital credentials using zero-knowledge proofs. 
             Experience seamless identity verification in under 5 minutes.
@@ -110,7 +110,7 @@ export default function HomePage() {
             <p className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
               Why Choose Persona?
             </p>
-            <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+            <p className="mt-4 max-w-2xl text-xl text-black mx-auto">
               Built with the latest Web3 technology and zero-knowledge proofs for maximum security and privacy.
             </p>
           </motion.div>
@@ -126,7 +126,7 @@ export default function HomePage() {
                 className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 hover:shadow-lg transition-all duration-300"
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Zero-Knowledge Security</h3>
-                <p className="text-base text-gray-600 leading-relaxed">
+                <p className="text-base text-black leading-relaxed">
                   Prove your identity without revealing personal information using cutting-edge ZK-proof technology. Your data stays private while maintaining full verification.
                 </p>
               </motion.div>
@@ -140,7 +140,7 @@ export default function HomePage() {
                 className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-100 hover:shadow-lg transition-all duration-300"
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Instant Verification</h3>
-                <p className="text-base text-gray-600 leading-relaxed">
+                <p className="text-base text-black leading-relaxed">
                   Complete your identity verification in minutes, not days. Our streamlined process eliminates lengthy paperwork and waiting periods.
                 </p>
               </motion.div>
@@ -154,7 +154,7 @@ export default function HomePage() {
                 className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-8 border border-purple-100 hover:shadow-lg transition-all duration-300"
               >
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Universal Compatibility</h3>
-                <p className="text-base text-gray-600 leading-relaxed">
+                <p className="text-base text-black leading-relaxed">
                   Use your verified identity across thousands of platforms and services. One verification, endless possibilities.
                 </p>
               </motion.div>
@@ -177,7 +177,7 @@ export default function HomePage() {
             <p className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
               Identity Verification Made Simple
             </p>
-            <p className="mt-4 max-w-3xl text-xl text-gray-600 mx-auto">
+            <p className="mt-4 max-w-3xl text-xl text-black mx-auto">
               Experience the magic of zero-knowledge proofs - prove who you are without revealing personal data.
             </p>
           </motion.div>
@@ -198,7 +198,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Connect Your Documents</h3>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-base text-black leading-relaxed">
                 Securely upload your government ID, passport, or other verification documents. Your data is encrypted and never stored on our servers.
               </p>
             </motion.div>
@@ -218,7 +218,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Generate ZK Proof</h3>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-base text-black leading-relaxed">
                 Our advanced cryptography creates a mathematical proof of your identity without exposing any personal information.
               </p>
             </motion.div>
@@ -238,7 +238,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Verify Anywhere</h3>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-base text-black leading-relaxed">
                 Use your verified digital identity across thousands of platforms. One verification, endless possibilities.
               </p>
             </motion.div>
@@ -304,7 +304,7 @@ export default function HomePage() {
             <p className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
               Trusted by Industries Worldwide
             </p>
-            <p className="mt-4 max-w-3xl text-xl text-gray-600 mx-auto">
+            <p className="mt-4 max-w-3xl text-xl text-black mx-auto">
               From financial services to healthcare, Persona enables secure identity verification across every industry.
             </p>
           </motion.div>

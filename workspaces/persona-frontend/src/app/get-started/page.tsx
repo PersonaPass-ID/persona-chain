@@ -317,11 +317,14 @@ export default function GetStartedPage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                How would you like to get started?
+              <h1 className="text-4xl font-bold text-black mb-6">
+                Create Your Digital Identity
               </h1>
-              <p className="text-lg text-gray-600 mb-12">
-                Choose your preferred method to create your secure digital identity
+              <p className="text-xl text-black mb-4">
+                Own your data. Control your privacy. Prove who you are without revealing everything.
+              </p>
+              <p className="text-lg text-gray-700 mb-12">
+                Choose how you&apos;d like to get started:
               </p>
 
               <div className="space-y-4">
@@ -340,8 +343,8 @@ export default function GetStartedPage() {
                       <Wallet className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">Connect Wallet</h3>
-                      <p className="text-gray-600">Use MetaMask, WalletConnect, or any Web3 wallet</p>
+                      <h3 className="text-xl font-semibold text-black mb-1">Connect Wallet</h3>
+                      <p className="text-gray-800">Already have MetaMask or another Web3 wallet? Connect instantly.</p>
                     </div>
                     <ChevronRight className="w-6 h-6 text-gray-400" />
                   </div>
@@ -362,8 +365,8 @@ export default function GetStartedPage() {
                       <Mail className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">Email Address</h3>
-                      <p className="text-gray-600">Quick setup with email verification</p>
+                      <h3 className="text-xl font-semibold text-black mb-1">Email Address</h3>
+                      <p className="text-gray-800">Get started quickly with just your email address.</p>
                     </div>
                     <ChevronRight className="w-6 h-6 text-gray-400" />
                   </div>
@@ -384,8 +387,8 @@ export default function GetStartedPage() {
                       <Phone className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">Phone Number</h3>
-                      <p className="text-gray-600">Verify with SMS code for instant access</p>
+                      <h3 className="text-xl font-semibold text-black mb-1">Phone Number</h3>
+                      <p className="text-gray-800">Verify with SMS for the strongest identity proof.</p>
                     </div>
                     <ChevronRight className="w-6 h-6 text-gray-400" />
                   </div>
@@ -396,8 +399,8 @@ export default function GetStartedPage() {
                 <div className="flex items-start">
                   <Shield className="w-5 h-5 text-blue-600 mt-0.5 mr-3" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Your privacy is guaranteed</p>
-                    <p>All methods use zero-knowledge proofs. Your personal data never leaves your device.</p>
+                    <p className="font-medium mb-1 text-blue-900">Your privacy is guaranteed</p>
+                    <p className="text-blue-800">All methods use zero-knowledge proofs. Your personal data never leaves your device.</p>
                   </div>
                 </div>
               </div>
@@ -412,11 +415,14 @@ export default function GetStartedPage() {
               className="space-y-8"
             >
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Create Your Profile
+                <h1 className="text-4xl font-bold text-black mb-4">
+                  Tell Us About Yourself
                 </h1>
-                <p className="text-lg text-gray-600">
-                  Just the essentials to get you started with your digital identity
+                <p className="text-xl text-black mb-2">
+                  We only need the basics to create your verified digital identity.
+                </p>
+                <p className="text-lg text-gray-700">
+                  This information stays on your device and is never shared without your permission.
                 </p>
               </div>
 
@@ -425,7 +431,7 @@ export default function GetStartedPage() {
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center mb-6">
                     <User className="w-6 h-6 text-blue-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Essential Information</h3>
+                    <h3 className="text-xl font-semibold text-black">Your Information</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -495,7 +501,7 @@ export default function GetStartedPage() {
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center mb-6">
                     <Shield className="w-6 h-6 text-green-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Terms & Privacy</h3>
+                    <h3 className="text-xl font-semibold text-black">Terms & Privacy</h3>
                   </div>
                   
                   <div className="space-y-4">
@@ -505,8 +511,8 @@ export default function GetStartedPage() {
                         {...register('acceptedTerms', { required: 'You must accept the terms to continue' })}
                         className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">
-                        I agree to the <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>. I understand that additional verification may be required later for advanced features.
+                      <span className="text-sm text-black">
+                        I agree to the <a href="#" className="text-blue-600 hover:underline font-semibold">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline font-semibold">Privacy Policy</a>. I understand that additional verification may be required later for advanced features.
                       </span>
                     </label>
                     {errors.acceptedTerms && <p className="text-sm text-red-600 ml-7">{errors.acceptedTerms.message}</p>}
@@ -529,8 +535,8 @@ export default function GetStartedPage() {
                 <div className="flex items-start">
                   <div className="text-blue-600 mr-3">💡</div>
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Coming Soon</p>
-                    <p>Address verification and government ID can be added later to unlock additional features like KYC compliance and premium services.</p>
+                    <p className="font-medium mb-1 text-blue-900">More Features Coming</p>
+                    <p className="text-blue-800">Address verification and government ID can be added later to unlock additional features like KYC compliance and premium services.</p>
                   </div>
                 </div>
               </div>
@@ -546,10 +552,10 @@ export default function GetStartedPage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center space-y-6"
             >
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-black mb-4">
                 {authMethod === 'wallet' && 'Connect Your Wallet'}
-                {authMethod === 'email' && 'Check Your Email'}
-                {authMethod === 'phone' && 'Enter SMS Verification Code'}
+                {authMethod === 'email' && 'Verify Your Email'}
+                {authMethod === 'phone' && 'Verify Your Phone'}
               </h1>
               
               {authMethod === 'wallet' && (
@@ -563,10 +569,16 @@ export default function GetStartedPage() {
               
               {authMethod !== 'wallet' && (
                 <>
-                  <p className="text-lg text-gray-600 mb-8">
+                  <p className="text-xl text-black mb-4">
                     {isVerificationSent 
-                      ? `Enter the 6-digit code we sent via SMS to ${currentPhone}`
-                      : 'Sending SMS verification code...'
+                      ? `We sent a 6-digit code to ${currentPhone}`
+                      : 'Sending verification code...'
+                    }
+                  </p>
+                  <p className="text-lg text-gray-700 mb-8">
+                    {isVerificationSent 
+                      ? 'Enter the code below to verify your phone number.'
+                      : 'This will only take a moment.'
                     }
                   </p>
                   
@@ -629,12 +641,12 @@ export default function GetStartedPage() {
               {isProcessing && (
                 <div className="flex flex-col items-center space-y-4">
                   <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-                  <div className="text-sm text-gray-500 space-y-2">
-                    <p>🔐 Generating cryptographic keys...</p>
-                    <p>⛓️ Registering DID on blockchain...</p>
-                    <p>📋 Creating verifiable credentials...</p>
-                    <p>🛡️ Generating zero-knowledge proofs...</p>
-                    <p>💾 Storing credentials securely...</p>
+                  <div className="text-sm text-black space-y-3">
+                    <p className="font-semibold">🔐 Generating your cryptographic keys...</p>
+                    <p className="font-semibold">⛓️ Registering your identity on the blockchain...</p>
+                    <p className="font-semibold">📋 Creating your verifiable credentials...</p>
+                    <p className="font-semibold">🛡️ Setting up zero-knowledge privacy proofs...</p>
+                    <p className="font-semibold">💾 Securing everything on your device...</p>
                   </div>
                 </div>
               )}
@@ -778,9 +790,12 @@ export default function GetStartedPage() {
               className="space-y-8"
             >
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Back Up Your Recovery Phrase</h1>
-                <p className="text-lg text-gray-600">
-                  Save this 12-word recovery phrase to restore access to your account and credentials if needed
+                <h1 className="text-4xl font-bold text-black mb-4">🔒 Secure Your Identity</h1>
+                <p className="text-xl text-black mb-4">
+                  This 12-word recovery phrase is the KEY to your digital identity.
+                </p>
+                <p className="text-lg text-red-700 font-semibold mb-6">
+                  ⚠️ If you lose this phrase, you lose access to your identity forever. No one can recover it for you.
                 </p>
               </div>
 
@@ -789,8 +804,8 @@ export default function GetStartedPage() {
                   {/* Recovery Phrase */}
                   <div className="bg-gray-900 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-white">Your Recovery Phrase</h3>
-                      <Key className="w-5 h-5 text-gray-400" />
+                      <h3 className="text-xl font-bold text-white">🗝️ Your Recovery Phrase</h3>
+                      <Key className="w-6 h-6 text-yellow-400" />
                     </div>
                     <div className="grid grid-cols-3 gap-3 mb-6">
                       {seedPhrase.map((word, index) => (
@@ -831,8 +846,8 @@ export default function GetStartedPage() {
                           {...register('hasBackedUpSeedPhrase', { required: 'You must backup your recovery phrase' })}
                           className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="saved" className="text-sm text-gray-300">
-                          I have safely stored my recovery phrase
+                        <label htmlFor="saved" className="text-sm text-white font-semibold">
+                          ✓ I have safely stored my recovery phrase in multiple locations
                         </label>
                       </div>
                       {errors.hasBackedUpSeedPhrase && (
@@ -890,9 +905,12 @@ export default function GetStartedPage() {
               </div>
 
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Persona! 🎉</h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your digital identity has been created successfully. You now have your first Verifiable Credential!
+                <h1 className="text-4xl font-bold text-black mb-4">🎉 Welcome to the Future!</h1>
+                <p className="text-2xl text-black mb-4">
+                  Your decentralized digital identity is now LIVE on the blockchain.
+                </p>
+                <p className="text-lg text-gray-800 mb-8">
+                  You now own your data, control your privacy, and can prove who you are without revealing everything about yourself.
                 </p>
               </div>
 
