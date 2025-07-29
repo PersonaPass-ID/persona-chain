@@ -63,7 +63,7 @@ export default function HomePage() {
             className="mx-auto mt-6 max-w-2xl text-xl leading-8 text-gray-700"
           >
             Create secure, verifiable digital credentials using zero-knowledge proofs. 
-            Experience seamless identity verification in the first five magical minutes.
+            Experience seamless identity verification in under 5 minutes.
           </motion.p>
 
           {/* CTA Buttons */}
