@@ -37,13 +37,22 @@ export const config = createConfig({
       // Configure for better reconnection handling
       showQrModal: true,
       // Handle stale chains properly
-      isNewChainsStale: false
+      isNewChainsStale: false,
+      // Add retry configuration
+      qrModalOptions: {
+        themeMode: 'light',
+        themeVariables: {
+          '--wcm-z-index': '1000'
+        }
+      }
     }),
     // Coinbase Wallet with latest configuration
     coinbaseWallet({
       appName: 'Persona Identity Platform',
       appLogoUrl: 'https://personapass.xyz/favicon.svg',
-      preference: 'smartWalletOnly'
+      preference: 'smartWalletOnly',
+      // Disable analytics to prevent 401 errors
+      enableMobileWalletLink: false
     }),
     // Safe wallet connector
     safe({

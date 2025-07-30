@@ -220,8 +220,8 @@ export class PersonaBlockchain {
   private apiKey?: string;
 
   constructor(apiKey?: string) {
-    // Use HTTPS for production API calls to avoid mixed content errors
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://161.35.2.88:3001';
+    // Use HTTPS for all API calls to avoid mixed content errors
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod';
     this.apiKey = apiKey;
     
     console.log('🔗 PersonaBlockchain initialized:', this.baseUrl);

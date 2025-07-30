@@ -27,11 +27,26 @@ export function useWalletConnectionManager() {
   const clearMetaMaskState = useCallback(async () => {
     try {
       // Clear any pending MetaMask requests
-      if (typeof window !== 'undefined' && window.ethereum) {
-        // Force MetaMask to clear its pending state
-        await window.ethereum.request({ method: 'eth_accounts' }).catch(() => {})
-        // Small delay to ensure state is cleared
-        await new Promise(resolve => setTimeout(resolve, 100))
+      if (typeof window !== 'undefined' && window.ethereum?.isMetaMask) {
+        console.debug('Clearing MetaMask state...')
+        
+        // Try multiple approaches to clear MetaMask state
+        try {
+          // First, try to get current accounts to clear pending state
+          await window.ethereum.request({ method: 'eth_accounts' }).catch(() => {})
+          
+          // Wait a bit longer for MetaMask to process the state clearing
+          await new Promise(resolve => setTimeout(resolve, 200))
+          
+          // Try to clear any cached permissions
+          if ('permissions' in window.ethereum) {
+            await window.ethereum.request({ method: 'wallet_getPermissions' }).catch(() => {})
+          }
+        } catch (error) {
+          console.debug('MetaMask state clearing completed with minor errors:', error)
+        }
+        
+        console.debug('MetaMask state clearing completed')
       }
     } catch {
       // Silently ignore clearing errors - MetaMask state clearing is best effort
@@ -66,18 +81,29 @@ export function useWalletConnectionManager() {
         // Handle specific MetaMask "Already processing" error
         if (err instanceof Error && err.message.includes('Already processing eth_requestAccounts')) {
           console.debug('MetaMask already processing, clearing state and retrying...')
-          await clearMetaMaskState()
           
-          // Wait a bit longer and retry once
-          await new Promise(resolve => setTimeout(resolve, 500))
-          try {
-            await connect({ connector })
-            return { success: true }
-          } catch (retryErr) {
-            console.error('Retry connection failed:', retryErr)
-            return { 
-              success: false, 
-              error: retryErr instanceof Error ? retryErr.message : 'Connection failed after retry' 
+          // More aggressive retry logic for MetaMask
+          for (let retryCount = 0; retryCount < 3; retryCount++) {
+            await clearMetaMaskState()
+            
+            // Progressive delay - wait longer on each retry
+            const delay = 300 + (retryCount * 200)
+            await new Promise(resolve => setTimeout(resolve, delay))
+            
+            try {
+              console.debug(`MetaMask retry attempt ${retryCount + 1}/3`)
+              await connect({ connector })
+              console.debug('MetaMask retry successful!')
+              return { success: true }
+            } catch (retryErr) {
+              console.debug(`MetaMask retry ${retryCount + 1} failed:`, retryErr)
+              if (retryCount === 2) {
+                // Final retry failed
+                return { 
+                  success: false, 
+                  error: `MetaMask connection failed after 3 attempts: ${retryErr instanceof Error ? retryErr.message : 'Connection failed'}` 
+                }
+              }
             }
           }
         }
