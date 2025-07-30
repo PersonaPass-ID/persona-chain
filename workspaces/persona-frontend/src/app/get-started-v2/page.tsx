@@ -53,6 +53,59 @@ export default function GetStartedV2Page() {
   const router = useRouter()
   const { isConnected, address } = useAccount()
   const { connectWallet, connectors, isPending } = useWalletConnectionManager()
+  const { disconnect } = useDisconnect()
+  
+  const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [generatedDID, setGeneratedDID] = useState<string>('')
+  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | EmailVerificationCredential | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [selectedSocial, setSelectedSocial] = useState<string>('')
+  const [existingUser, setExistingUser] = useState<{
+    found: boolean
+    authMethod?: string
+    identifier?: string
+    credentials?: {
+      id: string
+      firstName: string
+      lastName: string
+    }[]
+    user?: {
+      firstName: string
+      lastName: string
+      username: string
+    }
+  }>({ found: false })
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [verifiedEmail, setVerifiedEmail] = useState<string>('')
+  const [emailVerificationStep, setEmailVerificationStep] = useState<'email' | 'password' | 'verification' | 'complete'>('email')
+  const [emailVerificationCode, setEmailVerificationCode] = useState('')
+  const [emailCountdown, setEmailCountdown] = useState(0)
+  const [isEmailVerifying, setIsEmailVerifying] = useState(false)
+  const [emailVerificationError, setEmailVerificationError] = useState('')
+  
+  const { 
+    register, 
+    watch, 
+    trigger,
+    formState: { errors },
+    getValues
+  } = useForm<FormData>({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      acceptedTerms: false
+    },
+    mode: 'onChange'
+  })
 
   // Check for existing users based on authentication method
   useEffect(() => {
@@ -111,59 +164,6 @@ export default function GetStartedV2Page() {
       if (timeoutId) clearTimeout(timeoutId)
     }
   }, [address, isConnected, authMethod, getValues])
-  const { disconnect } = useDisconnect()
-  
-  const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [generatedDID, setGeneratedDID] = useState<string>('')
-  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | EmailVerificationCredential | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [selectedSocial, setSelectedSocial] = useState<string>('')
-  const [existingUser, setExistingUser] = useState<{
-    found: boolean
-    authMethod?: string
-    identifier?: string
-    credentials?: {
-      id: string
-      firstName: string
-      lastName: string
-    }[]
-    user?: {
-      firstName: string
-      lastName: string
-      username: string
-    }
-  }>({ found: false })
-  const [showPhoneModal, setShowPhoneModal] = useState(false)
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
-  const [showEmailModal, setShowEmailModal] = useState(false)
-  const [verifiedEmail, setVerifiedEmail] = useState<string>('')
-  const [emailVerificationStep, setEmailVerificationStep] = useState<'email' | 'password' | 'verification' | 'complete'>('email')
-  const [emailVerificationCode, setEmailVerificationCode] = useState('')
-  const [emailCountdown, setEmailCountdown] = useState(0)
-  const [isEmailVerifying, setIsEmailVerifying] = useState(false)
-  const [emailVerificationError, setEmailVerificationError] = useState('')
-  
-  const { 
-    register, 
-    watch, 
-    trigger,
-    formState: { errors },
-    getValues
-  } = useForm<FormData>({
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      acceptedTerms: false
-    },
-    mode: 'onChange'
-  })
 
   // Auto-advance for wallet users - with connection state protection
   useEffect(() => {
