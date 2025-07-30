@@ -8,7 +8,7 @@
   "env": {
     "NEXT_PUBLIC_REOWN_PROJECT_ID": "946b25b33d5bf1a42b32971e742ce05d",
     "NEXT_PUBLIC_RPC_URL": "http://161.35.2.88:26657",
-    "NEXT_PUBLIC_API_URL": "https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com",
+    "NEXT_PUBLIC_API_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
     "NEXT_PUBLIC_ENVIRONMENT": "production"
   },
   "functions": {
