@@ -29,14 +29,25 @@ export function WalletConnection({ onNext, onWalletConnected }: WalletConnection
   }, [isConnected, address, onWalletConnected, onNext])
 
   const handleConnect = async (connector: Connector) => {
+    console.log('🎯 WalletConnection handleConnect called:', {
+      connectorName: connector.name,
+      isConnectionBlocked,
+      isPending,
+      isConnected
+    })
+    
     if (isConnectionBlocked) {
+      console.log('🚫 Connection blocked by isConnectionBlocked')
       return
     }
     
     setSelectedConnector(connector)
     const result = await connectWallet(connector)
     
+    console.log('📊 Connection result:', result)
+    
     if (!result.success) {
+      console.log('❌ Connection unsuccessful, clearing selected connector')
       setSelectedConnector(null)
     }
   }
