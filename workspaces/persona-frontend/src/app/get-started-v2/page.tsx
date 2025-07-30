@@ -141,7 +141,6 @@ export default function GetStartedV2Page() {
   const [verifiedEmail, setVerifiedEmail] = useState<string>('')
   const [emailVerificationStep, setEmailVerificationStep] = useState<'email' | 'password' | 'verification' | 'complete'>('email')
   const [emailVerificationCode, setEmailVerificationCode] = useState('')
-  const [emailVerificationId, setEmailVerificationId] = useState('')
   const [emailCountdown, setEmailCountdown] = useState(0)
   const [isEmailVerifying, setIsEmailVerifying] = useState(false)
   const [emailVerificationError, setEmailVerificationError] = useState('')
@@ -414,7 +413,7 @@ export default function GetStartedV2Page() {
     
     try {
       const email = getValues('email')
-      const result = await personaApiClient.verifyEmailCode(email, emailVerificationCode)
+      const result = await personaApiClient.verifyEmailCodeAndIssueVC(email, emailVerificationCode)
       
       if (result.success) {
         setVerifiedEmail(email)
