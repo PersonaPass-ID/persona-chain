@@ -43,6 +43,8 @@ type FormData = {
   email: string
   phone: string
   username: string
+  password: string
+  confirmPassword: string
   acceptedTerms: boolean
 }
 
@@ -103,6 +105,12 @@ export default function GetStartedV2Page() {
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [verifiedEmail, setVerifiedEmail] = useState<string>('')
+  const [emailVerificationStep, setEmailVerificationStep] = useState<'email' | 'password' | 'verification' | 'complete'>('email')
+  const [emailVerificationCode, setEmailVerificationCode] = useState('')
+  const [emailVerificationId, setEmailVerificationId] = useState('')
+  const [emailCountdown, setEmailCountdown] = useState(0)
+  const [isEmailVerifying, setIsEmailVerifying] = useState(false)
+  const [emailVerificationError, setEmailVerificationError] = useState('')
   
   const { 
     register, 
@@ -117,6 +125,8 @@ export default function GetStartedV2Page() {
       email: '',
       phone: '',
       username: '',
+      password: '',
+      confirmPassword: '',
       acceptedTerms: false
     },
     mode: 'onChange'
@@ -140,6 +150,7 @@ export default function GetStartedV2Page() {
     { id: 'method', label: 'Choose Method', icon: Fingerprint },
     { id: 'connect', label: 'Connect', icon: Globe },
     { id: 'profile', label: 'Create Profile', icon: User },
+    { id: 'verification', label: 'Verify', icon: Mail },
     { id: 'complete', label: 'Complete', icon: Check }
   ]
 
@@ -183,14 +194,19 @@ export default function GetStartedV2Page() {
         break
         
       case 'profile':
-        const profileValid = await trigger(['firstName', 'lastName', 'username', 'acceptedTerms'])
+        const fieldsToValidate = ['firstName', 'lastName', 'username', 'acceptedTerms']
+        if (authMethod === 'email') {
+          fieldsToValidate.push('email', 'password', 'confirmPassword')
+        }
+        const profileValid = await trigger(fieldsToValidate as (keyof FormData)[])
         if (profileValid) {
           if (authMethod === 'phone') {
             // Show phone verification modal
             setShowPhoneModal(true)
           } else if (authMethod === 'email') {
-            // Show email verification modal
-            setShowEmailModal(true)
+            // Start inline email verification process
+            setCurrentStep('verification')
+            setEmailVerificationStep('email')
           } else {
             // Skip verification for other methods in demo
             await createDID()
@@ -329,6 +345,92 @@ export default function GetStartedV2Page() {
     }
     await createDID()
   }
+
+  // Inline email verification handlers
+  const startEmailVerification = async () => {
+    setIsEmailVerifying(true)
+    setEmailVerificationError('')
+    
+    try {
+      const email = getValues('email')
+      const result = await personaApiClient.startEmailVerification(email)
+      
+      if (result.success) {
+        setEmailVerificationId(result.verificationId || '')
+        setEmailVerificationStep('verification')
+        setEmailCountdown(300) // 5 minutes
+      } else {
+        setEmailVerificationError(result.message || 'Failed to send verification email')
+      }
+    } catch {
+      setEmailVerificationError('Failed to send verification email')
+    } finally {
+      setIsEmailVerifying(false)
+    }
+  }
+
+  const verifyEmailCode = async () => {
+    if (!emailVerificationCode || emailVerificationCode.length !== 6) {
+      setEmailVerificationError('Please enter a valid 6-digit code')
+      return
+    }
+
+    setIsEmailVerifying(true)
+    setEmailVerificationError('')
+    
+    try {
+      const email = getValues('email')
+      const result = await personaApiClient.verifyEmailCode(email, emailVerificationCode)
+      
+      if (result.success) {
+        setVerifiedEmail(email)
+        if (result.credential) {
+          setVerifiableCredential(result.credential as EmailVerificationCredential)
+        }
+        
+        // Create account with password
+        await createPasswordAccount()
+      } else {
+        setEmailVerificationError(result.message || 'Invalid verification code')
+      }
+    } catch {
+      setEmailVerificationError('Verification failed. Please try again.')
+    } finally {
+      setIsEmailVerifying(false)
+    }
+  }
+
+  const createPasswordAccount = async () => {
+    try {
+      const { email, password, firstName, lastName, username } = getValues()
+      
+      const result = await personaApiClient.createAccount({
+        email,
+        password,
+        firstName,
+        lastName,
+        username
+      })
+      
+      if (result.success) {
+        // Account created successfully, proceed to create DID
+        await createDID()
+      } else {
+        setEmailVerificationError(result.message || 'Failed to create account')
+      }
+    } catch {
+      setEmailVerificationError('Failed to create account')
+    }
+  }
+
+  // Countdown timer for email verification
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (emailCountdown > 0) {
+      timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000)
+    }
+    return () => clearTimeout(timer)
+  }, [emailCountdown])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
@@ -880,26 +982,75 @@ export default function GetStartedV2Page() {
 
                 {/* Contact field based on auth method */}
                 {authMethod === 'email' && (
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Email address
-                    </label>
-                    <input
-                      type="email"
-                      {...register('email', { 
-                        required: 'Email is required',
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Invalid email address'
-                        }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="john@example.com"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                    )}
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-black mb-2">
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        {...register('email', { 
+                          required: 'Email is required',
+                          pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: 'Invalid email address'
+                          }
+                        })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="john@example.com"
+                      />
+                      {errors.email && (
+                        <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          {...register('password', { 
+                            required: 'Password is required',
+                            minLength: {
+                              value: 8,
+                              message: 'Password must be at least 8 characters'
+                            },
+                            pattern: {
+                              value: /^(?=.*[A-Za-z])(?=.*\d)/,
+                              message: 'Password must contain at least one letter and one number'
+                            }
+                          })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="At least 8 characters"
+                        />
+                        {errors.password && (
+                          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-2">
+                          Confirm Password
+                        </label>
+                        <input
+                          type="password"
+                          {...register('confirmPassword', { 
+                            required: 'Please confirm your password',
+                            validate: (value) => {
+                              const password = getValues('password')
+                              return value === password || 'Passwords do not match'
+                            }
+                          })}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="Confirm password"
+                        />
+                        {errors.confirmPassword && (
+                          <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
 
 
@@ -945,6 +1096,133 @@ export default function GetStartedV2Page() {
             </motion.div>
           )}
 
+
+          {/* Email Verification Step */}
+          {currentStep === 'verification' && authMethod === 'email' && (
+            <motion.div
+              key="verification"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              <div className="text-center mb-8">
+                <Mail className="w-16 h-16 mx-auto text-blue-600 mb-4" />
+                <h1 className="text-4xl font-bold text-black mb-4">
+                  Verify Your Email
+                </h1>
+                <p className="text-xl text-black">
+                  We&apos;ll send a verification code to your email address
+                </p>
+              </div>
+
+              {emailVerificationStep === 'email' && (
+                <div className="max-w-md mx-auto space-y-6">
+                  <div className="bg-gray-50 rounded-xl p-6 text-center">
+                    <p className="text-sm text-gray-600 mb-2">Sending verification code to:</p>
+                    <p className="text-lg font-semibold text-black">{getValues('email')}</p>
+                  </div>
+
+                  {emailVerificationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-sm text-red-600">{emailVerificationError}</p>
+                    </div>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={startEmailVerification}
+                    disabled={isEmailVerifying}
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {isEmailVerifying ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-5 h-5" />
+                        <span>Send Verification Code</span>
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              )}
+
+              {emailVerificationStep === 'verification' && (
+                <div className="max-w-md mx-auto space-y-6">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <p className="text-sm text-green-600 mb-2">Verification code sent to:</p>
+                    <p className="text-lg font-semibold text-black">{getValues('email')}</p>
+                    {emailCountdown > 0 && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        Code expires in {Math.floor(emailCountdown / 60)}:{(emailCountdown % 60).toString().padStart(2, '0')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Enter 6-digit verification code
+                    </label>
+                    <input
+                      type="text"
+                      value={emailVerificationCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                        setEmailVerificationCode(value)
+                        setEmailVerificationError('')
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg font-mono tracking-widest"
+                      placeholder="000000"
+                      maxLength={6}
+                    />
+                  </div>
+
+                  {emailVerificationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-sm text-red-600">{emailVerificationError}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={verifyEmailCode}
+                      disabled={isEmailVerifying || emailVerificationCode.length !== 6}
+                      className="w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {isEmailVerifying ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-5 h-5" />
+                          <span>Verify & Create Account</span>
+                        </>
+                      )}
+                    </motion.button>
+
+                    <button
+                      onClick={() => {
+                        setEmailVerificationStep('email')
+                        setEmailVerificationCode('')
+                        setEmailVerificationError('')
+                      }}
+                      className="w-full py-2 text-sm text-gray-600 hover:text-black transition-colors"
+                    >
+                      ← Back to resend code
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
 
           {/* Complete Step */}
           {currentStep === 'complete' && (

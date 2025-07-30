@@ -45,6 +45,7 @@ async function bootstrap() {
   logger.log(`🚀 Issuer Service running on http://localhost:${port}`);
   logger.log(`📱 Phone Verification API: http://localhost:${port}/issue-vc/phone`);
   logger.log(`📧 Email Verification API: http://localhost:${port}/issue-vc/email`);
+  logger.log(`🔐 Password Authentication API: http://localhost:${port}/auth`);
 }
 
 bootstrap();

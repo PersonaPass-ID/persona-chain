@@ -9,6 +9,7 @@ import { DatabaseConfig } from './config/database.config';
 // Modules
 import { PhoneVerificationModule } from './phone-verification/phone-verification.module';
 import { EmailVerificationModule } from './email-verification/email-verification.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EmailVerificationModule } from './email-verification/email-verification
     // Feature modules
     PhoneVerificationModule,
     EmailVerificationModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],

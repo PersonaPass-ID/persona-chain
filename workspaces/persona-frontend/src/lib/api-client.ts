@@ -74,6 +74,53 @@ export interface EmailVerificationCredential {
   }
 }
 
+export interface CreateAccountRequest {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  username: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface AuthResponse {
+  success: boolean
+  message: string
+  token?: string
+  user?: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    username: string
+  }
+}
+
+export interface TokenVerificationResponse {
+  valid: boolean
+  user?: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    username: string
+  }
+  message?: string
+}
+
+export interface CheckEmailResponse {
+  exists: boolean
+  user?: {
+    firstName: string
+    lastName: string
+    username: string
+  }
+}
+
 export interface ZKProof {
   proof: {
     type: string
@@ -510,6 +557,194 @@ class PersonaApiClient {
   }
 
   /**
+   * Create password-based account
+   */
+  async createAccount(request: CreateAccountRequest): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/create-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Store token if successful
+      if (result.success && result.token) {
+        localStorage.setItem('persona_auth_token', result.token)
+        localStorage.setItem('persona_user', JSON.stringify(result.user))
+      }
+
+      return result
+    } catch (error) {
+      console.error('Failed to create account:', error)
+      return {
+        success: false,
+        message: 'Failed to create account. Please try again.',
+      }
+    }
+  }
+
+  /**
+   * Login with email and password
+   */
+  async login(request: LoginRequest): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Store token if successful
+      if (result.success && result.token) {
+        localStorage.setItem('persona_auth_token', result.token)
+        localStorage.setItem('persona_user', JSON.stringify(result.user))
+      }
+
+      return result
+    } catch (error) {
+      console.error('Failed to login:', error)
+      return {
+        success: false,
+        message: 'Login failed. Please try again.',
+      }
+    }
+  }
+
+  /**
+   * Verify stored authentication token
+   */
+  async verifyToken(): Promise<TokenVerificationResponse> {
+    try {
+      const token = localStorage.getItem('persona_auth_token')
+      if (!token) {
+        return {
+          valid: false,
+          message: 'No authentication token found'
+        }
+      }
+
+      const response = await fetch(`${this.baseUrl}/auth/verify-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Update stored user data if valid
+      if (result.valid && result.user) {
+        localStorage.setItem('persona_user', JSON.stringify(result.user))
+      } else {
+        // Clear invalid token
+        localStorage.removeItem('persona_auth_token')
+        localStorage.removeItem('persona_user')
+      }
+
+      return result
+    } catch (error) {
+      console.error('Failed to verify token:', error)
+      // Clear potentially invalid token
+      localStorage.removeItem('persona_auth_token')
+      localStorage.removeItem('persona_user')
+      return {
+        valid: false,
+        message: 'Token verification failed'
+      }
+    }
+  }
+
+  /**
+   * Check if email already exists
+   */
+  async checkEmailExists(email: string): Promise<CheckEmailResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/check-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to check email:', error)
+      return {
+        exists: false
+      }
+    }
+  }
+
+  /**
+   * Get stored authentication token
+   */
+  getStoredToken(): string | null {
+    try {
+      return localStorage.getItem('persona_auth_token')
+    } catch (error) {
+      console.error('Failed to get stored token:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get stored user data
+   */
+  getStoredUser(): {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    username: string
+  } | null {
+    try {
+      const userData = localStorage.getItem('persona_user')
+      return userData ? JSON.parse(userData) : null
+    } catch (error) {
+      console.error('Failed to get stored user:', error)
+      return null
+    }
+  }
+
+  /**
+   * Logout user
+   */
+  logout(): void {
+    try {
+      localStorage.removeItem('persona_auth_token')
+      localStorage.removeItem('persona_user')
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+  }
+
+  /**
    * Clear stored credentials
    */
   clearStoredCredentials(): void {
@@ -517,6 +752,8 @@ class PersonaApiClient {
       localStorage.removeItem('persona_vc')
       localStorage.removeItem('persona_did')
       localStorage.removeItem('persona_profile')
+      localStorage.removeItem('persona_auth_token')
+      localStorage.removeItem('persona_user')
     } catch (error) {
       console.error('Failed to clear credentials:', error)
     }
