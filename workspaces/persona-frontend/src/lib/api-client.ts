@@ -73,7 +73,8 @@ class PersonaApiClient {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com'
+    console.log('🔗 PersonaApiClient initialized with baseUrl:', this.baseUrl)
   }
 
   /**
@@ -210,7 +211,9 @@ class PersonaApiClient {
     error?: string
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/did/create`, {
+      const url = `${this.baseUrl}/api/did/create`
+      console.log('🌐 Making DID creation request to:', url)
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

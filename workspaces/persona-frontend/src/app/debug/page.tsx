@@ -19,12 +19,12 @@ export default function DebugPage() {
         
         <div className="bg-gray-100 p-4 rounded">
           <h2 className="font-semibold">API Client Configuration</h2>
-          <p><strong>API Client Base URL:</strong> {(personaApiClient as any).baseUrl}</p>
+          <p><strong>API Client Base URL:</strong> {(personaApiClient as unknown as { baseUrl: string }).baseUrl}</p>
         </div>
         
         <div className="bg-gray-100 p-4 rounded">
           <h2 className="font-semibold">Blockchain Client Configuration</h2>
-          <p><strong>Blockchain Base URL:</strong> {(blockchain as any).baseUrl}</p>
+          <p><strong>Blockchain Base URL:</strong> {(blockchain as unknown as { baseUrl: string }).baseUrl}</p>
         </div>
       </div>
     </div>
