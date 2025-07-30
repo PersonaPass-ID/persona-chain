@@ -28,7 +28,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, PhoneVerificationCredential } from '@/lib/api-client'
+import { personaApiClient, PersonaIdentityCredential, PhoneVerificationCredential } from '@/lib/api-client'
 import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
 import confetti from 'canvas-confetti'
 
@@ -56,7 +56,7 @@ export default function GetStartedV2Page() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
-  const [verifiableCredential, setVerifiableCredential] = useState<PhoneVerificationCredential | null>(null)
+  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | null>(null)
   const [, setVerificationId] = useState<string>('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedSocial, setSelectedSocial] = useState<string>('')

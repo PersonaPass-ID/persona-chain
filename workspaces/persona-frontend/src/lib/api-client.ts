@@ -28,6 +28,26 @@ export interface PhoneVerificationCredential {
   }
 }
 
+export interface PersonaIdentityCredential {
+  id: string
+  type: string
+  issuer: string
+  issuanceDate: string
+  credentialSubject: {
+    id: string
+    firstName: string
+    lastName: string
+    verificationMethod: string
+  }
+  proof: {
+    type: string
+    created: string
+    proofPurpose: string
+    verificationMethod: string
+    blockchainTxHash: string
+  }
+}
+
 export interface ZKProof {
   proof: {
     type: string
@@ -215,7 +235,7 @@ class PersonaApiClient {
     success: boolean
     did?: string
     txHash?: string
-    credential?: PhoneVerificationCredential
+    credential?: PersonaIdentityCredential
     message?: string
     error?: string
   }> {
