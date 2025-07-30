@@ -186,7 +186,7 @@ const PrivacyStep: React.FC<StepProps> = ({
     
     PRIVACY_SETTINGS.forEach(setting => {
       if (setting.recommended !== undefined) {
-        // @ts-ignore - Type assertion needed for dynamic property assignment
+        // @ts-expect-error - Type assertion needed for dynamic property assignment
         recommendedSettings[setting.id] = setting.recommended;
       }
     });
