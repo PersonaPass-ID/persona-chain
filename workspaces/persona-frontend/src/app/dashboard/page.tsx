@@ -15,10 +15,11 @@ import {
   Copy,
   Download,
   ExternalLink,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react'
 import { DashboardNavigation } from '@/components/DashboardNavigation'
-import { personaApiClient, PhoneVerificationCredential } from '@/lib/api-client'
+import { personaApiClient, PhoneVerificationCredential, APICredential } from '@/lib/api-client'
 
 interface ProfileData {
   firstName: string
@@ -36,6 +37,8 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<'overview' | 'credentials' | 'security'>('overview')
   const [userDID, setUserDID] = useState<string>('')
   const [storedCredential, setStoredCredential] = useState<PhoneVerificationCredential | null>(null)
+  const [allCredentials, setAllCredentials] = useState<APICredential[]>([])
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(true)
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
 
   // Load user data from localStorage on component mount
@@ -62,6 +65,37 @@ export default function DashboardPage() {
     }
   }, [userDID])
 
+  // Load all credentials from API when wallet connects
+  useEffect(() => {
+    const loadAllCredentials = async () => {
+      if (address && isConnected) {
+        setIsLoadingCredentials(true)
+        try {
+          console.log('📊 Loading all credentials for wallet:', address)
+          const result = await personaApiClient.getCredentials(address)
+          if (result.success && result.credentials) {
+            setAllCredentials(result.credentials || [])
+            console.log('✅ Loaded', result.credentials.length, 'credentials')
+            
+            // Set the most recent DID as primary if no DID is set
+            if (!userDID && result.credentials.length > 0) {
+              const mostRecent = result.credentials.sort((a: APICredential, b: APICredential) => 
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              )[0]
+              setUserDID(mostRecent.did)
+              localStorage.setItem('persona_did', mostRecent.did)
+            }
+          }
+        } catch (error) {
+          console.error('Error loading credentials:', error)
+        }
+        setIsLoadingCredentials(false)
+      }
+    }
+
+    loadAllCredentials()
+  }, [address, isConnected, userDID])
+
   // User data with real info if available
   const userData = {
     name: profileData?.firstName && profileData?.lastName 
@@ -75,12 +109,28 @@ export default function DashboardPage() {
     joinDate: storedCredential 
       ? new Date(storedCredential.issuanceDate).toLocaleDateString()
       : new Date().toLocaleDateString(),
-    totalCredentials: storedCredential ? 1 : 1,
-    verifiedCredentials: storedCredential ? 1 : 1,
+    totalCredentials: allCredentials.length > 0 ? allCredentials.length : 1,
+    verifiedCredentials: allCredentials.length > 0 ? allCredentials.filter(c => c.status === 'active').length : 1,
     did: userDID
   }
 
-  const credentials = storedCredential ? [
+  // Transform API credentials for display
+  const credentials = allCredentials.length > 0 ? allCredentials.map((cred, index) => ({
+    id: index + 1,
+    type: cred.type === 'PersonaIdentityCredential' ? 'Identity Credential' : cred.type,
+    issuer: 'Persona Identity Platform',
+    status: cred.status === 'active' ? 'Verified' : cred.status,
+    issuedDate: new Date(cred.createdAt).toLocaleDateString(),
+    expiryDate: 'Never',
+    description: `${cred.verification?.method || 'blockchain'} verified identity for ${cred.firstName} ${cred.lastName}`,
+    credentialId: cred.did,
+    did: cred.did,
+    txHash: cred.blockchain?.txHash,
+    blockHeight: cred.blockchain?.blockHeight,
+    authMethod: cred.authMethod,
+    firstName: cred.firstName,
+    lastName: cred.lastName
+  })) : storedCredential ? [
     {
       id: 1,
       type: storedCredential.type.includes('PhoneVerificationCredential') 
@@ -329,7 +379,15 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Credentials List */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {isLoadingCredentials ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center space-x-3 text-gray-600">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <span>Loading your credentials...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {credentials.map((credential) => (
                     <motion.div
                       key={credential.id}
@@ -356,6 +414,18 @@ export default function DashboardPage() {
                           <span className="text-blue-100">Expires:</span>
                           <span>{credential.expiryDate}</span>
                         </div>
+                        {'txHash' in credential && credential.txHash && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-blue-100">Blockchain:</span>
+                            <span className="font-mono text-xs">Block #{'blockHeight' in credential ? credential.blockHeight : 'N/A'}</span>
+                          </div>
+                        )}
+                        {'did' in credential && credential.did && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-blue-100">DID:</span>
+                            <span className="font-mono text-xs">{credential.did.slice(0, 20)}...</span>
+                          </div>
+                        )}
                       </div>
                       
                       <p className="text-blue-100 text-sm mb-4">{credential.description}</p>
@@ -380,7 +450,8 @@ export default function DashboardPage() {
                       </div>
                     </motion.div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 

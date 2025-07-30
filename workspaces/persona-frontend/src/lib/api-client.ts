@@ -62,6 +62,24 @@ export interface ZKProof {
   }
 }
 
+export interface APICredential {
+  id: string
+  did: string  
+  type: string
+  status: string
+  firstName: string
+  lastName: string
+  authMethod: string
+  createdAt: string
+  blockchain?: {
+    txHash: string
+    blockHeight: number
+  }
+  verification?: {
+    method: string
+  }
+}
+
 export interface StartVerificationResponse {
   success: boolean
   message: string
@@ -283,7 +301,7 @@ class PersonaApiClient {
    */
   async getCredentials(walletAddress: string): Promise<{
     success: boolean
-    credentials?: PhoneVerificationCredential[]
+    credentials?: APICredential[]
     blockchain?: {
       network: string
       nodeUrl: string
