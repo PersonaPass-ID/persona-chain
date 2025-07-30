@@ -186,6 +186,7 @@ const PrivacyStep: React.FC<StepProps> = ({
     
     PRIVACY_SETTINGS.forEach(setting => {
       if (setting.recommended !== undefined) {
+        // @ts-ignore - Type assertion needed for dynamic property assignment
         recommendedSettings[setting.id] = setting.recommended;
       }
     });
@@ -421,7 +422,7 @@ const PrivacyStep: React.FC<StepProps> = ({
                             <label className="flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={currentValue || false}
+                                checked={(currentValue as boolean) || false}
                                 onChange={(e) => handleSettingChange(setting.id, e.target.checked)}
                                 className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                               />
@@ -431,12 +432,12 @@ const PrivacyStep: React.FC<StepProps> = ({
                             </label>
                           ) : (
                             <select
-                              value={currentValue || setting.defaultValue}
+                              value={(currentValue as string) || (setting.defaultValue as string)}
                               onChange={(e) => handleSettingChange(setting.id, e.target.value)}
                               className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
                             >
                               {setting.options?.map((option) => (
-                                <option key={option.value} value={option.value}>
+                                <option key={String(option.value)} value={String(option.value)}>
                                   {option.label}
                                 </option>
                               ))}
