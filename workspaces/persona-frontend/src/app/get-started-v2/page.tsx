@@ -28,9 +28,10 @@ import {
   Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, PersonaIdentityCredential, PhoneVerificationCredential } from '@/lib/api-client'
+import { personaApiClient, PersonaIdentityCredential, PhoneVerificationCredential, EmailVerificationCredential } from '@/lib/api-client'
 import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
 import PhoneVerificationModal from '@/components/PhoneVerificationModal'
+import EmailVerificationModal from '@/components/EmailVerificationModal'
 import confetti from 'canvas-confetti'
 
 type AuthMethod = 'social' | 'wallet' | 'email' | 'phone' | null
@@ -86,7 +87,7 @@ export default function GetStartedV2Page() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
-  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | null>(null)
+  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | EmailVerificationCredential | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedSocial, setSelectedSocial] = useState<string>('')
   const [existingUser, setExistingUser] = useState<{
@@ -100,6 +101,8 @@ export default function GetStartedV2Page() {
   }>({ found: false })
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [verifiedEmail, setVerifiedEmail] = useState<string>('')
   
   const { 
     register, 
@@ -174,6 +177,9 @@ export default function GetStartedV2Page() {
           if (authMethod === 'phone') {
             // Show phone verification modal
             setShowPhoneModal(true)
+          } else if (authMethod === 'email') {
+            // Show email verification modal
+            setShowEmailModal(true)
           } else {
             // Skip verification for other methods in demo
             await createDID()
@@ -199,7 +205,7 @@ export default function GetStartedV2Page() {
         walletAddress = address || ''
         identifier = walletAddress
       } else if (authMethod === 'email') {
-        identifier = getValues('email')
+        identifier = verifiedEmail || getValues('email')
         walletAddress = identifier
       } else if (authMethod === 'phone') {
         identifier = verifiedPhoneNumber
@@ -243,7 +249,7 @@ export default function GetStartedV2Page() {
           firstName,
           lastName,
           username,
-          email: getValues('email'),
+          email: authMethod === 'email' ? verifiedEmail : getValues('email'),
           phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: result.did,
@@ -272,7 +278,7 @@ export default function GetStartedV2Page() {
           firstName,
           lastName,
           username,
-          email: getValues('email'),
+          email: authMethod === 'email' ? verifiedEmail : getValues('email'),
           phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: fallbackDID,
@@ -299,6 +305,16 @@ export default function GetStartedV2Page() {
     setVerifiedPhoneNumber(phoneNumber)
     if (verificationData.credential) {
       setVerifiableCredential(verificationData.credential as PhoneVerificationCredential)
+    }
+    await createDID()
+  }
+
+  // Handle email verification completion from modal
+  const handleEmailVerified = async (email: string, verificationData: { success: boolean; credential?: unknown }) => {
+    setShowEmailModal(false)
+    setVerifiedEmail(email)
+    if (verificationData.credential) {
+      setVerifiableCredential(verificationData.credential as EmailVerificationCredential)
     }
     await createDID()
   }
@@ -982,7 +998,9 @@ export default function GetStartedV2Page() {
                         <p className="text-sm text-green-800">
                           ✓ {verifiableCredential.type === 'PersonaIdentityCredential' 
                               ? 'Identity credential issued successfully' 
-                              : 'Phone verification credential issued successfully'}
+                              : verifiableCredential.type.includes('PhoneVerification')
+                              ? 'Phone verification credential issued successfully'
+                              : 'Email verification credential issued successfully'}
                         </p>
                         <p className="text-xs text-green-600 mt-1">
                           Type: {verifiableCredential.type || 'PersonaIdentityCredential'}
@@ -1052,6 +1070,13 @@ export default function GetStartedV2Page() {
         isOpen={showPhoneModal}
         onClose={() => setShowPhoneModal(false)}
         onVerified={handlePhoneVerified}
+      />
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onVerified={handleEmailVerified}
       />
     </div>
   )

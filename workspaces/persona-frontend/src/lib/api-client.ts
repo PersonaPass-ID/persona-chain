@@ -48,6 +48,32 @@ export interface PersonaIdentityCredential {
   }
 }
 
+export interface EmailVerificationCredential {
+  '@context': string[]
+  id: string
+  type: string[]
+  issuer: {
+    id: string
+    name: string
+  }
+  issuanceDate: string
+  expirationDate: string
+  credentialSubject: {
+    id: string
+    email: string
+    emailHashed: string
+    verificationMethod: string
+    verificationTimestamp: string
+  }
+  proof: {
+    type: string
+    created: string
+    verificationMethod: string
+    proofPurpose: string
+    jws?: string
+  }
+}
+
 export interface ZKProof {
   proof: {
     type: string
@@ -91,7 +117,7 @@ export interface StartVerificationResponse {
 export interface VerifyCodeResponse {
   success: boolean
   message: string
-  credential?: PhoneVerificationCredential
+  credential?: PhoneVerificationCredential | EmailVerificationCredential
   zkProof?: ZKProof
   error?: string
 }
@@ -186,15 +212,77 @@ class PersonaApiClient {
   }
 
   /**
+   * Start email verification process
+   */
+  async startEmailVerification(email: string): Promise<StartVerificationResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/issue-vc/email/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to start email verification:', error)
+      return {
+        success: false,
+        message: 'Failed to connect to verification service',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
+   * Verify email code and issue VC
+   */
+  async verifyEmailCodeAndIssueVC(email: string, verificationCode: string): Promise<VerifyCodeResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/issue-vc/email/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          verificationCode: verificationCode
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to verify email code:', error)
+      return {
+        success: false,
+        message: 'Failed to connect to verification service',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  /**
    * Verify an existing VC
    */
-  async verifyCredential(credential: PhoneVerificationCredential): Promise<{
+  async verifyCredential(credential: PhoneVerificationCredential | EmailVerificationCredential): Promise<{
     valid: boolean
     reason?: string
     message?: string
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/issue-vc/phone/verify-credential`, {
+      const credentialType = credential.type.includes('PhoneVerification') ? 'phone' : 'email'
+      const response = await fetch(`${this.baseUrl}/issue-vc/${credentialType}/verify-credential`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
