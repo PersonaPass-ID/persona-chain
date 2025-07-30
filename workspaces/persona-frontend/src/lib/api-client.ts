@@ -73,7 +73,16 @@ class PersonaApiClient {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com'
+    // Force HTTPS URL to prevent mixed content errors
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com'
+    
+    // Override any HTTP URLs with HTTPS version
+    if (apiUrl.startsWith('http://161.35.2.88:3001')) {
+      apiUrl = 'https://persona-prod-alb-1378202633.us-east-1.elb.amazonaws.com'
+      console.warn('🔒 Overriding HTTP API URL with HTTPS to prevent mixed content errors')
+    }
+    
+    this.baseUrl = apiUrl
     console.log('🔗 PersonaApiClient initialized with baseUrl:', this.baseUrl)
   }
 
