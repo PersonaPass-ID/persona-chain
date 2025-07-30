@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { 
   ChevronRight, 
   Wallet, 
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
 import { personaApiClient, PhoneVerificationCredential } from '@/lib/api-client'
+import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
 import confetti from 'canvas-confetti'
 
 type AuthMethod = 'social' | 'wallet' | 'email' | 'phone' | null
@@ -48,7 +49,7 @@ type FormData = {
 export default function GetStartedV2Page() {
   const router = useRouter()
   const { isConnected, address } = useAccount()
-  const { connect, connectors } = useConnect()
+  const { connectWallet, connectors, isConnectionBlocked } = useWalletConnectionManager()
   const { disconnect } = useDisconnect()
   
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
@@ -79,11 +80,12 @@ export default function GetStartedV2Page() {
     mode: 'onChange'
   })
 
-  // Auto-advance for wallet users
+  // Auto-advance for wallet users - with connection state protection
   useEffect(() => {
     if (isConnected && address && currentStep === 'connect' && authMethod === 'wallet') {
-      // Auto-advance to profile
-      setTimeout(() => setCurrentStep('profile'), 1000)
+      // Auto-advance to profile only once
+      const timer = setTimeout(() => setCurrentStep('profile'), 1000)
+      return () => clearTimeout(timer)
     }
   }, [isConnected, address, currentStep, authMethod])
 
@@ -584,8 +586,13 @@ export default function GetStartedV2Page() {
                           key={connector.id}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => connect({ connector })}
-                          className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 flex items-center justify-between"
+                          onClick={() => {
+                            if (!isConnectionBlocked && !isProcessing) {
+                              connectWallet(connector)
+                            }
+                          }}
+                          disabled={isConnectionBlocked || isProcessing}
+                          className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <div className="flex items-center space-x-3">
                             <Wallet className="w-6 h-6 text-gray-600" />

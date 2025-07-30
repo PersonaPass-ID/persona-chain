@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Persona - Your Digital Identity Platform",
   description: "Create secure, verifiable digital credentials using zero-knowledge proofs. Experience seamless identity verification in minutes.",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

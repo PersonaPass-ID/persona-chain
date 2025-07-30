@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { useConnect, useAccount, useDisconnect, Connector } from 'wagmi'
+import { useAccount, useDisconnect, Connector } from 'wagmi'
 import { ChevronRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import Image from 'next/image'
+import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
 
 interface WalletConnectionProps {
   onNext: () => void
@@ -12,7 +13,7 @@ interface WalletConnectionProps {
 }
 
 export function WalletConnection({ onNext, onWalletConnected }: WalletConnectionProps) {
-  const { connectors, connect, isPending, error } = useConnect()
+  const { connectWallet, connectors, isPending, error, isConnectionBlocked } = useWalletConnectionManager()
   const { isConnected, address } = useAccount()
   const { disconnect } = useDisconnect()
   const [selectedConnector, setSelectedConnector] = useState<Connector | null>(null)
@@ -28,11 +29,14 @@ export function WalletConnection({ onNext, onWalletConnected }: WalletConnection
   }, [isConnected, address, onWalletConnected, onNext])
 
   const handleConnect = async (connector: Connector) => {
+    if (isConnectionBlocked) {
+      return
+    }
+    
     setSelectedConnector(connector)
-    try {
-      await connect({ connector })
-    } catch (err) {
-      console.error('Connection failed:', err)
+    const result = await connectWallet(connector)
+    
+    if (!result.success) {
       setSelectedConnector(null)
     }
   }
@@ -123,7 +127,7 @@ export function WalletConnection({ onNext, onWalletConnected }: WalletConnection
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleConnect(connector)}
-              disabled={isPending}
+              disabled={isConnectionBlocked}
               className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 text-left disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center">

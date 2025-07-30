@@ -9,7 +9,12 @@ export const config = createConfig({
   chains: [mainnet, base, optimism, arbitrum, polygon],
   connectors: [
     injected(),
-    metaMask(),
+    metaMask({
+      dappMetadata: {
+        name: 'Persona Identity Platform',
+        url: 'https://personapass.xyz',
+      },
+    }),
     walletConnect({ 
       projectId,
       metadata: {
@@ -22,7 +27,8 @@ export const config = createConfig({
     coinbaseWallet({
       appName: 'Persona Identity Platform',
       appLogoUrl: 'https://personapass.xyz/icon.png',
-      preference: 'smartWalletOnly'
+      preference: 'smartWalletOnly',
+      enableMobileWalletLink: true
     }),
     safe(),
   ],
