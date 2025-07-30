@@ -127,7 +127,7 @@ export interface AuthenticationOption {
   id: string;
   name: string;
   icon: string;
-  type: 'social' | 'biometric' | 'email' | 'wallet';
+  type: 'social' | 'biometric' | 'email' | 'wallet' | 'phone';
   provider?: string;
   available: boolean;
 }
@@ -573,6 +573,13 @@ export const AUTHENTICATION_OPTIONS: AuthenticationOption[] = [
     name: 'Continue with Email',
     icon: '📧',
     type: 'email',
+    available: true
+  },
+  {
+    id: 'phone',
+    name: 'Continue with Phone',
+    icon: '📱',
+    type: 'phone',
     available: true
   },
   {

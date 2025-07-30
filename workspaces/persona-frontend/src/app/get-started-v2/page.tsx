@@ -30,6 +30,7 @@ import {
 import { Navigation } from '@/components/Navigation'
 import { personaApiClient, PersonaIdentityCredential, PhoneVerificationCredential } from '@/lib/api-client'
 import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
+import PhoneVerificationModal from '@/components/PhoneVerificationModal'
 import confetti from 'canvas-confetti'
 
 type AuthMethod = 'social' | 'wallet' | 'email' | 'phone' | null
@@ -42,7 +43,6 @@ type FormData = {
   phone: string
   username: string
   acceptedTerms: boolean
-  verificationCode: string
 }
 
 // Modern Web3 onboarding with progressive disclosure
@@ -50,6 +50,36 @@ export default function GetStartedV2Page() {
   const router = useRouter()
   const { isConnected, address } = useAccount()
   const { connectWallet, connectors, isPending } = useWalletConnectionManager()
+
+  // Check if wallet has existing credentials when it connects
+  useEffect(() => {
+    const checkExistingUser = async () => {
+      if (address && isConnected) {
+        console.log('🔍 Checking for existing user with wallet:', address)
+        try {
+          const result = await personaApiClient.getCredentials(address)
+          if (result.success && result.credentials && result.credentials.length > 0) {
+            const firstName = result.credentials[0].firstName || 'User'
+            const lastName = result.credentials[0].lastName || ''
+            setExistingUser({
+              found: true,
+              credentials: result.credentials,
+              userName: `${firstName} ${lastName}`.trim()
+            })
+            console.log('✅ Found existing user:', firstName, lastName, `(${result.credentials.length} credentials)`)
+          } else {
+            setExistingUser({ found: false })
+            console.log('👤 New user - no existing credentials found')
+          }
+        } catch (error) {
+          console.error('Error checking existing user:', error)
+          setExistingUser({ found: false })
+        }
+      }
+    }
+
+    checkExistingUser()
+  }, [address, isConnected])
   const { disconnect } = useDisconnect()
   
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
@@ -57,9 +87,19 @@ export default function GetStartedV2Page() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
   const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | null>(null)
-  const [, setVerificationId] = useState<string>('')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedSocial, setSelectedSocial] = useState<string>('')
+  const [existingUser, setExistingUser] = useState<{
+    found: boolean
+    credentials?: {
+      id: string
+      firstName: string
+      lastName: string
+    }[]
+    userName?: string
+  }>({ found: false })
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
   
   const { 
     register, 
@@ -74,8 +114,7 @@ export default function GetStartedV2Page() {
       email: '',
       phone: '',
       username: '',
-      acceptedTerms: false,
-      verificationCode: ''
+      acceptedTerms: false
     },
     mode: 'onChange'
   })
@@ -91,7 +130,6 @@ export default function GetStartedV2Page() {
 
   // Watch form values
   const acceptedTerms = watch('acceptedTerms')
-  const verificationCode = watch('verificationCode')
 
   // Step indicators with modern design
   const steps = [
@@ -99,7 +137,6 @@ export default function GetStartedV2Page() {
     { id: 'method', label: 'Choose Method', icon: Fingerprint },
     { id: 'connect', label: 'Connect', icon: Globe },
     { id: 'profile', label: 'Create Profile', icon: User },
-    { id: 'verification', label: 'Verify', icon: Shield },
     { id: 'complete', label: 'Complete', icon: Check }
   ]
 
@@ -135,23 +172,8 @@ export default function GetStartedV2Page() {
         const profileValid = await trigger(['firstName', 'lastName', 'username', 'acceptedTerms'])
         if (profileValid) {
           if (authMethod === 'phone') {
-            // Start phone verification
-            setIsProcessing(true)
-            try {
-              const phone = getValues('phone')
-              const result = await personaApiClient.startPhoneVerification(phone)
-              if (result.success) {
-                setVerificationId(result.verificationId || '')
-                setCurrentStep('verification')
-              } else {
-                alert('Failed to start verification. Please try again.')
-              }
-            } catch (error) {
-              console.error('Error starting verification:', error)
-              alert('Error starting verification. Please check your connection.')
-            } finally {
-              setIsProcessing(false)
-            }
+            // Show phone verification modal
+            setShowPhoneModal(true)
           } else {
             // Skip verification for other methods in demo
             await createDID()
@@ -159,11 +181,6 @@ export default function GetStartedV2Page() {
         }
         break
         
-      case 'verification':
-        if (verificationCode.length === 6) {
-          await verifyAndCreateDID()
-        }
-        break
     }
   }
 
@@ -185,7 +202,7 @@ export default function GetStartedV2Page() {
         identifier = getValues('email')
         walletAddress = identifier
       } else if (authMethod === 'phone') {
-        identifier = getValues('phone')
+        identifier = verifiedPhoneNumber
         walletAddress = identifier
       } else if (authMethod === 'social') {
         identifier = `${selectedSocial}:${username}`
@@ -227,7 +244,7 @@ export default function GetStartedV2Page() {
           lastName,
           username,
           email: getValues('email'),
-          phone: getValues('phone'),
+          phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: result.did,
           walletAddress: authMethod === 'wallet' ? address : undefined,
@@ -256,7 +273,7 @@ export default function GetStartedV2Page() {
           lastName,
           username,
           email: getValues('email'),
-          phone: getValues('phone'),
+          phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: fallbackDID,
           createdAt: new Date().toISOString()
@@ -275,25 +292,15 @@ export default function GetStartedV2Page() {
     }
   }
 
-  // Verify phone and create DID
-  const verifyAndCreateDID = async () => {
-    setIsProcessing(true)
-    try {
-      const phone = getValues('phone')
-      const result = await personaApiClient.verifyPhoneCodeAndIssueVC(phone, verificationCode)
-      
-      if (result.success && result.credential) {
-        setVerifiableCredential(result.credential)
-        await createDID()
-      } else {
-        alert('Invalid verification code. Please try again.')
-      }
-    } catch (error) {
-      console.error('Error verifying code:', error)
-      alert('Error verifying code. Please try again.')
-    } finally {
-      setIsProcessing(false)
+
+  // Handle phone verification completion from modal
+  const handlePhoneVerified = async (phoneNumber: string, verificationData: { success: boolean; credential?: unknown }) => {
+    setShowPhoneModal(false)
+    setVerifiedPhoneNumber(phoneNumber)
+    if (verificationData.credential) {
+      setVerifiableCredential(verificationData.credential as PhoneVerificationCredential)
     }
+    await createDID()
   }
 
   return (
@@ -401,14 +408,31 @@ export default function GetStartedV2Page() {
                 </motion.div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setCurrentStep('method')}
-                className="mt-8 px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
-              >
-                Let&apos;s Begin
-              </motion.button>
+              <div className="flex flex-col items-center space-y-4 mt-8">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setCurrentStep('method')}
+                  className="px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+                >
+                  Create New Identity
+                </motion.button>
+                
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <span>Already have an account?</span>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setAuthMethod('wallet')
+                      setCurrentStep('connect')
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-medium underline"
+                  >
+                    Sign In
+                  </motion.button>
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -637,9 +661,40 @@ export default function GetStartedV2Page() {
                           Disconnect
                         </button>
                       </div>
-                      <p className="text-sm text-gray-700">
-                        Great! Your wallet is connected. Let&apos;s continue setting up your profile.
-                      </p>
+                      {existingUser.found ? (
+                        <div className="space-y-3">
+                          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                            <p className="text-sm font-semibold text-blue-800 mb-2">
+                              🎉 Welcome back, {existingUser.userName}!
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this wallet.
+                            </p>
+                          </div>
+                          <div className="flex space-x-3">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => router.push('/dashboard')}
+                              className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            >
+                              Go to Dashboard
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setCurrentStep('profile')}
+                              className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            >
+                              Create New Identity
+                            </motion.button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700">
+                          Great! Your wallet is connected. Let&apos;s continue setting up your profile.
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </div>
@@ -832,28 +887,6 @@ export default function GetStartedV2Page() {
                   </div>
                 )}
 
-                {authMethod === 'phone' && (
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Phone number
-                    </label>
-                    <input
-                      type="tel"
-                      {...register('phone', { 
-                        required: 'Phone is required',
-                        pattern: {
-                          value: /^\+[1-9]\d{1,14}$/,
-                          message: 'Use international format: +1234567890'
-                        }
-                      })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="+1234567890"
-                    />
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                    )}
-                  </div>
-                )}
 
                 {/* Simple terms checkbox */}
                 <div className="bg-gray-50 rounded-xl p-4">
@@ -897,77 +930,6 @@ export default function GetStartedV2Page() {
             </motion.div>
           )}
 
-          {/* Verification Step */}
-          {currentStep === 'verification' && authMethod === 'phone' && (
-            <motion.div
-              key="verification"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-xl mx-auto space-y-8"
-            >
-              <div className="text-center mb-8">
-                <h1 className="text-4xl font-bold text-black mb-4">
-                  Verify Your Phone
-                </h1>
-                <p className="text-xl text-black">
-                  We sent a 6-digit code to {getValues('phone')}
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-2">
-                    Verification code
-                  </label>
-                  <input
-                    type="text"
-                    {...register('verificationCode', { 
-                      required: 'Code is required',
-                      pattern: {
-                        value: /^[0-9]{6}$/,
-                        message: 'Must be 6 digits'
-                      }
-                    })}
-                    className="w-full px-4 py-3 text-center text-2xl tracking-widest border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="000000"
-                    maxLength={6}
-                  />
-                  {errors.verificationCode && (
-                    <p className="mt-1 text-sm text-red-600">{errors.verificationCode.message}</p>
-                  )}
-                </div>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={goToNextStep}
-                  disabled={isProcessing || verificationCode.length !== 6}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify & Continue</span>
-                      <ChevronRight className="w-5 h-5" />
-                    </>
-                  )}
-                </motion.button>
-
-                <p className="text-center text-sm text-gray-600">
-                  Didn&apos;t receive the code? 
-                  <button className="ml-1 text-blue-600 hover:underline">
-                    Resend
-                  </button>
-                </p>
-              </div>
-            </motion.div>
-          )}
 
           {/* Complete Step */}
           {currentStep === 'complete' && (
@@ -1018,7 +980,12 @@ export default function GetStartedV2Page() {
                       <p className="text-sm font-medium text-gray-600 mb-1">Verifiable Credential</p>
                       <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                         <p className="text-sm text-green-800">
-                          ✓ Phone verification credential issued successfully
+                          ✓ {verifiableCredential.type === 'PersonaIdentityCredential' 
+                              ? 'Identity credential issued successfully' 
+                              : 'Phone verification credential issued successfully'}
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Type: {verifiableCredential.type || 'PersonaIdentityCredential'}
                         </p>
                       </div>
                     </div>
@@ -1079,6 +1046,13 @@ export default function GetStartedV2Page() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        onVerified={handlePhoneVerified}
+      />
     </div>
   )
 }
