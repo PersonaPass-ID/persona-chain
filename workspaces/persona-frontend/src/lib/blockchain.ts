@@ -85,7 +85,7 @@ export interface VerifiableCredential {
     name: string;
   };
   issuanceDate: string;
-  credentialSubject: Record<string, any>;
+  credentialSubject: Record<string, unknown>;
   proof?: {
     type: string;
     created: string;
@@ -119,7 +119,7 @@ export interface OnboardingResult {
     didDocument: DIDDocument;
     identityProfile: IdentityProfile;
     credential: VerifiableCredential;
-    reputationScore: any;
+    reputationScore: unknown;
   };
 }
 
@@ -288,7 +288,7 @@ export class PersonaBlockchain {
     userId: string, 
     publicKey: string,
     userMetadata: Partial<UserMetadata> = {}
-  ): Promise<BlockchainResponse<{ did_document: any; tx_hash: string }>> {
+  ): Promise<BlockchainResponse<{ did_document: unknown; tx_hash: string }>> {
     const did = `did:persona:${userId}`;
     
     const didDocument: DIDDocument = {
@@ -359,8 +359,8 @@ export class PersonaBlockchain {
   async issueVerifiableCredential(
     did: string, 
     credentialType: string, 
-    claims: Record<string, any>
-  ): Promise<BlockchainResponse<{ credential: any; tx_hash: string }>> {
+    claims: Record<string, unknown>
+  ): Promise<BlockchainResponse<{ credential: unknown; tx_hash: string }>> {
     const credential: VerifiableCredential = {
       '@context': [
         'https://www.w3.org/2018/credentials/v1',
@@ -394,7 +394,7 @@ export class PersonaBlockchain {
   }
 
   // ⭐ Get Reputation Score
-  async getReputationScore(userId: string): Promise<BlockchainResponse<{ reputation_score: any }>> {
+  async getReputationScore(userId: string): Promise<BlockchainResponse<{ reputation_score: unknown }>> {
     return await this.request(`/api/persona/reputation/v1/reputation-scores/${userId}`);
   }
 
@@ -510,8 +510,8 @@ export class PersonaBlockchain {
   // 📊 Get comprehensive user data
   async getUserData(userId: string): Promise<{
     identity?: IdentityProfile;
-    reputation?: any;
-    credentials?: any[];
+    reputation?: unknown;
+    credentials?: unknown[];
   }> {
     const [identityResponse, reputationResponse] = await Promise.all([
       this.request(`/api/persona/identity/v1/identity-profiles/${userId}`),

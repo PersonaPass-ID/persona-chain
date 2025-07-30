@@ -88,7 +88,7 @@ const KeysStep: React.FC<StepProps> = ({
       }, 100);
 
       // Generate cryptographically secure keys
-      const crypto = window.crypto || (window as any).msCrypto;
+      const crypto = window.crypto || (window as unknown as { msCrypto: Crypto }).msCrypto;
       
       // Generate entropy for mnemonic
       const entropy = crypto.getRandomValues(new Uint8Array(16));
@@ -291,7 +291,7 @@ const KeysStep: React.FC<StepProps> = ({
         </h1>
         
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Your cryptographic keys have been generated. Choose how you'd like to back them up.
+          Your cryptographic keys have been generated. Choose how you&apos;d like to back them up.
         </p>
       </motion.div>
 

@@ -14,9 +14,9 @@ interface PrivacySetting {
   description: string;
   category: 'profile' | 'data' | 'communication' | 'blockchain';
   type: 'boolean' | 'select';
-  defaultValue: any;
-  options?: Array<{ value: any; label: string; description?: string }>;
-  recommended?: any;
+  defaultValue: string | boolean;
+  options?: Array<{ value: string | boolean; label: string; description?: string }>;
+  recommended?: string | boolean;
   impact: 'low' | 'medium' | 'high';
   icon: string;
 }
@@ -175,7 +175,7 @@ const PrivacyStep: React.FC<StepProps> = ({
     setSettings(privacySettings);
   }, [privacySettings]);
 
-  const handleSettingChange = (settingId: keyof PrivacySettings, value: any) => {
+  const handleSettingChange = (settingId: keyof PrivacySettings, value: string | boolean) => {
     const newSettings = { ...settings, [settingId]: value };
     setSettings(newSettings);
     onUpdatePrivacySettings(newSettings);

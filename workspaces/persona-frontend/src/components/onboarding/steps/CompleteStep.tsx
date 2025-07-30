@@ -379,7 +379,7 @@ const CompleteStep: React.FC<StepProps> = ({
         className="mb-8"
       >
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-          What's Next? 🚀
+          What&apos;s Next? 🚀
         </h2>
         
         <div className="grid md:grid-cols-2 gap-6">

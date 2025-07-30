@@ -34,7 +34,7 @@ export interface OnboardingState {
 }
 
 export interface OnboardingAnalytics {
-  track: (event: string, properties?: Record<string, any>) => void;
+  track: (event: string, properties?: Record<string, unknown>) => void;
   timeStep: (stepId: string) => void;
   recordError: (error: string, stepId?: string) => void;
   getMetrics: () => {
@@ -81,14 +81,14 @@ export const useOnboarding = (
 
   // 📊 Analytics tracking
   const analytics: OnboardingAnalytics = {
-    track: useCallback((event: string, properties?: Record<string, any>) => {
+    track: useCallback((event: string, properties?: Record<string, unknown>) => {
       if (!enableAnalytics) return;
       
       console.log('📊 Analytics:', event, properties);
       
       // Send to your analytics service (PostHog, Mixpanel, etc.)
       if (typeof window !== 'undefined' && 'gtag' in window) {
-        (window as any).gtag('event', event, {
+        (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', event, {
           ...properties,
           page_title: 'PersonaPass Onboarding',
           page_location: window.location.href,

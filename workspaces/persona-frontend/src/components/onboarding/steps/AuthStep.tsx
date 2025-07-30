@@ -93,7 +93,7 @@ const AuthStep: React.FC<StepProps> = ({
         </h1>
         
         <p className="text-lg text-gray-600 dark:text-gray-300">
-          Select how you'd like to secure and access your PersonaPass identity. 
+          Select how you&apos;d like to secure and access your PersonaPass identity. 
           All methods provide enterprise-grade security.
         </p>
       </motion.div>
@@ -196,7 +196,7 @@ const AuthStep: React.FC<StepProps> = ({
               Great Choice!
             </h3>
             <p className="text-green-600 dark:text-green-300 text-sm">
-              You've selected {selectedAuth.name}. Moving to the next step...
+              You&apos;ve selected {selectedAuth.name}. Moving to the next step...
             </p>
           </motion.div>
         )}
