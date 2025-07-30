@@ -195,6 +195,14 @@ export default function GetStartedV2Page() {
       }
       
       // Create DID on blockchain
+      console.log('🚀 Calling personaApiClient.createDID with:', {
+        walletAddress,
+        firstName,
+        lastName,
+        authMethod,
+        identifier
+      })
+      
       const result = await personaApiClient.createDID(
         walletAddress,
         firstName,
@@ -203,9 +211,13 @@ export default function GetStartedV2Page() {
         identifier
       )
       
+      console.log('🎯 DID creation result received:', result)
+      
       if (result.success && result.did) {
+        console.log('✅ DID creation successful! DID:', result.did)
         setGeneratedDID(result.did)
         if (result.credential) {
+          console.log('✅ Credential received:', result.credential)
           setVerifiableCredential(result.credential)
         }
         

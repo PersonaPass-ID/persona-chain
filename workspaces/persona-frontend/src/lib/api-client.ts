@@ -236,11 +236,18 @@ class PersonaApiClient {
         })
       })
 
+      console.log('📡 DID creation response status:', response.status)
+      console.log('📡 DID creation response headers:', Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('❌ DID creation failed with response:', errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
-      return await response.json()
+      const result = await response.json()
+      console.log('✅ DID creation successful! Response:', result)
+      return result
     } catch (error) {
       console.error('Failed to create DID:', error)
       return {
