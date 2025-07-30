@@ -1,6 +1,6 @@
 import { http, createConfig } from 'wagmi'
 import { mainnet, base, optimism, arbitrum, polygon } from 'wagmi/chains'
-import { injected, metaMask, safe, walletConnect, coinbaseWallet } from 'wagmi/connectors'
+import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors'
 
 // Get Reown (formerly WalletConnect) project ID from environment
 const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || '946b25b33d5bf1a42b32971e742ce05d'
@@ -46,14 +46,14 @@ export const config = createConfig({
         }
       }
     }),
-    // Coinbase Wallet with latest configuration
-    coinbaseWallet({
-      appName: 'Persona Identity Platform',
-      appLogoUrl: 'https://personapass.xyz/favicon.svg',
-      preference: 'smartWalletOnly',
-      // Disable analytics to prevent 401 errors
-      enableMobileWalletLink: false
-    }),
+    // Coinbase Wallet temporarily disabled due to analytics 401 errors
+    // coinbaseWallet({
+    //   appName: 'Persona Identity Platform',
+    //   appLogoUrl: 'https://personapass.xyz/favicon.svg',
+    //   preference: 'smartWalletOnly',
+    //   // Disable analytics to prevent 401 errors
+    //   enableMobileWalletLink: false
+    // }),
     // Safe wallet connector
     safe({
       shimDisconnect: true
