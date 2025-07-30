@@ -28,8 +28,12 @@ async function bootstrap() {
       'http://localhost:3001', 
       'http://localhost:8081', // React Native Metro
       /^http:\/\/192\.168\.\d+\.\d+:8081$/, // Local network access for mobile
+      'https://personapass.xyz', // Production frontend domain
+      'https://www.personapass.xyz', // Production www domain
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
   
   // Basic API info endpoint
@@ -40,6 +44,7 @@ async function bootstrap() {
   
   logger.log(`🚀 Issuer Service running on http://localhost:${port}`);
   logger.log(`📱 Phone Verification API: http://localhost:${port}/issue-vc/phone`);
+  logger.log(`📧 Email Verification API: http://localhost:${port}/issue-vc/email`);
 }
 
 bootstrap();

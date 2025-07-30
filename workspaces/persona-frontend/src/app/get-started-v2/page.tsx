@@ -145,6 +145,17 @@ export default function GetStartedV2Page() {
 
   const currentStepIndex = steps.findIndex(s => s.id === currentStep)
 
+  // Handle auth method selection and navigation
+  const handleAuthMethodSelection = (method: AuthMethod) => {
+    setAuthMethod(method)
+    if (method === 'social') {
+      // For demo, simulate social login
+      setCurrentStep('profile')
+    } else {
+      setCurrentStep('connect')
+    }
+  }
+
   // Modern step navigation
   const goToNextStep = async () => {
     switch (currentStep) {
@@ -402,7 +413,7 @@ export default function GetStartedV2Page() {
                 >
                   <Zap className="w-12 h-12 text-yellow-500 mb-4 mx-auto" />
                   <h3 className="font-semibold text-black mb-2">Lightning Fast</h3>
-                  <p className="text-sm text-gray-600">Get started in under 60 seconds</p>
+                  <p className="text-sm text-black">Get started in under 60 seconds</p>
                 </motion.div>
                 
                 <motion.div
@@ -411,7 +422,7 @@ export default function GetStartedV2Page() {
                 >
                   <Lock className="w-12 h-12 text-green-500 mb-4 mx-auto" />
                   <h3 className="font-semibold text-black mb-2">Zero Knowledge</h3>
-                  <p className="text-sm text-gray-600">Your data stays private, always</p>
+                  <p className="text-sm text-black">Your data stays private, always</p>
                 </motion.div>
                 
                 <motion.div
@@ -420,7 +431,7 @@ export default function GetStartedV2Page() {
                 >
                   <Globe className="w-12 h-12 text-blue-500 mb-4 mx-auto" />
                   <h3 className="font-semibold text-black mb-2">Universal</h3>
-                  <p className="text-sm text-gray-600">Works everywhere on Web3</p>
+                  <p className="text-sm text-black">Works everywhere on Web3</p>
                 </motion.div>
               </div>
 
@@ -475,10 +486,7 @@ export default function GetStartedV2Page() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setAuthMethod('social')
-                    goToNextStep()
-                  }}
+                  onClick={() => handleAuthMethodSelection('social')}
                   className="relative overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-purple-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full blur-3xl opacity-50" />
@@ -502,10 +510,7 @@ export default function GetStartedV2Page() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setAuthMethod('wallet')
-                    goToNextStep()
-                  }}
+                  onClick={() => handleAuthMethodSelection('wallet')}
                   className="relative overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-blue-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl opacity-50" />
@@ -525,10 +530,7 @@ export default function GetStartedV2Page() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setAuthMethod('email')
-                    goToNextStep()
-                  }}
+                  onClick={() => handleAuthMethodSelection('email')}
                   className="relative overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-green-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-green-200 rounded-full blur-3xl opacity-50" />
@@ -548,10 +550,7 @@ export default function GetStartedV2Page() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setAuthMethod('phone')
-                    goToNextStep()
-                  }}
+                  onClick={() => handleAuthMethodSelection('phone')}
                   className="relative overflow-hidden bg-gradient-to-br from-orange-100 to-yellow-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-orange-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200 rounded-full blur-3xl opacity-50" />
