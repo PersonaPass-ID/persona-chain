@@ -389,7 +389,6 @@ export default function GetStartedV2Page() {
       const result = await personaApiClient.startEmailVerification(email)
       
       if (result.success) {
-        setEmailVerificationId(result.verificationId || '')
         setEmailVerificationStep('verification')
         setEmailCountdown(300) // 5 minutes
       } else {
