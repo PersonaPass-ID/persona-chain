@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { TwilioService, VerificationStartResponse, VerificationCheckResponse } from './twilio.service';
+import { AwsSnsService, VerificationStartResponse, VerificationCheckResponse } from './aws-sns.service';
 import { VcIssuerService, PhoneVerificationCredential } from './vc-issuer.service';
 
 export interface StartVerificationRequest {
@@ -30,7 +30,7 @@ export class PhoneVerificationService {
   private readonly logger = new Logger(PhoneVerificationService.name);
   
   constructor(
-    private twilioService: TwilioService,
+    private awsSnsService: AwsSnsService,
     private vcIssuerService: VcIssuerService,
   ) {}
 
@@ -46,8 +46,8 @@ export class PhoneVerificationService {
         throw new BadRequestException('Invalid phone number format. Please use E.164 format (e.g., +1234567890)');
       }
 
-      // Start Twilio verification
-      const verificationResult: VerificationStartResponse = await this.twilioService.startVerification(
+      // Start AWS SNS verification
+      const verificationResult: VerificationStartResponse = await this.awsSnsService.startVerification(
         request.phoneNumber
       );
 
@@ -89,8 +89,8 @@ export class PhoneVerificationService {
         throw new BadRequestException('Invalid verification code format');
       }
 
-      // Verify code with Twilio
-      const verificationResult: VerificationCheckResponse = await this.twilioService.checkVerification(
+      // Verify code with AWS SNS
+      const verificationResult: VerificationCheckResponse = await this.awsSnsService.checkVerification(
         request.phoneNumber,
         request.verificationCode
       );
@@ -205,10 +205,10 @@ export class PhoneVerificationService {
     timestamp: string;
   }> {
     try {
-      const twilioStatus = await this.twilioService.getServiceStatus();
+      const awsSnsStatus = await this.awsSnsService.getServiceStatus();
       
       const services = [
-        twilioStatus,
+        awsSnsStatus,
         {
           service: 'vc-issuer',
           status: 'healthy',
