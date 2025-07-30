@@ -66,6 +66,79 @@ functions:
           method: get
           cors: true
 
+  # Email Verification Endpoints
+  startEmailVerification:
+    handler: src/lambda/email-verification-start.handler
+    events:
+      - http:
+          path: /issue-vc/email/start
+          method: post
+          cors: true
+    environment:
+      SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'not-configured'}
+
+  verifyEmailCode:
+    handler: src/lambda/email-verification-verify.handler
+    events:
+      - http:
+          path: /issue-vc/email/verify
+          method: post
+          cors: true
+    environment:
+      SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'not-configured'}
+
+  # Phone Verification Endpoints  
+  startPhoneVerification:
+    handler: src/lambda/phone-verification-start.handler
+    events:
+      - http:
+          path: /issue-vc/phone/start
+          method: post
+          cors: true
+    environment:
+      AWS_SNS_REGION: ${env:AWS_SNS_REGION, 'us-east-1'}
+
+  verifyPhoneCode:
+    handler: src/lambda/phone-verification-verify.handler
+    events:
+      - http:
+          path: /issue-vc/phone/verify
+          method: post
+          cors: true
+    environment:
+      AWS_SNS_REGION: ${env:AWS_SNS_REGION, 'us-east-1'}
+
+  # Password Authentication Endpoints
+  createAccount:
+    handler: src/lambda/auth-create-account.handler
+    events:
+      - http:
+          path: /auth/create-account
+          method: post
+          cors: true
+    environment:
+      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
+
+  loginAccount:
+    handler: src/lambda/auth-login.handler
+    events:
+      - http:
+          path: /auth/login
+          method: post
+          cors: true
+    environment:
+      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
+
+  verifyToken:
+    handler: src/lambda/auth-verify-token.handler
+    events:
+      - http:
+          path: /auth/verify-token
+          method: post
+          cors: true
+    environment:
+      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
+
 resources:
   Resources:
     PersonaCredentialsTable:
