@@ -279,6 +279,19 @@ export class PasswordAuthService {
   }
 
   /**
+   * Check if username exists
+   */
+  async checkUsernameExists(username: string): Promise<{
+    exists: boolean;
+  }> {
+    const existingUser = Array.from(users.values()).find(
+      user => user.username.toLowerCase() === username.toLowerCase()
+    );
+    
+    return { exists: !!existingUser };
+  }
+
+  /**
    * Mark user as verified after email verification
    */
   async markUserAsVerified(email: string): Promise<boolean> {

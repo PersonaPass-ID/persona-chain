@@ -60,6 +60,13 @@ class CheckEmailDto {
   email: string;
 }
 
+class CheckUsernameDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  username: string;
+}
+
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -189,6 +196,28 @@ export class AuthController {
       return {
         exists: false,
         error: 'Failed to check email',
+      };
+    }
+  }
+
+  @Post('check-username')
+  async checkUsername(@Body() dto: CheckUsernameDto) {
+    this.logger.log(`POST /auth/check-username - ${dto.username}`);
+
+    try {
+      const result = await this.passwordAuthService.checkUsernameExists(dto.username);
+
+      return {
+        exists: result.exists,
+        available: !result.exists,
+      };
+    } catch (error) {
+      this.logger.error(`Check username failed: ${error.message}`, error.stack);
+
+      return {
+        exists: false,
+        available: true,
+        error: 'Failed to check username',
       };
     }
   }

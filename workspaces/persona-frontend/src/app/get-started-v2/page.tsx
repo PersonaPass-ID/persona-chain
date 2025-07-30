@@ -54,35 +54,63 @@ export default function GetStartedV2Page() {
   const { isConnected, address } = useAccount()
   const { connectWallet, connectors, isPending } = useWalletConnectionManager()
 
-  // Check if wallet has existing credentials when it connects
+  // Check for existing users based on authentication method
   useEffect(() => {
     const checkExistingUser = async () => {
-      if (address && isConnected) {
-        console.log('🔍 Checking for existing user with wallet:', address)
+      if (authMethod === 'wallet' && address && isConnected) {
+        console.log('🔍 Checking for existing wallet user:', address)
         try {
           const result = await personaApiClient.getCredentials(address)
           if (result.success && result.credentials && result.credentials.length > 0) {
-            const firstName = result.credentials[0].firstName || 'User'
-            const lastName = result.credentials[0].lastName || ''
             setExistingUser({
               found: true,
               credentials: result.credentials,
-              userName: `${firstName} ${lastName}`.trim()
+              authMethod: 'wallet',
+              identifier: address
             })
-            console.log('✅ Found existing user:', firstName, lastName, `(${result.credentials.length} credentials)`)
+            console.log('✅ Found existing wallet user with', result.credentials.length, 'credentials')
           } else {
             setExistingUser({ found: false })
-            console.log('👤 New user - no existing credentials found')
           }
         } catch (error) {
-          console.error('Error checking existing user:', error)
+          console.error('Error checking existing wallet user:', error)
+          setExistingUser({ found: false })
+        }
+      } else if (authMethod === 'email' && getValues('email')) {
+        console.log('🔍 Checking for existing email user')
+        try {
+          const email = getValues('email')
+          const result = await personaApiClient.checkEmailExists(email)
+          if (result.exists && result.user) {
+            setExistingUser({
+              found: true,
+              authMethod: 'email',
+              identifier: email,
+              user: result.user
+            })
+            console.log('✅ Found existing email user')
+          } else {
+            setExistingUser({ found: false })
+          }
+        } catch (error) {
+          console.error('Error checking existing email user:', error)
           setExistingUser({ found: false })
         }
       }
     }
 
-    checkExistingUser()
-  }, [address, isConnected])
+    // Debounce email checks
+    let timeoutId: NodeJS.Timeout
+    if (authMethod === 'email') {
+      timeoutId = setTimeout(checkExistingUser, 500)
+    } else {
+      checkExistingUser()
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [address, isConnected, authMethod, getValues])
   const { disconnect } = useDisconnect()
   
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
@@ -94,12 +122,18 @@ export default function GetStartedV2Page() {
   const [selectedSocial, setSelectedSocial] = useState<string>('')
   const [existingUser, setExistingUser] = useState<{
     found: boolean
+    authMethod?: string
+    identifier?: string
     credentials?: {
       id: string
       firstName: string
       lastName: string
     }[]
-    userName?: string
+    user?: {
+      firstName: string
+      lastName: string
+      username: string
+    }
   }>({ found: false })
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
@@ -782,10 +816,10 @@ export default function GetStartedV2Page() {
                         <div className="space-y-3">
                           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <p className="text-sm font-semibold text-blue-800 mb-2">
-                              🎉 Welcome back, {existingUser.userName}!
+                              🎉 Welcome back{existingUser.user?.firstName ? `, ${existingUser.user.firstName}` : ''}!
                             </p>
                             <p className="text-sm text-blue-700">
-                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this wallet.
+                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this {existingUser.authMethod === 'wallet' ? 'wallet' : existingUser.authMethod === 'email' ? 'email address' : 'account'}.
                             </p>
                           </div>
                           <div className="flex space-x-3">

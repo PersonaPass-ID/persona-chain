@@ -121,6 +121,11 @@ export interface CheckEmailResponse {
   }
 }
 
+export interface CheckUsernameResponse {
+  exists: boolean
+  available: boolean
+}
+
 export interface ZKProof {
   proof: {
     type: string
@@ -697,6 +702,33 @@ class PersonaApiClient {
       console.error('Failed to check email:', error)
       return {
         exists: false
+      }
+    }
+  }
+
+  /**
+   * Check if username already exists
+   */
+  async checkUsernameExists(username: string): Promise<CheckUsernameResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/check-username`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Failed to check username:', error)
+      return {
+        exists: false,
+        available: true
       }
     }
   }
