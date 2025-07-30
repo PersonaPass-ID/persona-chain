@@ -192,8 +192,8 @@ export default function GetStartedV2Page() {
   // Handle auth method selection and navigation
   const handleAuthMethodSelection = (method: AuthMethod) => {
     setAuthMethod(method)
-    if (method === 'social') {
-      // For demo, simulate social login
+    if (method === 'social' || method === 'phone' || method === 'email') {
+      // Skip connect step for social, phone, and email - go directly to profile
       setCurrentStep('profile')
     } else {
       setCurrentStep('connect')
@@ -970,7 +970,7 @@ export default function GetStartedV2Page() {
                           message: 'Username must be 3-20 characters, letters, numbers, _ or -'
                         }
                       })}
-                      className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                       placeholder="johndoe"
                     />
                     <span className="absolute left-3 top-3.5 text-gray-500">@</span>
@@ -989,7 +989,7 @@ export default function GetStartedV2Page() {
                     <input
                       type="text"
                       {...register('firstName', { required: 'Required' })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                       placeholder="John"
                     />
                     {errors.firstName && (
@@ -1003,7 +1003,7 @@ export default function GetStartedV2Page() {
                     <input
                       type="text"
                       {...register('lastName', { required: 'Required' })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                       placeholder="Doe"
                     />
                     {errors.lastName && (
@@ -1028,7 +1028,7 @@ export default function GetStartedV2Page() {
                             message: 'Invalid email address'
                           }
                         })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                         placeholder="john@example.com"
                       />
                       {errors.email && (
@@ -1054,7 +1054,7 @@ export default function GetStartedV2Page() {
                               message: 'Password must contain at least one letter and one number'
                             }
                           })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                           placeholder="At least 8 characters"
                         />
                         {errors.password && (
@@ -1074,7 +1074,7 @@ export default function GetStartedV2Page() {
                               return value === password || 'Passwords do not match'
                             }
                           })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                           placeholder="Confirm password"
                         />
                         {errors.confirmPassword && (
@@ -1207,7 +1207,7 @@ export default function GetStartedV2Page() {
                         setEmailVerificationCode(value)
                         setEmailVerificationError('')
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg font-mono tracking-widest"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg font-mono tracking-widest text-black"
                       placeholder="000000"
                       maxLength={6}
                     />
