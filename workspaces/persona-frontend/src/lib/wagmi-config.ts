@@ -8,13 +8,18 @@ const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || '946b25b33d5bf1a42
 export const config = createConfig({
   chains: [mainnet, base, optimism, arbitrum, polygon],
   connectors: [
-    injected(),
+    // Injected connector for general browser wallets
+    injected({
+      shimDisconnect: true
+    }),
+    // MetaMask with proper configuration
     metaMask({
       dappMetadata: {
         name: 'Persona Identity Platform',
         url: 'https://personapass.xyz',
       },
     }),
+    // WalletConnect with proper metadata
     walletConnect({ 
       projectId,
       metadata: {
@@ -24,13 +29,16 @@ export const config = createConfig({
         icons: ['https://personapass.xyz/icon.png']
       }
     }),
+    // Coinbase Wallet with latest configuration
     coinbaseWallet({
       appName: 'Persona Identity Platform',
       appLogoUrl: 'https://personapass.xyz/icon.png',
-      preference: 'smartWalletOnly',
-      enableMobileWalletLink: true
+      preference: 'smartWalletOnly'
     }),
-    safe(),
+    // Safe wallet connector
+    safe({
+      shimDisconnect: true
+    }),
   ],
   transports: {
     [mainnet.id]: http(),

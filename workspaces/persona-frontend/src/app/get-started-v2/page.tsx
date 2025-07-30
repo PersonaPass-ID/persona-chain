@@ -49,7 +49,7 @@ type FormData = {
 export default function GetStartedV2Page() {
   const router = useRouter()
   const { isConnected, address } = useAccount()
-  const { connectWallet, connectors, isConnectionBlocked } = useWalletConnectionManager()
+  const { connectWallet, connectors, isPending } = useWalletConnectionManager()
   const { disconnect } = useDisconnect()
   
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
@@ -587,11 +587,11 @@ export default function GetStartedV2Page() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
-                            if (!isConnectionBlocked && !isProcessing) {
+                            if (!isPending && !isProcessing) {
                               connectWallet(connector)
                             }
                           }}
-                          disabled={isConnectionBlocked || isProcessing}
+                          disabled={isPending || isProcessing}
                           className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <div className="flex items-center space-x-3">
