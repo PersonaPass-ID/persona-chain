@@ -274,7 +274,7 @@ export class PersonaBlockchain {
   // 🏥 Health check with retry logic
   async checkHealth(): Promise<boolean> {
     for (let i = 0; i < 3; i++) {
-      const response = await this.request('/health');
+      const response = await this.request<{ status: string }>('/health');
       if (response.success && response.data?.status === 'healthy') {
         return true;
       }
@@ -420,8 +420,8 @@ export class PersonaBlockchain {
         throw new Error(`DID creation failed: ${didResult.error}`);
       }
 
-      const did = didResult.data!.did_document.did;
-      console.log('✅ DID created with TX hash:', didResult.data!.tx_hash);
+      const did = (didResult.data as { did_document: { did: string }; tx_hash: string }).did_document.did;
+      console.log('✅ DID created with TX hash:', (didResult.data as { tx_hash: string }).tx_hash);
 
       // Step 3: Create identity profile
       console.log('👤 Step 3: Creating identity profile...');
@@ -430,7 +430,7 @@ export class PersonaBlockchain {
         throw new Error(`Identity creation failed: ${identityResult.error}`);
       }
 
-      console.log('✅ Identity created with TX hash:', identityResult.data!.tx_hash);
+      console.log('✅ Identity created with TX hash:', (identityResult.data as { tx_hash: string }).tx_hash);
 
       // Step 4: Issue membership credential
       console.log('🎫 Step 4: Issuing membership credential...');
@@ -451,7 +451,7 @@ export class PersonaBlockchain {
         throw new Error(`Credential issuance failed: ${credentialResult.error}`);
       }
 
-      console.log('✅ Credential issued with TX hash:', credentialResult.data!.tx_hash);
+      console.log('✅ Credential issued with TX hash:', (credentialResult.data as { tx_hash: string }).tx_hash);
 
       // Step 5: Initialize reputation score
       console.log('⭐ Step 5: Initializing reputation...');
@@ -467,21 +467,21 @@ export class PersonaBlockchain {
       const result: OnboardingResult = {
         success: true,
         did,
-        didTxHash: didResult.data!.tx_hash,
-        identityId: identityResult.data!.identity_profile.identity_id,
-        identityTxHash: identityResult.data!.tx_hash,
-        credentialId: credentialResult.data!.credential.id,
-        credentialTxHash: credentialResult.data!.tx_hash,
-        reputationScore: reputationResult.data?.reputation_score?.overall_score || 500,
+        didTxHash: (didResult.data as { tx_hash: string }).tx_hash,
+        identityId: (identityResult.data as { identity_profile: { identity_id: string } }).identity_profile.identity_id,
+        identityTxHash: (identityResult.data as { tx_hash: string }).tx_hash,
+        credentialId: (credentialResult.data as { credential: { id: string } }).credential.id,
+        credentialTxHash: (credentialResult.data as { tx_hash: string }).tx_hash,
+        reputationScore: (reputationResult.data as { reputation_score?: { overall_score?: number } } | undefined)?.reputation_score?.overall_score || 500,
         mnemonic,
         publicKey,
         privateKey,
         qrCode: qrCodeData,
         blockchainProof: {
-          didDocument: didResult.data!.did_document,
-          identityProfile: identityResult.data!.identity_profile,
-          credential: credentialResult.data!.credential,
-          reputationScore: reputationResult.data?.reputation_score,
+          didDocument: (didResult.data as { did_document: DIDDocument }).did_document,
+          identityProfile: (identityResult.data as { identity_profile: IdentityProfile }).identity_profile,
+          credential: (credentialResult.data as { credential: VerifiableCredential }).credential,
+          reputationScore: (reputationResult.data as { reputation_score?: unknown } | undefined)?.reputation_score,
         }
       };
 
@@ -519,8 +519,8 @@ export class PersonaBlockchain {
     ]);
 
     return {
-      identity: identityResponse.data?.identity_profile,
-      reputation: reputationResponse.data?.reputation_score,
+      identity: (identityResponse.data as { identity_profile?: IdentityProfile } | undefined)?.identity_profile,
+      reputation: (reputationResponse.data as { reputation_score?: unknown } | undefined)?.reputation_score,
       credentials: [] // TODO: Implement credential querying
     };
   }

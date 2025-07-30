@@ -1,7 +1,7 @@
 // 🚀 STATE-OF-THE-ART ONBOARDING HOOK
 // Advanced React hook with complete state management and analytics
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import PersonaBlockchain, { 
   OnboardingResult, 
   UserMetadata, 
@@ -79,80 +79,86 @@ export const useOnboarding = (
     }
   });
 
-  // 📊 Analytics tracking
-  const analytics: OnboardingAnalytics = {
-    track: useCallback((event: string, properties?: Record<string, unknown>) => {
-      if (!enableAnalytics) return;
-      
-      console.log('📊 Analytics:', event, properties);
-      
-      // Send to your analytics service (PostHog, Mixpanel, etc.)
-      if (typeof window !== 'undefined' && 'gtag' in window) {
-        (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', event, {
-          ...properties,
-          page_title: 'PersonaPass Onboarding',
-          page_location: window.location.href,
-        });
+  // 📊 Analytics tracking functions
+  const trackEvent = useCallback((event: string, properties?: Record<string, unknown>) => {
+    if (!enableAnalytics) return;
+    
+    console.log('📊 Analytics:', event, properties);
+    
+    // Send to your analytics service (PostHog, Mixpanel, etc.)
+    if (typeof window !== 'undefined' && 'gtag' in window) {
+      (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', event, {
+        ...properties,
+        page_title: 'PersonaPass Onboarding',
+        page_location: window.location.href,
+      });
+    }
+  }, [enableAnalytics]);
+
+  const timeStep = useCallback((stepId: string) => {
+    const now = Date.now();
+    setState(prev => ({
+      ...prev,
+      analytics: {
+        ...prev.analytics,
+        stepStartTimes: {
+          ...prev.analytics.stepStartTimes,
+          [stepId]: now
+        }
       }
-    }, [enableAnalytics]),
+    }));
+  }, []);
 
-    timeStep: useCallback((stepId: string) => {
-      const now = Date.now();
-      setState(prev => ({
-        ...prev,
-        analytics: {
-          ...prev.analytics,
-          stepStartTimes: {
-            ...prev.analytics.stepStartTimes,
-            [stepId]: now
+  const recordError = useCallback((error: string, stepId?: string) => {
+    setState(prev => ({
+      ...prev,
+      analytics: {
+        ...prev.analytics,
+        errors: [
+          ...prev.analytics.errors,
+          {
+            step: stepId || prev.steps[prev.currentStep]?.id || 'unknown',
+            error,
+            timestamp: Date.now()
           }
-        }
-      }));
-    }, []),
+        ]
+      }
+    }));
+    
+    trackEvent('onboarding_error', {
+      error,
+      step: stepId,
+      timestamp: Date.now()
+    });
+  }, [trackEvent]);
 
-    recordError: useCallback((error: string, stepId?: string) => {
-      setState(prev => ({
-        ...prev,
-        analytics: {
-          ...prev.analytics,
-          errors: [
-            ...prev.analytics.errors,
-            {
-              step: stepId || prev.steps[prev.currentStep]?.id || 'unknown',
-              error,
-              timestamp: Date.now()
-            }
-          ]
-        }
-      }));
-      
-      analytics.track('onboarding_error', {
-        error,
-        step: stepId,
-        timestamp: Date.now()
-      });
-    }, [analytics]),
+  const getMetrics = useCallback(() => {
+    const { stepStartTimes, stepCompletionTimes, totalTime } = state.analytics;
+    const stepTimes: Record<string, number> = {};
+    
+    Object.keys(stepCompletionTimes).forEach(stepId => {
+      const start = stepStartTimes[stepId];
+      const end = stepCompletionTimes[stepId];
+      if (start && end) {
+        stepTimes[stepId] = end - start;
+      }
+    });
 
-    getMetrics: useCallback(() => {
-      const { stepStartTimes, stepCompletionTimes, totalTime } = state.analytics;
-      const stepTimes: Record<string, number> = {};
-      
-      Object.keys(stepCompletionTimes).forEach(stepId => {
-        const start = stepStartTimes[stepId];
-        const end = stepCompletionTimes[stepId];
-        if (start && end) {
-          stepTimes[stepId] = end - start;
-        }
-      });
+    return {
+      totalTime,
+      stepTimes,
+      conversionRate: state.isComplete ? 100 : (state.currentStep / state.steps.length) * 100,
+      dropoffPoints: state.analytics.errors.map(e => e.step)
+    };
+  }, [state.analytics, state.currentStep, state.steps.length, state.isComplete]);
 
-      return {
-        totalTime,
-        stepTimes,
-        conversionRate: state.isComplete ? 100 : (state.currentStep / state.steps.length) * 100,
-        dropoffPoints: state.analytics.errors.map(e => e.step)
-      };
-    }, [state.analytics, state.currentStep, state.steps.length, state.isComplete])
-  };
+  // 📊 Analytics object using useMemo to prevent circular dependencies
+  const analytics: OnboardingAnalytics = useMemo(() => ({
+    track: trackEvent,
+    timeStep,
+    recordError,
+    getMetrics
+  }), [trackEvent, timeStep, recordError, getMetrics]);
 
   // 🏥 Check blockchain health on mount
   useEffect(() => {
@@ -163,14 +169,14 @@ export const useOnboarding = (
           ...prev,
           error: 'Blockchain connection failed. Please try again later.'
         }));
-        analytics.recordError('blockchain_health_check_failed', 'initialization');
+        recordError('blockchain_health_check_failed', 'initialization');
       } else {
-        analytics.track('blockchain_connected');
+        trackEvent('blockchain_connected');
       }
     };
 
     checkHealth();
-  }, [blockchain, analytics]);
+  }, [blockchain, recordError, trackEvent]);
 
   // ⏭️ Navigate to next step
   const nextStep = useCallback(() => {
@@ -199,7 +205,7 @@ export const useOnboarding = (
         }
       };
 
-      analytics.track('onboarding_step_completed', {
+      trackEvent('onboarding_step_completed', {
         step: currentStepId,
         step_number: prev.currentStep + 1,
         time_spent: now - (prev.analytics.stepStartTimes[currentStepId] || now)
@@ -222,7 +228,7 @@ export const useOnboarding = (
         analytics: newAnalytics
       };
     });
-  }, [analytics]);
+  }, [trackEvent]);
 
   // ⏮️ Navigate to previous step
   const prevStep = useCallback(() => {
@@ -245,11 +251,11 @@ export const useOnboarding = (
       };
     });
 
-    analytics.track('onboarding_step_back', {
+    trackEvent('onboarding_step_back', {
       from_step: state.currentStep,
       to_step: state.currentStep - 1
     });
-  }, [analytics, state.currentStep]);
+  }, [trackEvent, state.currentStep]);
 
   // 📝 Update user data
   const updateUserData = useCallback((data: Partial<UserMetadata>) => {
@@ -258,11 +264,11 @@ export const useOnboarding = (
       userData: { ...prev.userData, ...data }
     }));
 
-    analytics.track('onboarding_data_updated', {
+    trackEvent('onboarding_data_updated', {
       fields: Object.keys(data),
       step: state.steps[state.currentStep]?.id
     });
-  }, [analytics, state.steps, state.currentStep]);
+  }, [trackEvent, state.steps, state.currentStep]);
 
   // 🔒 Update privacy settings
   const updatePrivacySettings = useCallback((settings: Partial<PrivacySettings>) => {
@@ -271,11 +277,11 @@ export const useOnboarding = (
       privacySettings: { ...prev.privacySettings, ...settings }
     }));
 
-    analytics.track('privacy_settings_updated', {
+    trackEvent('privacy_settings_updated', {
       settings: Object.keys(settings),
       values: settings
     });
-  }, [analytics]);
+  }, [trackEvent]);
 
   // 🔐 Select authentication method
   const selectAuth = useCallback((auth: AuthenticationOption) => {
@@ -288,24 +294,24 @@ export const useOnboarding = (
       }
     }));
 
-    analytics.track('auth_method_selected', {
+    trackEvent('auth_method_selected', {
       method: auth.id,
       type: auth.type,
       provider: auth.provider
     });
-  }, [analytics]);
+  }, [trackEvent]);
 
   // 🚀 Complete the onboarding process
   const completeOnboarding = useCallback(async () => {
     if (!state.userData.name || !state.userData.email) {
       const error = 'Name and email are required';
       setState(prev => ({ ...prev, error }));
-      analytics.recordError(error, 'profile');
+      recordError(error, 'profile');
       return;
     }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
-    analytics.track('onboarding_completion_started');
+    trackEvent('onboarding_completion_started');
 
     try {
       const result = await blockchain.completeAdvancedOnboarding(
@@ -328,7 +334,7 @@ export const useOnboarding = (
         }
       }));
 
-      analytics.track('onboarding_completed', {
+      trackEvent('onboarding_completed', {
         total_time: totalTime,
         auth_method: state.selectedAuth?.id,
         did: result.did,
@@ -345,7 +351,7 @@ export const useOnboarding = (
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState(prev => ({ ...prev, loading: false, error: errorMessage }));
-      analytics.recordError(errorMessage, 'completion');
+      recordError(errorMessage, 'completion');
       onError?.(errorMessage, 'completion');
     }
   }, [
@@ -353,7 +359,8 @@ export const useOnboarding = (
     state.privacySettings, 
     state.selectedAuth, 
     blockchain, 
-    analytics, 
+    trackEvent,
+    recordError,
     onComplete, 
     onError
   ]);
@@ -387,20 +394,20 @@ export const useOnboarding = (
     });
 
     startTimeRef.current = Date.now();
-    analytics.track('onboarding_reset');
-  }, [analytics]);
+    trackEvent('onboarding_reset');
+  }, [trackEvent]);
 
   // 🎯 Skip optional step
   const skipStep = useCallback(() => {
     const currentStep = state.steps[state.currentStep];
     if (currentStep?.optional) {
-      analytics.track('onboarding_step_skipped', {
+      trackEvent('onboarding_step_skipped', {
         step: currentStep.id,
         step_number: state.currentStep + 1
       });
       nextStep();
     }
-  }, [state.steps, state.currentStep, analytics, nextStep]);
+  }, [state.steps, state.currentStep, trackEvent, nextStep]);
 
   // 🔍 Validate current step
   const validateCurrentStep = useCallback((): boolean => {
