@@ -12,27 +12,37 @@ export const config = createConfig({
     injected({
       shimDisconnect: true
     }),
-    // MetaMask with proper configuration
+    // MetaMask with enhanced configuration for error handling
     metaMask({
       dappMetadata: {
         name: 'Persona Identity Platform',
         url: 'https://personapass.xyz',
+        iconUrl: 'https://personapass.xyz/favicon.svg'
       },
+      // Enable logging for debugging connection issues
+      logging: {
+        developerMode: false, // Keep false for production
+        sdk: false
+      }
     }),
-    // WalletConnect with proper metadata
+    // WalletConnect with enhanced configuration
     walletConnect({ 
       projectId,
       metadata: {
         name: 'Persona Identity Platform',
         description: 'Zero-knowledge identity verification platform',
         url: 'https://personapass.xyz',
-        icons: ['https://personapass.xyz/icon.png']
-      }
+        icons: ['https://personapass.xyz/favicon.svg']
+      },
+      // Configure for better reconnection handling
+      showQrModal: true,
+      // Handle stale chains properly
+      isNewChainsStale: false
     }),
     // Coinbase Wallet with latest configuration
     coinbaseWallet({
       appName: 'Persona Identity Platform',
-      appLogoUrl: 'https://personapass.xyz/icon.png',
+      appLogoUrl: 'https://personapass.xyz/favicon.svg',
       preference: 'smartWalletOnly'
     }),
     // Safe wallet connector
@@ -47,6 +57,10 @@ export const config = createConfig({
     [arbitrum.id]: http(),
     [polygon.id]: http(),
   },
+  // Configure for better connection handling
+  ssr: false, // Disable SSR for better client-side wallet detection
+  // Handle reconnection more gracefully
+  multiInjectedProviderDiscovery: true
 })
 
 declare module 'wagmi' {

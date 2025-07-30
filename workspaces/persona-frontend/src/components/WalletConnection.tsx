@@ -29,10 +29,15 @@ export function WalletConnection({ onNext, onWalletConnected }: WalletConnection
 
   const handleConnect = async (connector: Connector) => {
     setSelectedConnector(connector)
+    console.log(`Attempting to connect with ${connector.name}...`)
+    
     const result = await connectWallet(connector)
     
     if (!result.success) {
+      console.error(`${connector.name} connection failed:`, result.error)
       setSelectedConnector(null)
+    } else {
+      console.log(`${connector.name} connected successfully!`)
     }
   }
 
