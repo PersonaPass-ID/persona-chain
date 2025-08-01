@@ -8,43 +8,34 @@ import { useAccount, useDisconnect } from 'wagmi'
 import { 
   ChevronRight, 
   Wallet, 
-  Mail, 
   Shield, 
-  Key, 
   Download, 
   Copy, 
   User,
   Check,
+  QrCode,
+  Key,
   Fingerprint,
   Sparkles,
   Zap,
   Lock,
   Globe,
-  QrCode,
-  Smartphone,
-  Chrome,
-  Twitter,
-  Github,
+  Mail,
   Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, PersonaIdentityCredential, PhoneVerificationCredential, EmailVerificationCredential } from '@/lib/api-client'
+import { personaApiClient, PersonaIdentityCredential } from '@/lib/api-client'
 import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
-import PhoneVerificationModal from '@/components/PhoneVerificationModal'
-import EmailVerificationModal from '@/components/EmailVerificationModal'
+import { useKeplrWallet } from '@/hooks/useKeplrWallet'
 import confetti from 'canvas-confetti'
 
-type AuthMethod = 'social' | 'wallet' | 'email' | 'phone' | null
+type AuthMethod = 'keplr' | 'wallet' | 'personapass' | null
 type OnboardingStep = 'welcome' | 'method' | 'connect' | 'profile' | 'verification' | 'complete'
 
 type FormData = {
   firstName: string
   lastName: string
-  email: string
-  phone: string
   username: string
-  password: string
-  confirmPassword: string
   acceptedTerms: boolean
 }
 
@@ -54,14 +45,14 @@ export default function GetStartedV2Page() {
   const { isConnected, address } = useAccount()
   const { connectWallet, connectors, isPending } = useWalletConnectionManager()
   const { disconnect } = useDisconnect()
+  const keplr = useKeplrWallet()
   
   const [authMethod, setAuthMethod] = useState<AuthMethod>(null)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
-  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | PhoneVerificationCredential | EmailVerificationCredential | null>(null)
+  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [selectedSocial, setSelectedSocial] = useState<string>('')
   const [existingUser, setExistingUser] = useState<{
     found: boolean
     authMethod?: string
@@ -77,15 +68,6 @@ export default function GetStartedV2Page() {
       username: string
     }
   }>({ found: false })
-  const [showPhoneModal, setShowPhoneModal] = useState(false)
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>('')
-  const [showEmailModal, setShowEmailModal] = useState(false)
-  const [verifiedEmail, setVerifiedEmail] = useState<string>('')
-  const [emailVerificationStep, setEmailVerificationStep] = useState<'email' | 'password' | 'verification' | 'complete'>('email')
-  const [emailVerificationCode, setEmailVerificationCode] = useState('')
-  const [emailCountdown, setEmailCountdown] = useState(0)
-  const [isEmailVerifying, setIsEmailVerifying] = useState(false)
-  const [emailVerificationError, setEmailVerificationError] = useState('')
   
   const { 
     register, 
@@ -97,11 +79,7 @@ export default function GetStartedV2Page() {
     defaultValues: {
       firstName: '',
       lastName: '',
-      email: '',
-      phone: '',
       username: '',
-      password: '',
-      confirmPassword: '',
       acceptedTerms: false
     },
     mode: 'onChange'
@@ -110,16 +88,17 @@ export default function GetStartedV2Page() {
   // Check for existing users based on authentication method
   useEffect(() => {
     const checkExistingUser = async () => {
-      if (authMethod === 'wallet' && address && isConnected) {
-        console.log('🔍 Checking for existing wallet user:', address)
+      if ((authMethod === 'wallet' && address && isConnected) || (authMethod === 'keplr' && keplr.address && keplr.isConnected)) {
+        const walletAddress = authMethod === 'keplr' ? keplr.address : address
+        console.log('🔍 Checking for existing wallet user:', walletAddress)
         try {
-          const result = await personaApiClient.getCredentials(address)
+          const result = await personaApiClient.getCredentials(walletAddress || '')
           if (result.success && result.credentials && result.credentials.length > 0) {
             setExistingUser({
               found: true,
               credentials: result.credentials,
-              authMethod: 'wallet',
-              identifier: address
+              authMethod,
+              identifier: walletAddress
             })
             console.log('✅ Found existing wallet user with', result.credentials.length, 'credentials')
           } else {
@@ -129,50 +108,22 @@ export default function GetStartedV2Page() {
           console.error('Error checking existing wallet user:', error)
           setExistingUser({ found: false })
         }
-      } else if (authMethod === 'email' && getValues('email')) {
-        console.log('🔍 Checking for existing email user')
-        try {
-          const email = getValues('email')
-          const result = await personaApiClient.checkEmailExists(email)
-          if (result.exists && result.user) {
-            setExistingUser({
-              found: true,
-              authMethod: 'email',
-              identifier: email,
-              user: result.user
-            })
-            console.log('✅ Found existing email user')
-          } else {
-            setExistingUser({ found: false })
-          }
-        } catch (error) {
-          console.error('Error checking existing email user:', error)
-          setExistingUser({ found: false })
-        }
       }
     }
 
-    // Debounce email checks
-    let timeoutId: NodeJS.Timeout
-    if (authMethod === 'email') {
-      timeoutId = setTimeout(checkExistingUser, 500)
-    } else {
-      checkExistingUser()
-    }
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId)
-    }
-  }, [address, isConnected, authMethod, getValues])
+    checkExistingUser()
+  }, [address, isConnected, authMethod, keplr.address, keplr.isConnected])
 
   // Auto-advance for wallet users - with connection state protection
   useEffect(() => {
-    if (isConnected && address && currentStep === 'connect' && authMethod === 'wallet') {
-      // Auto-advance to profile only once
-      const timer = setTimeout(() => setCurrentStep('profile'), 1000)
-      return () => clearTimeout(timer)
+    if ((isConnected && address && authMethod === 'wallet') || (keplr.isConnected && keplr.address && authMethod === 'keplr')) {
+      if (currentStep === 'connect') {
+        // Auto-advance to profile only once
+        const timer = setTimeout(() => setCurrentStep('profile'), 1000)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [isConnected, address, currentStep, authMethod])
+  }, [isConnected, address, currentStep, authMethod, keplr.isConnected, keplr.address])
 
   // Watch form values
   const acceptedTerms = watch('acceptedTerms')
@@ -192,8 +143,8 @@ export default function GetStartedV2Page() {
   // Handle auth method selection and navigation
   const handleAuthMethodSelection = (method: AuthMethod) => {
     setAuthMethod(method)
-    if (method === 'social' || method === 'phone' || method === 'email') {
-      // Skip connect step for social, phone, and email - go directly to profile
+    if (method === 'personapass') {
+      // Skip connect step for PersonaPass - go directly to profile
       setCurrentStep('profile')
     } else {
       setCurrentStep('connect')
@@ -209,8 +160,7 @@ export default function GetStartedV2Page() {
         
       case 'method':
         if (authMethod) {
-          if (authMethod === 'social') {
-            // For demo, simulate social login
+          if (authMethod === 'personapass') {
             setCurrentStep('profile')
           } else {
             setCurrentStep('connect')
@@ -219,31 +169,16 @@ export default function GetStartedV2Page() {
         break
         
       case 'connect':
-        if (authMethod === 'wallet' && isConnected) {
-          setCurrentStep('profile')
-        } else if (authMethod === 'email' || authMethod === 'phone') {
+        if ((authMethod === 'wallet' && isConnected) || (authMethod === 'keplr' && keplr.isConnected)) {
           setCurrentStep('profile')
         }
         break
         
       case 'profile':
-        const fieldsToValidate = ['firstName', 'lastName', 'username', 'acceptedTerms']
-        if (authMethod === 'email') {
-          fieldsToValidate.push('email', 'password', 'confirmPassword')
-        }
-        const profileValid = await trigger(fieldsToValidate as (keyof FormData)[])
+        const fieldsToValidate = ['firstName', 'lastName', 'username', 'acceptedTerms'] as (keyof FormData)[]
+        const profileValid = await trigger(fieldsToValidate)
         if (profileValid) {
-          if (authMethod === 'phone') {
-            // Show phone verification modal
-            setShowPhoneModal(true)
-          } else if (authMethod === 'email') {
-            // Start inline email verification process
-            setCurrentStep('verification')
-            setEmailVerificationStep('email')
-          } else {
-            // Skip verification for other methods in demo
-            await createDID()
-          }
+          await createDID()
         }
         break
         
@@ -264,14 +199,11 @@ export default function GetStartedV2Page() {
       if (authMethod === 'wallet') {
         walletAddress = address || ''
         identifier = walletAddress
-      } else if (authMethod === 'email') {
-        identifier = verifiedEmail || getValues('email')
-        walletAddress = identifier
-      } else if (authMethod === 'phone') {
-        identifier = verifiedPhoneNumber
-        walletAddress = identifier
-      } else if (authMethod === 'social') {
-        identifier = `${selectedSocial}:${username}`
+      } else if (authMethod === 'keplr') {
+        walletAddress = keplr.address || ''
+        identifier = walletAddress
+      } else if (authMethod === 'personapass') {
+        identifier = `personapass:${username}`
         walletAddress = identifier
       } else {
         throw new Error('Invalid auth method')
@@ -309,12 +241,9 @@ export default function GetStartedV2Page() {
           firstName,
           lastName,
           username,
-          email: authMethod === 'email' ? verifiedEmail : getValues('email'),
-          phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: result.did,
-          walletAddress: authMethod === 'wallet' ? address : undefined,
-          socialProvider: authMethod === 'social' ? selectedSocial : undefined,
+          walletAddress: authMethod === 'wallet' ? address : authMethod === 'keplr' ? keplr.address : undefined,
           createdAt: new Date().toISOString()
         }
         
@@ -338,10 +267,9 @@ export default function GetStartedV2Page() {
           firstName,
           lastName,
           username,
-          email: authMethod === 'email' ? verifiedEmail : getValues('email'),
-          phone: authMethod === 'phone' ? verifiedPhoneNumber : undefined,
           authMethod,
           did: fallbackDID,
+          walletAddress: authMethod === 'wallet' ? address : authMethod === 'keplr' ? keplr.address : undefined,
           createdAt: new Date().toISOString()
         }
         
@@ -358,111 +286,6 @@ export default function GetStartedV2Page() {
     }
   }
 
-
-  // Handle phone verification completion from modal
-  const handlePhoneVerified = async (phoneNumber: string, verificationData: { success: boolean; credential?: unknown }) => {
-    setShowPhoneModal(false)
-    setVerifiedPhoneNumber(phoneNumber)
-    if (verificationData.credential) {
-      setVerifiableCredential(verificationData.credential as PhoneVerificationCredential)
-    }
-    await createDID()
-  }
-
-  // Handle email verification completion from modal
-  const handleEmailVerified = async (email: string, verificationData: { success: boolean; credential?: unknown }) => {
-    setShowEmailModal(false)
-    setVerifiedEmail(email)
-    if (verificationData.credential) {
-      setVerifiableCredential(verificationData.credential as EmailVerificationCredential)
-    }
-    await createDID()
-  }
-
-  // Inline email verification handlers
-  const startEmailVerification = async () => {
-    setIsEmailVerifying(true)
-    setEmailVerificationError('')
-    
-    try {
-      const email = getValues('email')
-      const result = await personaApiClient.startEmailVerification(email)
-      
-      if (result.success) {
-        setEmailVerificationStep('verification')
-        setEmailCountdown(300) // 5 minutes
-      } else {
-        setEmailVerificationError(result.message || 'Failed to send verification email')
-      }
-    } catch {
-      setEmailVerificationError('Failed to send verification email')
-    } finally {
-      setIsEmailVerifying(false)
-    }
-  }
-
-  const verifyEmailCode = async () => {
-    if (!emailVerificationCode || emailVerificationCode.length !== 6) {
-      setEmailVerificationError('Please enter a valid 6-digit code')
-      return
-    }
-
-    setIsEmailVerifying(true)
-    setEmailVerificationError('')
-    
-    try {
-      const email = getValues('email')
-      const result = await personaApiClient.verifyEmailCodeAndIssueVC(email, emailVerificationCode)
-      
-      if (result.success) {
-        setVerifiedEmail(email)
-        if (result.credential) {
-          setVerifiableCredential(result.credential as EmailVerificationCredential)
-        }
-        
-        // Create account with password
-        await createPasswordAccount()
-      } else {
-        setEmailVerificationError(result.message || 'Invalid verification code')
-      }
-    } catch {
-      setEmailVerificationError('Verification failed. Please try again.')
-    } finally {
-      setIsEmailVerifying(false)
-    }
-  }
-
-  const createPasswordAccount = async () => {
-    try {
-      const { email, password, firstName, lastName, username } = getValues()
-      
-      const result = await personaApiClient.createAccount({
-        email,
-        password,
-        firstName,
-        lastName,
-        username
-      })
-      
-      if (result.success) {
-        // Account created successfully, proceed to create DID
-        await createDID()
-      } else {
-        setEmailVerificationError(result.message || 'Failed to create account')
-      }
-    } catch {
-      setEmailVerificationError('Failed to create account')
-    }
-  }
-
-  // Countdown timer for email verification
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (emailCountdown > 0) {
-      timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000)
-    }
-    return () => clearTimeout(timer)
-  }, [emailCountdown])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
@@ -615,32 +438,33 @@ export default function GetStartedV2Page() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                {/* Social Login - NEW! */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                {/* Keplr Wallet for PersonaChain */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleAuthMethodSelection('social')}
+                  onClick={() => handleAuthMethodSelection('keplr')}
                   className="relative overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-purple-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200 rounded-full blur-3xl opacity-50" />
                   <div className="relative">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex space-x-3">
-                        <Chrome className="w-6 h-6 text-blue-600" />
-                        <Twitter className="w-6 h-6 text-blue-400" />
-                        <Github className="w-6 h-6 text-gray-800" />
-                      </div>
+                      <Wallet className="w-8 h-8 text-purple-600" />
                       <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                        EASIEST
+                        PERSONACHAIN
                       </span>
                     </div>
-                    <h3 className="text-xl font-semibold text-black mb-2">Social Login</h3>
-                    <p className="text-gray-700">Sign in with Google, Twitter, or GitHub</p>
+                    <h3 className="text-xl font-semibold text-black mb-2">Keplr Wallet</h3>
+                    <p className="text-gray-700">Connect to PersonaChain with Keplr Cosmos wallet</p>
+                    {!keplr.isKeplrAvailable && (
+                      <p className="text-xs text-orange-600 mt-2">
+                        ⚠️ Install Keplr extension first
+                      </p>
+                    )}
                   </div>
                 </motion.button>
 
-                {/* Crypto Wallet */}
+                {/* Ethereum Wallets */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -652,51 +476,31 @@ export default function GetStartedV2Page() {
                     <div className="flex items-center justify-between mb-4">
                       <Wallet className="w-8 h-8 text-blue-600" />
                       <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                        WEB3 NATIVE
+                        ETHEREUM
                       </span>
                     </div>
-                    <h3 className="text-xl font-semibold text-black mb-2">Crypto Wallet</h3>
-                    <p className="text-gray-700">Connect MetaMask, WalletConnect, or Coinbase</p>
+                    <h3 className="text-xl font-semibold text-black mb-2">Ethereum Wallet</h3>
+                    <p className="text-gray-700">Connect MetaMask or WalletConnect</p>
                   </div>
                 </motion.button>
 
-                {/* Email - Progressive Disclosure */}
+                {/* PersonaPass Identity */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => handleAuthMethodSelection('email')}
+                  onClick={() => handleAuthMethodSelection('personapass')}
                   className="relative overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-green-300 transition-all duration-300"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-green-200 rounded-full blur-3xl opacity-50" />
                   <div className="relative">
                     <div className="flex items-center justify-between mb-4">
-                      <Mail className="w-8 h-8 text-green-600" />
+                      <Fingerprint className="w-8 h-8 text-green-600" />
                       <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        FAMILIAR
+                        IDENTITY
                       </span>
                     </div>
-                    <h3 className="text-xl font-semibold text-black mb-2">Email Magic Link</h3>
-                    <p className="text-gray-700">Get a secure login link sent to your email</p>
-                  </div>
-                </motion.button>
-
-                {/* Phone */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleAuthMethodSelection('phone')}
-                  className="relative overflow-hidden bg-gradient-to-br from-orange-100 to-yellow-100 rounded-2xl p-6 text-left border-2 border-transparent hover:border-orange-300 transition-all duration-300"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200 rounded-full blur-3xl opacity-50" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-4">
-                      <Smartphone className="w-8 h-8 text-orange-600" />
-                      <span className="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                        VERIFIED
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-black mb-2">Phone Verification</h3>
-                    <p className="text-gray-700">Verify with SMS for strongest identity proof</p>
+                    <h3 className="text-xl font-semibold text-black mb-2">PersonaPass</h3>
+                    <p className="text-gray-700">Create identity with zero-knowledge proofs</p>
                   </div>
                 </motion.button>
               </div>
@@ -753,14 +557,130 @@ export default function GetStartedV2Page() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
+              {/* Keplr Wallet Connection */}
+              {authMethod === 'keplr' && (
+                <div className="max-w-xl mx-auto">
+                  <div className="text-center mb-8">
+                    <h1 className="text-4xl font-bold text-black mb-4">
+                      Connect Keplr Wallet
+                    </h1>
+                    <p className="text-xl text-black">
+                      Connect to PersonaChain with your Keplr wallet
+                    </p>
+                  </div>
+
+                  {!keplr.isConnected ? (
+                    <div className="space-y-4">
+                      {!keplr.isKeplrAvailable ? (
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 text-center">
+                          <p className="text-orange-800 font-medium mb-2">Keplr Extension Required</p>
+                          <p className="text-sm text-orange-700 mb-4">
+                            Please install the Keplr wallet extension to continue with PersonaChain.
+                          </p>
+                          <a
+                            href="https://www.keplr.app/download"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block px-6 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors"
+                          >
+                            Install Keplr
+                          </a>
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={keplr.connectKeplr}
+                          disabled={keplr.isConnecting}
+                          className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-purple-500 transition-all duration-300 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Wallet className="w-6 h-6 text-purple-600" />
+                            <span className="font-medium text-black">
+                              {keplr.isConnecting ? 'Connecting...' : 'Connect Keplr Wallet'}
+                            </span>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                        </motion.button>
+                      )}
+                      
+                      {keplr.error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                          <p className="text-sm text-red-600">{keplr.error}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="bg-green-50 rounded-2xl p-6 border border-green-200"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                            <Check className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-black">Keplr Connected!</p>
+                            <p className="text-sm text-gray-600">{keplr.address?.slice(0, 10)}...{keplr.address?.slice(-6)}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={keplr.disconnectKeplr}
+                          className="text-sm text-red-600 hover:text-red-700"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+                      {existingUser.found ? (
+                        <div className="space-y-3">
+                          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                            <p className="text-sm font-semibold text-blue-800 mb-2">
+                              🎉 Welcome back!
+                            </p>
+                            <p className="text-sm text-blue-700">
+                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this wallet.
+                            </p>
+                          </div>
+                          <div className="flex space-x-3">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => router.push('/dashboard')}
+                              className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                            >
+                              Go to Dashboard
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setCurrentStep('profile')}
+                              className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            >
+                              Create New Identity
+                            </motion.button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700">
+                          Great! Your Keplr wallet is connected to PersonaChain. Let&apos;s continue setting up your profile.
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              )}
+
+              {/* Ethereum Wallet Connection */}
               {authMethod === 'wallet' && (
                 <div className="max-w-xl mx-auto">
                   <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-black mb-4">
-                      Connect Your Wallet
+                      Connect Ethereum Wallet
                     </h1>
                     <p className="text-xl text-black">
-                      Choose your preferred wallet to continue
+                      Choose your preferred Ethereum wallet to continue
                     </p>
                   </div>
 
@@ -814,10 +734,10 @@ export default function GetStartedV2Page() {
                         <div className="space-y-3">
                           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <p className="text-sm font-semibold text-blue-800 mb-2">
-                              🎉 Welcome back{existingUser.user?.firstName ? `, ${existingUser.user.firstName}` : ''}!
+                              🎉 Welcome back!
                             </p>
                             <p className="text-sm text-blue-700">
-                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this {existingUser.authMethod === 'wallet' ? 'wallet' : existingUser.authMethod === 'email' ? 'email address' : 'account'}.
+                              We found {existingUser.credentials?.length} existing credential{existingUser.credentials?.length !== 1 ? 's' : ''} for this wallet.
                             </p>
                           </div>
                           <div className="flex space-x-3">
@@ -849,90 +769,6 @@ export default function GetStartedV2Page() {
                 </div>
               )}
 
-              {authMethod === 'social' && (
-                <div className="max-w-xl mx-auto">
-                  <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-black mb-4">
-                      Choose Your Provider
-                    </h1>
-                    <p className="text-xl text-black">
-                      Select your preferred social login
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        setSelectedSocial('google')
-                        goToNextStep()
-                      }}
-                      className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 transition-all duration-300 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Chrome className="w-6 h-6 text-blue-600" />
-                        <span className="font-medium text-black">Continue with Google</span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        setSelectedSocial('twitter')
-                        goToNextStep()
-                      }}
-                      className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-400 transition-all duration-300 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Twitter className="w-6 h-6 text-blue-400" />
-                        <span className="font-medium text-black">Continue with Twitter</span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        setSelectedSocial('github')
-                        goToNextStep()
-                      }}
-                      className="w-full p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-gray-800 transition-all duration-300 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Github className="w-6 h-6 text-gray-800" />
-                        <span className="font-medium text-black">Continue with GitHub</span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-
-              {(authMethod === 'email' || authMethod === 'phone') && (
-                <div className="max-w-xl mx-auto text-center">
-                  <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-black mb-4">
-                      {authMethod === 'email' ? 'Email Setup' : 'Phone Setup'}
-                    </h1>
-                    <p className="text-xl text-black">
-                      We&apos;ll set this up in the next step
-                    </p>
-                  </div>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={goToNextStep}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    Continue to Profile
-                  </motion.button>
-                </div>
-              )}
             </motion.div>
           )}
 
@@ -1012,78 +848,6 @@ export default function GetStartedV2Page() {
                   </div>
                 </div>
 
-                {/* Contact field based on auth method */}
-                {authMethod === 'email' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-black mb-2">
-                        Email address
-                      </label>
-                      <input
-                        type="email"
-                        {...register('email', { 
-                          required: 'Email is required',
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: 'Invalid email address'
-                          }
-                        })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
-                        placeholder="john@example.com"
-                      />
-                      {errors.email && (
-                        <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          {...register('password', { 
-                            required: 'Password is required',
-                            minLength: {
-                              value: 8,
-                              message: 'Password must be at least 8 characters'
-                            },
-                            pattern: {
-                              value: /^(?=.*[A-Za-z])(?=.*\d)/,
-                              message: 'Password must contain at least one letter and one number'
-                            }
-                          })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
-                          placeholder="At least 8 characters"
-                        />
-                        {errors.password && (
-                          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          {...register('confirmPassword', { 
-                            required: 'Please confirm your password',
-                            validate: (value) => {
-                              const password = getValues('password')
-                              return value === password || 'Passwords do not match'
-                            }
-                          })}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
-                          placeholder="Confirm password"
-                        />
-                        {errors.confirmPassword && (
-                          <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
 
 
                 {/* Simple terms checkbox */}
@@ -1128,133 +892,6 @@ export default function GetStartedV2Page() {
             </motion.div>
           )}
 
-
-          {/* Email Verification Step */}
-          {currentStep === 'verification' && authMethod === 'email' && (
-            <motion.div
-              key="verification"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
-            >
-              <div className="text-center mb-8">
-                <Mail className="w-16 h-16 mx-auto text-blue-600 mb-4" />
-                <h1 className="text-4xl font-bold text-black mb-4">
-                  Verify Your Email
-                </h1>
-                <p className="text-xl text-black">
-                  We&apos;ll send a verification code to your email address
-                </p>
-              </div>
-
-              {emailVerificationStep === 'email' && (
-                <div className="max-w-md mx-auto space-y-6">
-                  <div className="bg-gray-50 rounded-xl p-6 text-center">
-                    <p className="text-sm text-gray-600 mb-2">Sending verification code to:</p>
-                    <p className="text-lg font-semibold text-black">{getValues('email')}</p>
-                  </div>
-
-                  {emailVerificationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                      <p className="text-sm text-red-600">{emailVerificationError}</p>
-                    </div>
-                  )}
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={startEmailVerification}
-                    disabled={isEmailVerifying}
-                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    {isEmailVerifying ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Sending...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-5 h-5" />
-                        <span>Send Verification Code</span>
-                      </>
-                    )}
-                  </motion.button>
-                </div>
-              )}
-
-              {emailVerificationStep === 'verification' && (
-                <div className="max-w-md mx-auto space-y-6">
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-                    <p className="text-sm text-green-600 mb-2">Verification code sent to:</p>
-                    <p className="text-lg font-semibold text-black">{getValues('email')}</p>
-                    {emailCountdown > 0 && (
-                      <p className="text-sm text-gray-500 mt-2">
-                        Code expires in {Math.floor(emailCountdown / 60)}:{(emailCountdown % 60).toString().padStart(2, '0')}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">
-                      Enter 6-digit verification code
-                    </label>
-                    <input
-                      type="text"
-                      value={emailVerificationCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6)
-                        setEmailVerificationCode(value)
-                        setEmailVerificationError('')
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg font-mono tracking-widest text-black"
-                      placeholder="000000"
-                      maxLength={6}
-                    />
-                  </div>
-
-                  {emailVerificationError && (
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                      <p className="text-sm text-red-600">{emailVerificationError}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={verifyEmailCode}
-                      disabled={isEmailVerifying || emailVerificationCode.length !== 6}
-                      className="w-full py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                    >
-                      {isEmailVerifying ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Verifying...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-5 h-5" />
-                          <span>Verify & Create Account</span>
-                        </>
-                      )}
-                    </motion.button>
-
-                    <button
-                      onClick={() => {
-                        setEmailVerificationStep('email')
-                        setEmailVerificationCode('')
-                        setEmailVerificationError('')
-                      }}
-                      className="w-full py-2 text-sm text-gray-600 hover:text-black transition-colors"
-                    >
-                      ← Back to resend code
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
 
           {/* Complete Step */}
           {currentStep === 'complete' && (
@@ -1374,19 +1011,6 @@ export default function GetStartedV2Page() {
         </AnimatePresence>
       </div>
 
-      {/* Phone Verification Modal */}
-      <PhoneVerificationModal
-        isOpen={showPhoneModal}
-        onClose={() => setShowPhoneModal(false)}
-        onVerified={handlePhoneVerified}
-      />
-
-      {/* Email Verification Modal */}
-      <EmailVerificationModal
-        isOpen={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        onVerified={handleEmailVerified}
-      />
     </div>
   )
 }

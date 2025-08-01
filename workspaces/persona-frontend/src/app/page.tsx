@@ -195,7 +195,7 @@ export default function HomePage() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-black mb-2">Connect Your Wallet</h3>
                 <p className="text-gray-600">
-                  Link your Web3 wallet or create a new one. We support all major wallets including MetaMask, WalletConnect, and social logins.
+                  Connect with Keplr for PersonaChain or Ethereum wallets like MetaMask for multi-chain identity verification.
                 </p>
               </div>
             </motion.div>

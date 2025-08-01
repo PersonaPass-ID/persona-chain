@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StepProps } from './types';
 import { AuthenticationOption } from '../../../lib/blockchain';
+import WalletAuthModal from '../../WalletAuthModal';
+import { useWalletAuth } from '@/hooks/useWalletAuth';
 
 const AuthStep: React.FC<StepProps> = ({ 
   selectedAuth,
@@ -17,6 +19,9 @@ const AuthStep: React.FC<StepProps> = ({
 }) => {
   const [hoveredOption, setHoveredOption] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  
+  const { isAuthenticated, user } = useWalletAuth();
 
   // Auto-advance when auth is selected
   useEffect(() => {
@@ -83,6 +88,35 @@ const AuthStep: React.FC<StepProps> = ({
     return levels[option.id as keyof typeof levels] || { level: 'Medium', color: 'text-yellow-600' };
   };
 
+  const handleWalletSuccess = (walletUser: any) => {
+    // Create a wallet authentication option and select it
+    const walletAuthOption: AuthenticationOption = {
+      id: 'wallet',
+      name: 'Cosmos Wallet',
+      type: 'wallet',
+      provider: walletUser.walletType,
+      available: true,
+      icon: '🌌'
+    };
+    onSelectAuth(walletAuthOption);
+    setShowWalletModal(false);
+  };
+
+  const handleWalletOptionClick = (option: AuthenticationOption) => {
+    if (option.id === 'wallet') {
+      setShowWalletModal(true);
+    } else {
+      onSelectAuth(option);
+    }
+  };
+
+  // Check if user is already authenticated with wallet
+  useEffect(() => {
+    if (isAuthenticated && user && !selectedAuth) {
+      handleWalletSuccess(user);
+    }
+  }, [isAuthenticated, user, selectedAuth]);
+
   return (
     <div className="max-w-2xl mx-auto">
       {/* Header */}
@@ -118,7 +152,7 @@ const AuthStep: React.FC<StepProps> = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              onClick={() => onSelectAuth(option)}
+              onClick={() => handleWalletOptionClick(option)}
               onMouseEnter={() => setHoveredOption(option.id)}
               onMouseLeave={() => setHoveredOption(null)}
               disabled={!option.available}
@@ -248,6 +282,15 @@ const AuthStep: React.FC<StepProps> = ({
         </svg>
         Need help choosing?
       </motion.button>
+
+      {/* Wallet Authentication Modal */}
+      <WalletAuthModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSuccess={handleWalletSuccess}
+        title="Connect Your Cosmos Wallet"
+        subtitle="Authenticate with your preferred Cosmos wallet for secure access"
+      />
     </div>
   );
 };

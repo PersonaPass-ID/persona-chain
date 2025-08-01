@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
+import WalletAuthButton from './WalletAuthButton'
 
 const navigation = {
   solutions: [
@@ -242,7 +243,8 @@ export function Navigation() {
         </div>
 
         {/* CTA buttons */}
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
+          <WalletAuthButton size="sm" variant="outline" />
           <a
             href="/get-started"
             className="rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
@@ -315,7 +317,8 @@ export function Navigation() {
                     Resources
                   </a>
                 </div>
-                <div className="py-6">
+                <div className="py-6 space-y-4">
+                  <WalletAuthButton className="w-full justify-center" variant="outline" />
                   <a
                     href="/get-started"
                     className="block rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-center text-base font-semibold text-white shadow-sm hover:from-blue-700 hover:to-purple-700 transition-all duration-300"

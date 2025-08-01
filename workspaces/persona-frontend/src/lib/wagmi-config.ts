@@ -1,44 +1,57 @@
 import { http, createConfig } from 'wagmi'
-import { mainnet, base, optimism, arbitrum, polygon } from 'wagmi/chains'
-import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors'
+import { mainnet } from 'wagmi/chains'
+import { injected, metaMask, walletConnect } from 'wagmi/connectors'
 
 // Get Reown (formerly WalletConnect) project ID from environment
 const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || '946b25b33d5bf1a42b32971e742ce05d'
 
+// PersonaChain configuration for Keplr wallet
+const personaChain = {
+  id: 7777, // Numeric chain ID for PersonaChain
+  name: 'PersonaChain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Persona',
+    symbol: 'PERSONA',
+  },
+  rpcUrls: {
+    public: { http: ['https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com'] },
+    default: { http: ['https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com'] },
+  },
+  blockExplorers: {
+    default: { name: 'PersonaChain Explorer', url: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com' },
+  },
+} as const
+
 export const config = createConfig({
-  chains: [mainnet, base, optimism, arbitrum, polygon],
+  chains: [mainnet, personaChain],
   connectors: [
-    // Injected connector for general browser wallets
+    // Generic injected wallet connector (includes Keplr)
     injected({
       shimDisconnect: true
     }),
-    // MetaMask with enhanced configuration for error handling
+    // MetaMask for Ethereum-compatible chains
     metaMask({
       dappMetadata: {
-        name: 'Persona Identity Platform',
+        name: 'PersonaPass Identity Platform',
         url: 'https://personapass.xyz',
         iconUrl: 'https://personapass.xyz/favicon.svg'
       },
-      // Enable logging for debugging connection issues
       logging: {
-        developerMode: false, // Keep false for production
+        developerMode: false,
         sdk: false
       }
     }),
-    // WalletConnect with enhanced configuration
+    // WalletConnect for mobile wallet support
     walletConnect({ 
       projectId,
       metadata: {
-        name: 'Persona Identity Platform',
+        name: 'PersonaPass Identity Platform',
         description: 'Zero-knowledge identity verification platform',
         url: 'https://personapass.xyz',
         icons: ['https://personapass.xyz/favicon.svg']
       },
-      // Configure for better reconnection handling
       showQrModal: true,
-      // Handle stale chains properly
-      isNewChainsStale: false,
-      // Add retry configuration
       qrModalOptions: {
         themeMode: 'light',
         themeVariables: {
@@ -46,25 +59,10 @@ export const config = createConfig({
         }
       }
     }),
-    // Coinbase Wallet temporarily disabled due to analytics 401 errors
-    // coinbaseWallet({
-    //   appName: 'Persona Identity Platform',
-    //   appLogoUrl: 'https://personapass.xyz/favicon.svg',
-    //   preference: 'smartWalletOnly',
-    //   // Disable analytics to prevent 401 errors
-    //   enableMobileWalletLink: false
-    // }),
-    // Safe wallet connector
-    safe({
-      shimDisconnect: true
-    }),
   ],
   transports: {
     [mainnet.id]: http(),
-    [base.id]: http(),
-    [optimism.id]: http(),
-    [arbitrum.id]: http(),
-    [polygon.id]: http(),
+    [personaChain.id]: http(),
   },
   // Configure for better connection handling
   ssr: false, // Disable SSR for better client-side wallet detection
