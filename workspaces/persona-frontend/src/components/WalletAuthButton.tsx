@@ -9,7 +9,7 @@ interface WalletAuthButtonProps {
   className?: string
   variant?: 'primary' | 'secondary' | 'outline'
   size?: 'sm' | 'md' | 'lg'
-  onSuccess?: (user: any) => void
+  onSuccess?: (user: { address: string; walletType: string; isVerified: boolean }) => void
   children?: React.ReactNode
 }
 
@@ -29,7 +29,7 @@ export default function WalletAuthButton({
 
   const [showModal, setShowModal] = useState(false)
 
-  const handleSuccess = (user: any) => {
+  const handleSuccess = (user: { address: string; walletType: string; isVerified: boolean }) => {
     setShowModal(false)
     onSuccess?.(user)
   }

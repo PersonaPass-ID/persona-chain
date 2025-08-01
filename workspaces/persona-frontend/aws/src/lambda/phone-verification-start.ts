@@ -1,10 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 
 // Simple in-memory storage for demo (in production, use DynamoDB)
 const verificationCodes = new Map<string, {
   code: string;
   expiresAt: Date;
 }>();
+
+const snsClient = new SNSClient({ 
+  region: process.env.AWS_SNS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.SNS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.SNS_SECRET_ACCESS_KEY!
+  }
+});
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -47,15 +56,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
-    // Basic phone number validation
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
+    // Validate phone number format (basic E.164 format)
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phoneNumber)) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
           success: false,
-          message: 'Invalid phone number format'
+          message: 'Invalid phone number format. Use E.164 format (e.g., +1234567890)'
         }),
       };
     }
@@ -65,18 +74,37 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
     // Store verification code (in production, use DynamoDB)
-    const normalizedPhone = phoneNumber.replace(/\s+/g, '');
-    verificationCodes.set(normalizedPhone, {
+    verificationCodes.set(phoneNumber, {
       code: verificationCode,
       expiresAt
     });
 
-    console.log(`Phone verification code for ${phoneNumber}: ${verificationCode}`);
+    console.log(`SMS verification code for ${maskPhone(phoneNumber)}: ${verificationCode}`);
 
-    // In production, send SMS via AWS SNS
-    if (process.env.AWS_SNS_REGION) {
-      // TODO: Implement AWS SNS SMS sending
-      console.log('AWS SNS integration would send SMS here');
+    // Send SMS via AWS SNS
+    if (process.env.SNS_ACCESS_KEY_ID && process.env.SNS_SECRET_ACCESS_KEY) {
+      try {
+        const message = `Your PersonaPass verification code is: ${verificationCode}. This code expires in 10 minutes.`;
+        
+        const command = new PublishCommand({
+          PhoneNumber: phoneNumber,
+          Message: message,
+          MessageAttributes: {
+            'AWS.SNS.SMS.SMSType': {
+              DataType: 'String',
+              StringValue: 'Transactional'
+            }
+          }
+        });
+
+        const result = await snsClient.send(command);
+        console.log(`SMS sent successfully to ${maskPhone(phoneNumber)}, MessageId: ${result.MessageId}`);
+      } catch (error) {
+        console.error('Failed to send SMS:', error);
+        // Don't fail the request if SMS sending fails
+      }
+    } else {
+      console.log('AWS SNS not configured - verification code logged only');
     }
 
     return {
@@ -84,7 +112,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'Verification code sent to phone',
+        message: 'Verification code sent to phone number',
         verificationId: `phone_${Date.now()}`,
         expiresIn: 600 // 10 minutes in seconds
       }),
@@ -103,3 +131,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     };
   }
 };
+
+function maskPhone(phone: string): string {
+  if (phone.length < 4) return phone;
+  return phone.slice(0, -4) + '****';
+}

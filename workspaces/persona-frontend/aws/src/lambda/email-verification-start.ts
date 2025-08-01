@@ -72,10 +72,41 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     console.log(`Email verification code for ${email}: ${verificationCode}`);
 
-    // In production, send email via SendGrid
-    if (process.env.SENDGRID_API_KEY) {
-      // TODO: Implement SendGrid email sending
-      console.log('SendGrid integration would send email here');
+    // Send email via SendGrid
+    if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY !== 'not-configured') {
+      try {
+        const sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+        const msg = {
+          to: email,
+          from: {
+            email: process.env.SENDGRID_FROM_EMAIL || 'noreply@personapass.xyz',
+            name: 'PersonaPass'
+          },
+          subject: 'PersonaPass Email Verification',
+          text: `Your PersonaPass verification code is: ${verificationCode}. This code expires in 10 minutes.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">PersonaPass Email Verification</h2>
+              <p>Your verification code is:</p>
+              <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0;">
+                ${verificationCode}
+              </div>
+              <p style="color: #6b7280;">This code expires in 10 minutes.</p>
+              <p style="color: #6b7280;">If you didn't request this verification, please ignore this email.</p>
+            </div>
+          `
+        };
+
+        await sgMail.send(msg);
+        console.log(`Email sent successfully to ${email}`);
+      } catch (error) {
+        console.error('Failed to send email:', error);
+        // Don't fail the request if email sending fails
+      }
+    } else {
+      console.log('SendGrid not configured - verification code logged only');
     }
 
     return {

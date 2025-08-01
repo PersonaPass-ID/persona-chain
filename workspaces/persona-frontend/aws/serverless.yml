@@ -10,6 +10,11 @@ provider:
     BLOCKCHAIN_RPC_URL: http://161.35.2.88:26657
     JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
     ENCRYPTION_KEY: ${env:ENCRYPTION_KEY, 'persona-32-char-encryption-key-123'}
+    SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'your-sendgrid-api-key'}
+    SENDGRID_FROM_EMAIL: noreply@personapass.xyz
+    SNS_ACCESS_KEY_ID: ${env:SNS_ACCESS_KEY_ID, 'your-sns-access-key-id'}
+    SNS_SECRET_ACCESS_KEY: ${env:SNS_SECRET_ACCESS_KEY, 'your-sns-secret-access-key'}
+    AWS_SNS_REGION: us-east-1
   iam:
     role:
       statements:
@@ -24,6 +29,10 @@ provider:
           Resource: 
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}"
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}/index/*"
+        - Effect: Allow
+          Action:
+            - sns:Publish
+          Resource: "*"
 
 functions:
   createDID:
@@ -74,8 +83,6 @@ functions:
           path: /issue-vc/email/start
           method: post
           cors: true
-    environment:
-      SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'not-configured'}
 
   verifyEmailCode:
     handler: src/lambda/email-verification-verify.handler
@@ -84,8 +91,6 @@ functions:
           path: /issue-vc/email/verify
           method: post
           cors: true
-    environment:
-      SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'not-configured'}
 
   # Phone Verification Endpoints  
   startPhoneVerification:
@@ -95,8 +100,6 @@ functions:
           path: /issue-vc/phone/start
           method: post
           cors: true
-    environment:
-      AWS_SNS_REGION: ${env:AWS_SNS_REGION, 'us-east-1'}
 
   verifyPhoneCode:
     handler: src/lambda/phone-verification-verify.handler
@@ -105,8 +108,6 @@ functions:
           path: /issue-vc/phone/verify
           method: post
           cors: true
-    environment:
-      AWS_SNS_REGION: ${env:AWS_SNS_REGION, 'us-east-1'}
 
   # Password Authentication Endpoints
   createAccount:
@@ -116,8 +117,6 @@ functions:
           path: /auth/create-account
           method: post
           cors: true
-    environment:
-      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
 
   loginAccount:
     handler: src/lambda/auth-login.handler
@@ -126,8 +125,6 @@ functions:
           path: /auth/login
           method: post
           cors: true
-    environment:
-      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
 
   verifyToken:
     handler: src/lambda/auth-verify-token.handler
@@ -136,8 +133,6 @@ functions:
           path: /auth/verify-token
           method: post
           cors: true
-    environment:
-      JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
 
 resources:
   Resources:
