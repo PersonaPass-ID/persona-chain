@@ -1,30 +1,26 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { PersonaNavbar } from '@/components/persona-navbar'
+import { Web3Provider } from "@/components/WagmiProvider";
 
-const inter = Inter({
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  variable: "--font-inter",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Persona | Zero-Knowledge Identity Protocol",
-  description: "Revolutionary digital identity with privacy-first technology. Own your credentials, control your data, trust the protocol.",
-  keywords: "zero-knowledge, digital identity, privacy, blockchain, Web3, credentials",
-  openGraph: {
-    title: "Persona | Zero-Knowledge Identity Protocol",
-    description: "Revolutionary digital identity with privacy-first technology.",
-    url: "https://personapass.xyz",
-    siteName: "Persona",
-    type: "website",
+  title: "Persona - Your Digital Identity Platform",
+  description: "Create secure, verifiable digital credentials using zero-knowledge proofs. Experience seamless identity verification in minutes.",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Persona | Zero-Knowledge Identity Protocol",
-    description: "Revolutionary digital identity with privacy-first technology.",
-  },
-  robots: "index, follow",
 };
 
 export default function RootLayout({
@@ -33,12 +29,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} antialiased`}>
-        <PersonaNavbar />
-        <main>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Web3Provider>
           {children}
-        </main>
+        </Web3Provider>
       </body>
     </html>
   );
