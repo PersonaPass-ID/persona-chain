@@ -156,7 +156,6 @@ class PersonaWalletApiClient {
     const defaultOptions: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'PersonaPass-Frontend',
         ...options.headers
       },
       ...options
