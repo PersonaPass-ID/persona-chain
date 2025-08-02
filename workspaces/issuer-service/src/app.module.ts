@@ -1,15 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Configuration
 import configuration from './config';
-import { DatabaseConfig } from './config/database.config';
 
-// Modules
-import { PhoneVerificationModule } from './phone-verification/phone-verification.module';
-import { EmailVerificationModule } from './email-verification/email-verification.module';
-import { AuthModule } from './auth/auth.module';
+// Modules - WALLET-ONLY AUTHENTICATION
 import { PersonaApiModule } from './persona-api/persona-api.module';
 
 @Module({

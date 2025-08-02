@@ -36,8 +36,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
   
-  // Basic API info endpoint
-  // Note: Swagger documentation removed for simplicity in Sprint 8
+  // Global API prefix to match PersonaApiClient expectations
+  app.setGlobalPrefix('api');
   
   const port = process.env.PORT || 3001;
   await app.listen(port);

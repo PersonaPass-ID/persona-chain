@@ -1,5 +1,5 @@
-# 🚀 PersonaPass Complete API - Production Dockerfile
-# Includes phone verification, email verification, and wallet authentication
+# 🚀 PersonaPass Wallet-Only API - Production Dockerfile
+# Pure wallet-based authentication system - no phone/email verification
 
 FROM node:18-alpine
 
