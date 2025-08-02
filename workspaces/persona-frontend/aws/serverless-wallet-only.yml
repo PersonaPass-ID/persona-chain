@@ -1,0 +1,134 @@
+service: persona-wallet-only-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'prod'}
+  environment:
+    DYNAMODB_TABLE_NAME: persona-wallet-credentials-${self:provider.stage}
+    BLOCKCHAIN_RPC_URL: http://161.35.2.88:26657
+    JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY, 'persona-32-char-encryption-key-123'}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: 
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}/index/*"
+
+# WALLET-ONLY FUNCTIONS - NO PHONE/EMAIL VERIFICATION
+functions:
+  createWalletDID:
+    handler: src/lambda/create-wallet-did.handler
+    events:
+      - http:
+          path: /api/did/create
+          method: post
+          cors:
+            origin: 
+              - 'https://personapass.xyz'
+              - 'https://www.personapass.xyz'
+              - 'https://persona-website-git-main-aiden-lipperts-projects.vercel.app'
+              - 'http://localhost:3000'
+              - 'http://localhost:3001'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+            allowCredentials: true
+          
+  getWalletCredentials:
+    handler: src/lambda/get-wallet-credentials.handler
+    events:
+      - http:
+          path: /api/credentials/{walletAddress}
+          method: get
+          cors:
+            origin: 
+              - 'https://personapass.xyz'
+              - 'https://www.personapass.xyz'
+              - 'https://persona-website-git-main-aiden-lipperts-projects.vercel.app'
+              - 'http://localhost:3000'
+              - 'http://localhost:3001'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+            allowCredentials: true
+
+  healthCheck:
+    handler: src/lambda/health.handler
+    events:
+      - http:
+          path: /api/health
+          method: get
+          cors:
+            origin: 
+              - 'https://personapass.xyz'
+              - 'https://www.personapass.xyz'
+              - 'https://persona-website-git-main-aiden-lipperts-projects.vercel.app'
+              - 'http://localhost:3000'
+              - 'http://localhost:3001'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+            allowCredentials: true
+
+  systemTest:
+    handler: src/lambda/system-test.handler
+    events:
+      - http:
+          path: /api/system/test
+          method: get
+          cors:
+            origin: 
+              - 'https://personapass.xyz'
+              - 'https://www.personapass.xyz'
+              - 'https://persona-website-git-main-aiden-lipperts-projects.vercel.app'
+              - 'http://localhost:3000'
+              - 'http://localhost:3001'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Requested-With
+            allowCredentials: true
+
+resources:
+  Resources:
+    PersonaWalletCredentialsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: persona-wallet-credentials-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: walletAddress
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: WalletAddressIndex
+            KeySchema:
+              - AttributeName: walletAddress
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+plugins:
+  - serverless-plugin-typescript

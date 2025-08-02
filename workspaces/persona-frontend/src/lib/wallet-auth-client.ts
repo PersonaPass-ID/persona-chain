@@ -1,9 +1,10 @@
 // 🔐 PersonaPass Universal Wallet Authentication Client
 // Production-ready client for Keplr, Leap, Cosmostation, Terra Station
 
-// import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
-// import { stringToPath, pathToString } from '@cosmjs/crypto'
-// import { fromBase64, toBase64, toUtf8, fromUtf8 } from '@cosmjs/encoding'
+// CosmJS encoding utilities for wallet operations
+function toBase64(data: Uint8Array): string {
+  return Buffer.from(data).toString('base64')
+}
 
 // Wallet authentication types
 export interface WalletAuthChallenge {
