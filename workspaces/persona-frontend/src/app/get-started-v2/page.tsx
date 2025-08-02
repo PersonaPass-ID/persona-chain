@@ -24,7 +24,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, PersonaIdentityCredential } from '@/lib/api-client'
+import { personaApiClient, WalletIdentityCredential } from '@/lib/api-client-updated'
 import { useWalletConnectionManager } from '@/hooks/useWalletConnectionManager'
 import { useKeplrWallet } from '@/hooks/useKeplrWallet'
 import confetti from 'canvas-confetti'
@@ -51,7 +51,7 @@ export default function GetStartedV2Page() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome')
   const [isProcessing, setIsProcessing] = useState(false)
   const [generatedDID, setGeneratedDID] = useState<string>('')
-  const [verifiableCredential, setVerifiableCredential] = useState<PersonaIdentityCredential | null>(null)
+  const [verifiableCredential, setVerifiableCredential] = useState<WalletIdentityCredential | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [existingUser, setExistingUser] = useState<{
     found: boolean
@@ -942,14 +942,14 @@ export default function GetStartedV2Page() {
                       <p className="text-sm font-medium text-gray-600 mb-1">Verifiable Credential</p>
                       <div className="bg-green-50 rounded-lg p-3 border border-green-200">
                         <p className="text-sm text-green-800">
-                          ✓ {verifiableCredential.type === 'PersonaIdentityCredential' 
-                              ? 'Identity credential issued successfully' 
-                              : verifiableCredential.type.includes('PhoneVerification')
-                              ? 'Phone verification credential issued successfully'
-                              : 'Email verification credential issued successfully'}
+                          ✓ {verifiableCredential.type === 'WalletIdentityCredential' 
+                              ? 'Wallet identity credential issued successfully' 
+                              : verifiableCredential.type.includes('WalletIdentity')
+                              ? 'Wallet identity credential issued successfully'
+                              : 'Identity credential issued successfully'}
                         </p>
                         <p className="text-xs text-green-600 mt-1">
-                          Type: {verifiableCredential.type || 'PersonaIdentityCredential'}
+                          Type: {verifiableCredential.type || 'WalletIdentityCredential'}
                         </p>
                       </div>
                     </div>
