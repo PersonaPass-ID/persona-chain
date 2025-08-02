@@ -89,12 +89,15 @@ const AuthStep: React.FC<StepProps> = ({
   };
 
   const handleWalletSuccess = (walletUser: unknown) => {
+    // Type guard to safely access wallet user properties
+    const user = walletUser as { walletType?: string; address?: string } | null;
+    
     // Create a wallet authentication option and select it
     const walletAuthOption: AuthenticationOption = {
       id: 'wallet',
       name: 'Cosmos Wallet',
       type: 'wallet',
-      provider: walletUser.walletType,
+      provider: user?.walletType || 'wallet',
       available: true,
       icon: '🌌'
     };
