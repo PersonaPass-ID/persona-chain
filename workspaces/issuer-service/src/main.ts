@@ -42,10 +42,10 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   
-  logger.log(`🚀 Issuer Service running on http://localhost:${port}`);
-  logger.log(`📱 Phone Verification API: http://localhost:${port}/issue-vc/phone`);
-  logger.log(`📧 Email Verification API: http://localhost:${port}/issue-vc/email`);
-  logger.log(`🔐 Password Authentication API: http://localhost:${port}/auth`);
+  logger.log(`🚀 PersonaPass Wallet-Only API running on http://localhost:${port}`);
+  logger.log(`⛓️  Wallet DID Creation API: http://localhost:${port}/api/did/create`);
+  logger.log(`🔍 Wallet Credentials API: http://localhost:${port}/api/credentials/:address`);
+  logger.log(`✅ Health Check API: http://localhost:${port}/api/health`);
 }
 
 bootstrap();
