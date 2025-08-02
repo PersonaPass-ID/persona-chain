@@ -71,13 +71,14 @@ export interface UniversalWallet {
     }
   }>
   getOfflineSigner: (chainId: string) => unknown
+  experimentalSuggestChain?: (config: unknown) => Promise<void>
 }
 
 // Extend window with all supported wallets
 declare global {
   interface Window {
-    keplr?: UniversalWallet
-    leap?: UniversalWallet
+    keplr?: UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }
+    leap?: UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }
     cosmostation?: {
       cosmos: UniversalWallet
     }
