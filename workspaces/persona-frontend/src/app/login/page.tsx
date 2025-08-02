@@ -1,262 +1,199 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import React, { useState, useEffect } from 'react'
+import { useSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, User, Shield } from 'lucide-react'
-import { Navigation } from '@/components/Navigation'
-import { personaApiClient, AuthResponse } from '@/lib/api-client'
+import { WalletConnectService } from '@/lib/wallet-connect-service'
 
-type LoginFormData = {
-  email: string
-  password: string
-}
-
-export default function LoginPage() {
+const LoginPage = () => {
+  const { data: session, status } = useSession()
   const router = useRouter()
-  
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const [loginError, setLoginError] = useState('')
-  const [loginSuccess, setLoginSuccess] = useState(false)
-  
-  const { 
-    register, 
-    handleSubmit,
-    formState: { errors, isValid },
-    // getValues // commented out to fix linting
-  } = useForm<LoginFormData>({
-    mode: 'onChange',
-    defaultValues: {
-      email: '',
-      password: ''
-    }
-  })
+  const [walletConnected, setWalletConnected] = useState(false)
+  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Check if already logged in
   useEffect(() => {
-    const checkExistingAuth = async () => {
-      const token = personaApiClient.getStoredToken()
-      if (token) {
-        const verification = await personaApiClient.verifyToken()
-        if (verification.valid) {
-          // Already logged in, redirect to dashboard
-          router.push('/dashboard')
-        }
-      }
+    if (session) {
+      router.push('/github-verification')
     }
-    
-    checkExistingAuth()
-  }, [router])
+  }, [session, router])
 
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoggingIn(true)
-    setLoginError('')
+  useEffect(() => {
+    checkWalletConnection()
+  }, [])
+
+  const checkWalletConnection = async () => {
+    try {
+      const walletService = new WalletConnectService()
+      const wallet = await walletService.getConnectedWallet()
+      if (wallet) {
+        setWalletConnected(true)
+        setWalletAddress(wallet.address)
+      }
+    } catch (error) {
+      console.log('No wallet connected')
+    }
+  }
+
+  const connectWallet = async () => {
+    setIsConnecting(true)
+    setError(null)
     
     try {
-      const result: AuthResponse = await personaApiClient.login(data)
+      const walletService = new WalletConnectService()
+      const wallet = await walletService.connectWallet()
       
-      if (result.success && result.user) {
-        setLoginSuccess(true)
-        
-        // Brief success state before redirecting
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1500)
-      } else {
-        setLoginError(result.message || 'Login failed. Please check your credentials.')
+      if (wallet) {
+        setWalletConnected(true)
+        setWalletAddress(wallet.address)
       }
-    } catch {
-      setLoginError('Login failed. Please try again.')
+    } catch (err) {
+      setError('Failed to connect wallet. Please install Keplr or Cosmostation.')
+      console.error('Wallet connection error:', err)
     } finally {
-      setIsLoggingIn(false)
+      setIsConnecting(false)
     }
   }
 
-  const handleForgotPassword = () => {
-    // TODO: Implement password reset flow
-    alert('Password reset feature coming soon!')
+  const handleGitHubSignIn = async () => {
+    if (!walletConnected) {
+      setError('Please connect your wallet first')
+      return
+    }
+
+    setError(null)
+    try {
+      await signIn('github', {
+        callbackUrl: '/github-verification',
+        redirect: false
+      })
+    } catch (err) {
+      setError('Failed to sign in with GitHub')
+      console.error('GitHub sign-in error:', err)
+    }
   }
 
-  const handleCreateAccount = () => {
-    router.push('/get-started-v2')
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50">
-      <Navigation />
-      
-      <div className="container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md mx-auto"
-        >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mb-6"
-            >
-              <Shield className="w-8 h-8 text-white" />
-            </motion.div>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">PersonaPass</h1>
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Verifiable Developer Identity
+          </h2>
+          <p className="text-lg text-gray-600">
+            Create secure, verifiable developer credentials using zero-knowledge proofs
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             
-            <h1 className="text-3xl font-bold text-black mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-gray-600">
-              Sign in to your PersonaPass account
-            </p>
-          </div>
-
-          {/* Login Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl shadow-xl p-8 space-y-6"
-          >
-            {loginError && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-50 border border-red-200 rounded-xl p-4"
-              >
-                <p className="text-sm text-red-600">{loginError}</p>
-              </motion.div>
-            )}
-
-            {loginSuccess && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-green-50 border border-green-200 rounded-xl p-4"
-              >
-                <p className="text-sm text-green-600">
-                  ✓ Login successful! Redirecting to dashboard...
-                </p>
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    {...register('email', {
-                      required: 'Email is required',
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Invalid email address'
-                      }
-                    })}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                    placeholder="Enter your email"
-                    disabled={isLoggingIn || loginSuccess}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+            {/* Step 1: Connect Wallet */}
+            <div className={`border rounded-lg p-4 ${walletConnected ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  1. Connect Wallet
+                </h3>
+                {walletConnected && (
+                  <span className="text-green-600 text-sm font-medium">✓ Connected</span>
                 )}
               </div>
-
-              {/* Password Field */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('password', {
-                      required: 'Password is required',
-                      minLength: {
-                        value: 1,
-                        message: 'Password is required'
-                      }
-                    })}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                    placeholder="Enter your password"
-                    disabled={isLoggingIn || loginSuccess}
-                  />
+              
+              {walletConnected ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    Wallet connected successfully
+                  </p>
+                  <p className="text-xs font-mono bg-gray-100 p-2 rounded break-all">
+                    {walletAddress}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    Connect your Cosmos wallet to create your DID
+                  </p>
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={isLoggingIn || loginSuccess}
+                    onClick={connectWallet}
+                    disabled={isConnecting}
+                    className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
+                      isConnecting
+                        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
-                )}
-              </div>
+              )}
+            </div>
 
-              {/* Forgot Password Link */}
-              <div className="text-right">
+            {/* Step 2: GitHub Authentication */}
+            <div className={`border rounded-lg p-4 ${!walletConnected ? 'border-gray-200 opacity-50' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  2. Verify GitHub
+                </h3>
+              </div>
+              
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Connect your GitHub account to create verifiable developer credentials
+                </p>
                 <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                  disabled={isLoggingIn || loginSuccess}
+                  onClick={handleGitHubSignIn}
+                  disabled={!walletConnected}
+                  className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors ${
+                    !walletConnected
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
+                  }`}
                 >
-                  Forgot your password?
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                  </svg>
+                  Continue with GitHub
                 </button>
               </div>
-
-              {/* Login Button */}
-              <motion.button
-                type="submit"
-                whileHover={{ scale: isLoggingIn || loginSuccess ? 1 : 1.02 }}
-                whileTap={{ scale: isLoggingIn || loginSuccess ? 1 : 0.98 }}
-                disabled={!isValid || isLoggingIn || loginSuccess}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Signing In...</span>
-                  </>
-                ) : loginSuccess ? (
-                  <>
-                    <User className="w-5 h-5" />
-                    <span>Success!</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </motion.button>
-            </form>
-
-            {/* Create Account Link */}
-            <div className="text-center pt-6 border-t border-gray-100">
-              <p className="text-sm text-gray-600 mb-3">
-                Don&apos;t have an account?
-              </p>
-              <button
-                onClick={handleCreateAccount}
-                disabled={isLoggingIn || loginSuccess}
-                className="text-blue-600 hover:text-blue-700 font-semibold transition-colors disabled:opacity-50"
-              >
-                Create your PersonaPass account
-              </button>
             </div>
-          </motion.div>
-        </motion.div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              Create verifiable credentials that prove your developer experience
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
+export default LoginPage
