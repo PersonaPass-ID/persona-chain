@@ -1,5 +1,8 @@
-// PersonaPass API Client - WALLET-ONLY AUTHENTICATION
-// Pure wallet-based authentication with Keplr, Leap, Cosmostation, Terra Station
+// PersonaPass API Client - INDUSTRY-GRADE WALLET-ONLY AUTHENTICATION
+// Zero-trust security with AES-GCM encryption and challenge-response authentication
+
+import { secureStorage } from './secure-storage';
+import { walletAuth } from './wallet-auth-secure';
 
 export interface WalletIdentityCredential {
   id: string
@@ -388,61 +391,80 @@ class PersonaWalletApiClient {
   }
 
   /**
-   * Store wallet profile in localStorage
+   * Store wallet profile securely with industry-grade encryption
    */
-  storeWalletProfile(profile: WalletProfile): void {
+  async storeWalletProfile(profile: WalletProfile): Promise<void> {
     try {
-      localStorage.setItem('persona_wallet_profile', JSON.stringify(profile))
-      localStorage.setItem('persona_did', profile.did)
+      await secureStorage.storeSecure('wallet_profile', profile, 4 * 60 * 60 * 1000); // 4 hours
+      await secureStorage.storeSecure('wallet_did', profile.did, 4 * 60 * 60 * 1000);
+      console.log('🔐 Wallet profile stored securely with AES-GCM encryption');
     } catch (error) {
-      console.error('Failed to store wallet profile:', error)
+      console.error('❌ Failed to store wallet profile securely:', error);
+      throw new Error('Secure storage failed');
     }
   }
 
   /**
-   * Get stored wallet profile
+   * Get securely stored wallet profile
    */
-  getStoredWalletProfile(): WalletProfile | null {
+  async getStoredWalletProfile(): Promise<WalletProfile | null> {
     try {
-      const profileData = localStorage.getItem('persona_wallet_profile')
-      return profileData ? JSON.parse(profileData) : null
+      const profile = await secureStorage.retrieveSecure<WalletProfile>('wallet_profile');
+      if (profile) {
+        console.log('🔓 Wallet profile retrieved securely');
+      }
+      return profile;
     } catch (error) {
-      console.error('Failed to get stored wallet profile:', error)
-      return null
+      console.error('❌ Failed to retrieve wallet profile securely:', error);
+      return null;
     }
   }
 
   /**
-   * Clear wallet session (disconnect)
+   * Secure wallet disconnect with session invalidation
    */
-  disconnectWallet(): void {
+  async disconnectWallet(): Promise<void> {
     try {
-      localStorage.removeItem('persona_wallet_profile')
-      localStorage.removeItem('persona_did')
-      localStorage.removeItem('persona_wallet_access_token')
-      localStorage.removeItem('persona_wallet_refresh_token')
-      localStorage.removeItem('persona_wallet_user')
-      console.log('🔓 Wallet disconnected and session cleared')
+      // Get current session for proper logout
+      const activeSession = await secureStorage.getActiveWalletSession();
+      if (activeSession) {
+        await walletAuth.logout(activeSession.sessionId);
+      }
+      
+      // Clear all secure storage
+      await secureStorage.clearWalletSessions();
+      
+      console.log('🔐 Secure wallet disconnect completed');
     } catch (error) {
-      console.error('Failed to disconnect wallet:', error)
+      console.error('❌ Failed to disconnect wallet securely:', error);
     }
   }
 
   /**
-   * Clear all stored wallet data
+   * Emergency security wipe - clears all encrypted data
    */
-  clearAllWalletData(): void {
+  async emergencySecurityWipe(): Promise<void> {
     try {
-      // Clear all wallet-related storage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('persona_wallet_') || key.startsWith('persona_')) {
-          localStorage.removeItem(key)
-        }
-      })
-      console.log('🧹 All wallet data cleared')
+      await walletAuth.emergencyLogoutAll();
+      await secureStorage.emergencyWipe();
+      
+      console.log('🚨 Emergency security wipe completed');
     } catch (error) {
-      console.error('Failed to clear wallet data:', error)
+      console.error('❌ Emergency wipe failed:', error);
     }
+  }
+
+  /**
+   * Get security status of the system
+   */
+  getSecurityStatus(): {
+    storage: any;
+    authentication: any;
+  } {
+    return {
+      storage: secureStorage.getSecurityStatus(),
+      authentication: walletAuth.getSecurityStatus()
+    };
   }
 
   /**

@@ -1,4 +1,18 @@
-import WalletOnboarding from '@/components/wallet/WalletOnboarding'
+'use client'
+
+import dynamic from 'next/dynamic'
+
+const WalletOnboarding = dynamic(() => import('@/components/wallet/WalletOnboarding'), {
+  ssr: false,
+  loading: () => (
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading wallet onboarding...</p>
+      </div>
+    </div>
+  )
+})
 
 export default function OnboardPage() {
   return (

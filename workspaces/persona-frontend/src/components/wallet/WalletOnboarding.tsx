@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { personaApiClient } from '@/lib/api-client-updated'
-import { walletAuthClient } from '@/lib/wallet-auth-client'
+import { walletAuth } from '@/lib/wallet-auth-secure'
+import '@/types/wallet'
 
 // Onboarding step types
 type OnboardingStep = 
@@ -39,25 +40,60 @@ export default function WalletOnboarding() {
     setError(null)
   }, [currentStep])
 
+  // Get available wallets with installation status
+  const getAvailableWallets = () => {
+    const wallets = [
+      {
+        type: 'keplr' as const,
+        name: 'Keplr',
+        isInstalled: typeof window !== 'undefined' && !!window.keplr
+      },
+      {
+        type: 'leap' as const,
+        name: 'Leap',
+        isInstalled: typeof window !== 'undefined' && !!window.leap
+      },
+      {
+        type: 'cosmostation' as const,
+        name: 'Cosmostation',
+        isInstalled: typeof window !== 'undefined' && !!window.cosmostation
+      },
+      {
+        type: 'terra-station' as const,
+        name: 'Terra Station',
+        isInstalled: typeof window !== 'undefined' && !!window.station
+      }
+    ]
+    return wallets
+  }
+
   // Step 1: Wallet Connection
   const handleWalletConnection = async (walletType: 'keplr' | 'leap' | 'cosmostation' | 'terra-station') => {
     setLoading(true)
     setError(null)
     
     try {
-      const connection = await walletAuthClient.connectWallet(walletType)
+      // Generate authentication challenge
+      const tempAddress = await getWalletAddress(walletType)
+      const challenge = await walletAuth.generateAuthChallenge(tempAddress)
       
-      if (!connection.success) {
-        throw new Error(connection.error || 'Failed to connect wallet')
-      }
-
-      if (!connection.address || !connection.publicKey) {
-        throw new Error('Failed to get wallet information')
+      // Get wallet signature
+      const signature = await signWalletChallenge(walletType, challenge.challenge)
+      
+      // Verify signature and create session
+      const authResult = await walletAuth.verifyWalletSignature(
+        challenge.nonce,
+        signature,
+        tempAddress
+      )
+      
+      if (!authResult.success) {
+        throw new Error('Wallet signature verification failed')
       }
 
       const wallet: WalletInfo = {
-        address: connection.address,
-        publicKey: connection.publicKey,
+        address: tempAddress,
+        publicKey: signature.publicKey,
         walletType: walletType
       }
 
@@ -71,6 +107,80 @@ export default function WalletOnboarding() {
       setError(err instanceof Error ? err.message : 'Failed to connect wallet')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Helper: Get wallet address
+  const getWalletAddress = async (walletType: string): Promise<string> => {
+    if (typeof window === 'undefined') {
+      throw new Error('Wallet not available on server side')
+    }
+
+    switch (walletType) {
+      case 'keplr':
+        if (!window.keplr) {
+          throw new Error('Keplr wallet not installed')
+        }
+        await window.keplr.enable('cosmoshub-4')
+        const keplrAccount = await window.keplr.getKey('cosmoshub-4')
+        return keplrAccount.bech32Address
+      
+      case 'leap':
+        if (!window.leap) {
+          throw new Error('Leap wallet not installed')
+        }
+        await window.leap.enable('cosmoshub-4')
+        const leapAccount = await window.leap.getKey('cosmoshub-4')
+        return leapAccount.bech32Address
+      
+      default:
+        throw new Error(`Wallet type ${walletType} not supported yet`)
+    }
+  }
+
+  // Helper: Sign wallet challenge
+  const signWalletChallenge = async (walletType: string, challenge: string): Promise<{
+    signature: string;
+    publicKey: string;
+    algorithm: string;
+  }> => {
+    if (typeof window === 'undefined') {
+      throw new Error('Wallet not available on server side')
+    }
+
+    switch (walletType) {
+      case 'keplr':
+        if (!window.keplr) {
+          throw new Error('Keplr wallet not installed')
+        }
+        const keplrSignature = await window.keplr.signArbitrary(
+          'cosmoshub-4',
+          await getWalletAddress(walletType),
+          challenge
+        )
+        return {
+          signature: keplrSignature.signature,
+          publicKey: keplrSignature.pub_key.value,
+          algorithm: 'secp256k1'
+        }
+      
+      case 'leap':
+        if (!window.leap) {
+          throw new Error('Leap wallet not installed')
+        }
+        const leapSignature = await window.leap.signArbitrary(
+          'cosmoshub-4',
+          await getWalletAddress(walletType),
+          challenge
+        )
+        return {
+          signature: leapSignature.signature,
+          publicKey: leapSignature.pub_key.value,
+          algorithm: 'secp256k1'
+        }
+      
+      default:
+        throw new Error(`Wallet type ${walletType} not supported yet`)
     }
   }
 
@@ -169,7 +279,7 @@ export default function WalletOnboarding() {
       </div>
 
       <div className="space-y-3">
-        {walletAuthClient.getAvailableWallets().map((wallet) => (
+        {getAvailableWallets().map((wallet) => (
           <button
             key={wallet.type}
             onClick={() => handleWalletConnection(wallet.type)}
