@@ -135,7 +135,15 @@ export class PersonaWalletAuthClient {
   private refreshToken: string | null = null
 
   constructor() {
-    this.authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://personapass-api-lb-1061457068.us-east-1.elb.amazonaws.com'
+    let authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://personapass-api-lb-1061457068.us-east-1.elb.amazonaws.com'
+    
+    // Ensure HTTPS for production to prevent mixed content errors
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && authApiUrl.startsWith('http://')) {
+      authApiUrl = authApiUrl.replace('http://', 'https://')
+      console.log('🔒 Upgraded Auth API URL to HTTPS for production')
+    }
+    
+    this.authApiUrl = authApiUrl
     
     // Load stored tokens
     this.loadStoredTokens()

@@ -120,9 +120,10 @@ class PersonaWalletApiClient {
       console.log('🔒 Upgraded API URL to HTTPS for production')
     }
     
-    // Add /api suffix if not present
-    if (!apiUrl.endsWith('/api')) {
-      apiUrl = apiUrl.endsWith('/') ? apiUrl + 'api' : apiUrl + '/api'
+    // Don't add /api suffix since endpoints already include it
+    // Remove trailing slash if present for consistent URL building
+    if (apiUrl.endsWith('/')) {
+      apiUrl = apiUrl.slice(0, -1)
     }
     
     this.mainApiUrl = apiUrl
