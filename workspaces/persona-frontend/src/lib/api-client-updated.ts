@@ -115,8 +115,16 @@ class PersonaWalletApiClient {
     const envApiUrl = process.env.NEXT_PUBLIC_API_URL
     console.log('🔍 Debug - Raw env var NEXT_PUBLIC_API_URL:', envApiUrl)
     
+    // HOTFIX: Override wrong environment variable until Vercel dashboard is fixed
     let apiUrl = envApiUrl || 'http://localhost:3001'
-    console.log('🔍 Debug - Initial API URL after fallback:', apiUrl)
+    
+    // Force correct load balancer URL in production if wrong IP detected
+    if (apiUrl.includes('161.35.2.88')) {
+      apiUrl = 'https://personapass-api-lb-1061457068.us-east-1.elb.amazonaws.com'
+      console.log('🚨 HOTFIX: Overriding wrong IP with correct load balancer')
+    }
+    
+    console.log('🔍 Debug - Initial API URL after fallback and hotfix:', apiUrl)
     
     // Ensure HTTPS for production to prevent mixed content errors
     if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
