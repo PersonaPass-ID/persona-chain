@@ -26,7 +26,7 @@ export default function WalletDemoPage() {
   const [apiTestResult, setApiTestResult] = useState<string>('')
   const [healthResult, setHealthResult] = useState<string>('')
 
-  const handleWalletSuccess = (userData: any) => {
+  const handleWalletSuccess = (userData: unknown) => {
     console.log('Wallet connected successfully:', userData)
     setShowModal(false)
   }

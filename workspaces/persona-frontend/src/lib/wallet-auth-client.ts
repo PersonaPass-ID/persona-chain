@@ -1,9 +1,9 @@
 // 🔐 PersonaPass Universal Wallet Authentication Client
 // Production-ready client for Keplr, Leap, Cosmostation, Terra Station
 
-import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
-import { stringToPath, pathToString } from '@cosmjs/crypto'
-import { fromBase64, toBase64, toUtf8, fromUtf8 } from '@cosmjs/encoding'
+// import { SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate'
+// import { stringToPath, pathToString } from '@cosmjs/crypto'
+// import { fromBase64, toBase64, toUtf8, fromUtf8 } from '@cosmjs/encoding'
 
 // Wallet authentication types
 export interface WalletAuthChallenge {
@@ -236,7 +236,7 @@ export class PersonaWalletAuthClient {
       // Suggest PersonaChain if using Keplr or Leap
       if (walletType === 'keplr' || walletType === 'leap') {
         try {
-          await (wallet as any).experimentalSuggestChain(PERSONACHAIN_CONFIG)
+          await (wallet as UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }).experimentalSuggestChain?.(PERSONACHAIN_CONFIG)
         } catch (error) {
           console.log('Chain suggestion failed (may already be added):', error)
         }

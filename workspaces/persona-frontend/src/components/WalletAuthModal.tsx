@@ -7,7 +7,7 @@ import { useWalletAuth, WalletType } from '@/hooks/useWalletAuth'
 interface WalletAuthModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess?: (user: any) => void
+  onSuccess?: (user: unknown) => void
   title?: string
   subtitle?: string
 }

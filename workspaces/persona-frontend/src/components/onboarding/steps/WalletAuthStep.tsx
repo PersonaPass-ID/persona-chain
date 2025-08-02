@@ -6,7 +6,7 @@ import { StepProps } from './types'
 import { useWalletAuth, WalletType } from '@/hooks/useWalletAuth'
 
 interface WalletAuthStepProps extends StepProps {
-  onWalletConnected?: (user: any) => void
+  onWalletConnected?: (user: unknown) => void
 }
 
 export default function WalletAuthStep({ 
@@ -316,7 +316,7 @@ export default function WalletAuthStep({
                 No Wallets Detected
               </h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6">
-                You'll need to install a Cosmos wallet to continue. We recommend Keplr for the best experience.
+                You&apos;ll need to install a Cosmos wallet to continue. We recommend Keplr for the best experience.
               </p>
               <a
                 href={getInstallUrl('keplr')}
@@ -347,7 +347,7 @@ export default function WalletAuthStep({
                 <ol className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                   <li className="flex items-start space-x-2">
                     <span className="bg-blue-200 dark:bg-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">1</span>
-                    <span>Click "Install" next to your preferred wallet</span>
+                    <span>Click &ldquo;Install&rdquo; next to your preferred wallet</span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <span className="bg-blue-200 dark:bg-blue-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium">2</span>
@@ -419,7 +419,7 @@ export default function WalletAuthStep({
             </h4>
             <p className="text-purple-700 dark:text-purple-300 text-sm">
               PersonaPass uses signature-based authentication. Your private keys never leave your wallet, 
-              and we can't access your funds or make transactions on your behalf. We only verify your identity 
+              and we can&apos;t access your funds or make transactions on your behalf. We only verify your identity 
               through cryptographic signatures.
             </p>
           </div>

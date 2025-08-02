@@ -88,7 +88,7 @@ const AuthStep: React.FC<StepProps> = ({
     return levels[option.id as keyof typeof levels] || { level: 'Medium', color: 'text-yellow-600' };
   };
 
-  const handleWalletSuccess = (walletUser: any) => {
+  const handleWalletSuccess = (walletUser: unknown) => {
     // Create a wallet authentication option and select it
     const walletAuthOption: AuthenticationOption = {
       id: 'wallet',
@@ -115,7 +115,7 @@ const AuthStep: React.FC<StepProps> = ({
     if (isAuthenticated && user && !selectedAuth) {
       handleWalletSuccess(user);
     }
-  }, [isAuthenticated, user, selectedAuth]);
+  }, [isAuthenticated, user, selectedAuth, handleWalletSuccess]);
 
   return (
     <div className="max-w-2xl mx-auto">

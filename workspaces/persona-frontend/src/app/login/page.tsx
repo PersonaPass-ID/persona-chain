@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, User, Shield } from 'lucide-react'
 import { Navigation } from '@/components/Navigation'
-import { personaApiClient, LoginRequest, AuthResponse } from '@/lib/api-client'
+import { personaApiClient, AuthResponse } from '@/lib/api-client'
 
 type LoginFormData = {
   email: string
@@ -25,7 +25,7 @@ export default function LoginPage() {
     register, 
     handleSubmit,
     formState: { errors, isValid },
-    getValues
+    // getValues // commented out to fix linting
   } = useForm<LoginFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -67,7 +67,7 @@ export default function LoginPage() {
       } else {
         setLoginError(result.message || 'Login failed. Please check your credentials.')
       }
-    } catch (error) {
+    } catch {
       setLoginError('Login failed. Please try again.')
     } finally {
       setIsLoggingIn(false)
