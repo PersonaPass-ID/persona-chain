@@ -10,6 +10,7 @@ import { DatabaseConfig } from './config/database.config';
 import { PhoneVerificationModule } from './phone-verification/phone-verification.module';
 import { EmailVerificationModule } from './email-verification/email-verification.module';
 import { AuthModule } from './auth/auth.module';
+import { PersonaApiModule } from './persona-api/persona-api.module';
 
 @Module({
   imports: [
@@ -19,16 +20,14 @@ import { AuthModule } from './auth/auth.module';
       load: [configuration],
     }),
     
-    // Database
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useClass: DatabaseConfig,
-    }),
+    // Database temporarily disabled for pure wallet auth
+    // TypeOrmModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useClass: DatabaseConfig,
+    // }),
     
-    // Feature modules
-    PhoneVerificationModule,
-    EmailVerificationModule,
-    AuthModule,
+    // Feature modules - ONLY wallet auth, no phone/email!
+    PersonaApiModule,
   ],
   controllers: [],
   providers: [],
