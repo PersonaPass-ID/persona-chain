@@ -74,15 +74,24 @@ export interface UniversalWallet {
   experimentalSuggestChain?: (config: unknown) => Promise<void>
 }
 
-// Extend window with all supported wallets
+// PersonaPass wallet types - avoiding global type conflicts
+export interface PersonaKeplrWallet extends UniversalWallet {
+  experimentalSuggestChain?: (config: unknown) => Promise<void>
+}
+
+export interface PersonaLeapWallet extends UniversalWallet {
+  experimentalSuggestChain?: (config: unknown) => Promise<void>
+}
+
+// Extend window with all supported wallets using safe casting
 declare global {
   interface Window {
-    keplr?: UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }
-    leap?: UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }
+    keplr?: unknown
+    leap?: unknown
     cosmostation?: {
-      cosmos: UniversalWallet
+      cosmos: unknown
     }
-    station?: UniversalWallet
+    station?: unknown
   }
 }
 
@@ -189,25 +198,25 @@ export class PersonaWalletAuthClient {
         type: 'keplr',
         name: 'Keplr',
         isInstalled: !!window.keplr,
-        wallet: window.keplr
+        wallet: window.keplr as UniversalWallet
       },
       {
         type: 'leap',
         name: 'Leap',
         isInstalled: !!window.leap,
-        wallet: window.leap
+        wallet: window.leap as UniversalWallet
       },
       {
         type: 'cosmostation',
         name: 'Cosmostation',
         isInstalled: !!window.cosmostation?.cosmos,
-        wallet: window.cosmostation?.cosmos
+        wallet: window.cosmostation?.cosmos as UniversalWallet
       },
       {
         type: 'terra-station',
         name: 'Terra Station',
         isInstalled: !!window.station,
-        wallet: window.station
+        wallet: window.station as UniversalWallet
       }
     ]
   }
@@ -237,7 +246,7 @@ export class PersonaWalletAuthClient {
       // Suggest PersonaChain if using Keplr or Leap
       if (walletType === 'keplr' || walletType === 'leap') {
         try {
-          await (wallet as UniversalWallet & { experimentalSuggestChain?: (config: unknown) => Promise<void> }).experimentalSuggestChain?.(PERSONACHAIN_CONFIG)
+          await (wallet as PersonaKeplrWallet | PersonaLeapWallet).experimentalSuggestChain?.(PERSONACHAIN_CONFIG)
         } catch (error) {
           console.log('Chain suggestion failed (may already be added):', error)
         }
