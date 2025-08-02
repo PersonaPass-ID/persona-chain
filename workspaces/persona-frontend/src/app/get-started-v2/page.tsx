@@ -260,7 +260,7 @@ export default function GetStartedV2Page() {
         setCurrentStep('complete')
       } else {
         // Fallback DID
-        const fallbackDID = personaApiClient.generateDID(identifier)
+        const fallbackDID = personaApiClient.generateWalletDID(identifier)
         setGeneratedDID(fallbackDID)
         
         const profileData = {

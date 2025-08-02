@@ -112,7 +112,20 @@ class PersonaWalletApiClient {
 
   constructor() {
     // API configuration - WALLET-ONLY
-    this.mainApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    
+    // Ensure HTTPS for production to prevent mixed content errors
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
+      apiUrl = apiUrl.replace('http://', 'https://')
+      console.log('🔒 Upgraded API URL to HTTPS for production')
+    }
+    
+    // Add /api suffix if not present
+    if (!apiUrl.endsWith('/api')) {
+      apiUrl = apiUrl.endsWith('/') ? apiUrl + 'api' : apiUrl + '/api'
+    }
+    
+    this.mainApiUrl = apiUrl
     
     console.log('🔗 PersonaWalletApiClient initialized - WALLET-ONLY AUTHENTICATION:')
     console.log('   📡 Main API:', this.mainApiUrl)
