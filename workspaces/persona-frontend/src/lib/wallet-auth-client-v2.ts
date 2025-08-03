@@ -454,6 +454,50 @@ Issued At: ${issuedAt}`
       }
     }
   }
+
+  /**
+   * Sign a message with the currently connected wallet
+   */
+  async signMessage(message: string): Promise<string | null> {
+    try {
+      if (!this.currentUser?.address) {
+        console.error('🚨 No authenticated user for message signing')
+        return null
+      }
+
+      // Find the currently connected wallet
+      const wallets = this.getAvailableWallets()
+      const connectedWallet = wallets.find(w => w.isInstalled && w.wallet)
+
+      if (!connectedWallet?.wallet) {
+        console.error('🚨 No wallet available for signing')
+        return null
+      }
+
+      const wallet = connectedWallet.wallet
+      
+      console.log('📝 Requesting signature from wallet...')
+      
+      // Use signArbitrary to sign the message
+      const signResult = await wallet.signArbitrary(
+        PERSONACHAIN_CONFIG.chainId,
+        this.currentUser.address,
+        message
+      )
+
+      if (!signResult?.signature) {
+        console.error('🚨 Wallet signing failed - no signature returned')
+        return null
+      }
+
+      console.log('✅ Message signed successfully')
+      return signResult.signature
+
+    } catch (error) {
+      console.error('🚨 Message signing error:', error)
+      return null
+    }
+  }
 }
 
 // Export singleton instance

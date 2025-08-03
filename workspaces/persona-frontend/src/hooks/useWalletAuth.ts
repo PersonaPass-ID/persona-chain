@@ -220,6 +220,15 @@ export function useWalletAuth() {
     return () => clearInterval(interval)
   }, [state.isAuthenticated, refreshAuth])
 
+  const signMessage = useCallback(async (message: string): Promise<string | null> => {
+    try {
+      return await walletAuthClient.signMessage(message)
+    } catch (error) {
+      console.error('Failed to sign message:', error)
+      return null
+    }
+  }, [])
+
   return {
     // State
     ...state,
@@ -230,6 +239,7 @@ export function useWalletAuth() {
     refreshAuth,
     clearError,
     checkAuthHealth,
+    signMessage,
     
     // Utils
     getInstalledWallets: () => state.availableWallets.filter(w => w.isInstalled),
