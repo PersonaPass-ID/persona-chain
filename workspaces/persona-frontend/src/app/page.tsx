@@ -87,30 +87,18 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <button
-              onClick={connectWallet}
-              disabled={isConnecting}
-              className={isConnecting 
-                ? "bg-gray-400 text-gray-700 px-10 py-4 text-xl font-bold rounded-xl cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 text-xl font-bold rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
-              }
+            <a
+              href="/get-started"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 text-xl font-bold rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
             >
-              {isConnecting ? 'Connecting...' : 'Create Your Persona →'}
-            </button>
+              Create Your Persona →
+            </a>
             <a 
               href="/login"
               className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg"
             >
-              Sign In
+              Access →
             </a>
-            {walletConnected && (
-              <button
-                onClick={goToDashboard}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg"
-              >
-                Go to Dashboard →
-              </button>
-            )}
           </div>
 
           {error && (
