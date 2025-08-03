@@ -87,12 +87,12 @@ export default function WalletAuthButton({
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
-                  {user.walletType.charAt(0).toUpperCase()}
+                  {user.address?.charAt(0).toUpperCase() || 'P'}
                 </span>
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  {user.walletType.charAt(0).toUpperCase() + user.walletType.slice(1)}
+                  Persona Wallet
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   PersonaChain
