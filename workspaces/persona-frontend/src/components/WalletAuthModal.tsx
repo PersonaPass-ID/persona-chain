@@ -103,33 +103,24 @@ export default function WalletAuthModal({
     }
   }
 
+  if (!isOpen) return null
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
-          style={{ zIndex: 99999 }}
-        >
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            style={{ zIndex: 99998 }}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
-            style={{ zIndex: 99999 }}
-            onClick={(e) => e.stopPropagation()}
-          >
+    <div 
+      className="fixed top-0 left-0 w-full h-full flex items-center justify-center p-4"
+      style={{ 
+        zIndex: 999999, 
+        position: 'fixed',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)'
+      }}
+      onClick={onClose}
+    >
+      {/* Modal */}
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200"
+        style={{ zIndex: 999999 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -315,10 +306,8 @@ export default function WalletAuthModal({
               {connectionStatus}
             </span>
           </div>
-          </div>
-          </motion.div>
         </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </div>
   )
 }
