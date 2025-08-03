@@ -12,7 +12,8 @@
     "NEXT_PUBLIC_API_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
     "NEXT_PUBLIC_AUTH_API_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
     "NEXT_PUBLIC_COMPUTE_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
-    "NEXT_PUBLIC_ENVIRONMENT": "production"
+    "NEXT_PUBLIC_ENVIRONMENT": "production",
+    "NEXTAUTH_URL": "https://personapass.xyz"
   },
   "functions": {
     "pages/api/**/*.js": {
