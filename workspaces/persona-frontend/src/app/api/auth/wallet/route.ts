@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SiweMessage } from 'siwe'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { personaChainService } from '@/lib/personachain-service'
@@ -67,6 +66,43 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Simple signature verification for Cosmos wallets
+function verifyCosmosMessage(message: string, expectedNonce: string): { success: boolean, address: string | null, error?: string } {
+  try {
+    // Parse the custom message format
+    const lines = message.split('\n')
+    
+    if (lines.length < 7) {
+      return { success: false, address: null, error: 'Invalid message format' }
+    }
+    
+    // Extract components
+    const addressLine = lines[1]
+    const nonceLine = lines.find(line => line.startsWith('Nonce: '))
+    
+    if (!addressLine || !nonceLine) {
+      return { success: false, address: null, error: 'Missing required fields' }
+    }
+    
+    const address = addressLine.trim()
+    const nonce = nonceLine.replace('Nonce: ', '').trim()
+    
+    // Verify nonce matches
+    if (nonce !== expectedNonce) {
+      return { success: false, address: null, error: 'Invalid nonce' }
+    }
+    
+    // Basic address validation for Cosmos
+    if (!address.startsWith('persona') || address.length < 20) {
+      return { success: false, address: null, error: 'Invalid Cosmos address format' }
+    }
+    
+    return { success: true, address }
+  } catch (error) {
+    return { success: false, address: null, error: 'Message parsing failed' }
+  }
+}
+
 // POST - Verify signature and create session
 export async function POST(request: NextRequest) {
   try {
@@ -82,24 +118,18 @@ export async function POST(request: NextRequest) {
     const cookieStore = cookies()
     const session = await getIronSession<SessionData>(cookieStore, sessionOptions)
     
-    // Parse SIWE message
-    const siweMessage = new SiweMessage(message)
+    // Verify the custom message format
+    const verification = verifyCosmosMessage(message, session.siwe?.nonce || '')
     
-    // Verify the signature
-    const { data: verifiedMessage, success, error } = await siweMessage.verify({
-      signature,
-      nonce: session.siwe?.nonce
-    })
-    
-    if (!success || error) {
+    if (!verification.success || !verification.address) {
       return NextResponse.json(
-        { error: error?.message || 'Invalid signature' },
+        { error: verification.error || 'Invalid message or signature' },
         { status: 400 }
       )
     }
     
     // Create user session
-    const userAddress = verifiedMessage.address
+    const userAddress = verification.address
     const userDID = `did:personapass:${userAddress.slice(-8).toLowerCase()}`
     
     session.user = {

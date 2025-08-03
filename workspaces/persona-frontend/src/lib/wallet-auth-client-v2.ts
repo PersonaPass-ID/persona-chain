@@ -1,7 +1,5 @@
-// 🔐 PersonaPass Wallet Authentication Client V2 - SIWE Implementation
-// Uses Sign-In with Ethereum (SIWE) pattern adapted for Cosmos wallets
-
-import { SiweMessage } from 'siwe'
+// 🔐 PersonaPass Wallet Authentication Client V2 - Custom Cosmos Auth
+// Uses SIWE-inspired pattern specifically designed for Cosmos wallets
 
 // CosmJS encoding utilities for wallet operations
 function toBase64(data: Uint8Array): string {
@@ -238,24 +236,23 @@ export class PersonaWalletAuthClientV2 {
 
       const { nonce } = await nonceResponse.json()
 
-      // Step 3: Create SIWE-like message
+      // Step 3: Create custom authentication message for Cosmos wallets
       const domain = window.location.host
       const origin = window.location.origin
       const statement = 'Sign in to PersonaPass to access your digital identity'
+      const issuedAt = new Date().toISOString()
       
-      // Create a message that follows SIWE format but adapted for Cosmos
-      const siweMessage = new SiweMessage({
-        domain,
-        address,
-        statement,
-        uri: origin,
-        version: '1',
-        chainId: 1, // We use 1 as a placeholder since SIWE expects EVM chain IDs
-        nonce,
-        issuedAt: new Date().toISOString()
-      })
+      // Create a custom message format that works with Cosmos addresses
+      const message = `${domain} wants you to sign in with your Cosmos account:
+${address}
 
-      const message = siweMessage.prepareMessage()
+${statement}
+
+URI: ${origin}
+Version: 1
+Chain ID: ${PERSONACHAIN_CONFIG.chainId}
+Nonce: ${nonce}
+Issued At: ${issuedAt}`
 
       // Step 4: Sign the message
       const wallets = this.getAvailableWallets()
