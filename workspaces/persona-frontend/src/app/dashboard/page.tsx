@@ -4,13 +4,21 @@ import React, { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { WalletConnectService } from '@/lib/wallet-connect-service'
+import { personaChainService } from '@/lib/personachain-service'
+import type { PersonaChainCredential } from '@/lib/personachain-service'
+import { credentialManagementService } from '@/lib/credential-management-service'
+import ZKProofModal from '@/components/ZKProofModal'
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [walletInfo, setWalletInfo] = useState<any>(null)
-  const [credentials, setCredentials] = useState<any[]>([])
+  const [credentials, setCredentials] = useState<PersonaChainCredential[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [networkStatus, setNetworkStatus] = useState<any>(null)
+  const [selectedCredentialForProof, setSelectedCredentialForProof] = useState<PersonaChainCredential | null>(null)
+  const [isProofModalOpen, setIsProofModalOpen] = useState(false)
+  const [insights, setInsights] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -21,8 +29,15 @@ export default function DashboardPage() {
     }
 
     loadWalletInfo()
-    loadCredentials()
+    loadNetworkStatus()
   }, [session, status, router])
+
+  useEffect(() => {
+    if (walletInfo?.address) {
+      loadCredentials()
+      loadInsights()
+    }
+  }, [walletInfo])
 
   const loadWalletInfo = async () => {
     try {
@@ -36,13 +51,42 @@ export default function DashboardPage() {
 
   const loadCredentials = async () => {
     try {
-      // TODO: Load real credentials from PersonaChain
-      // For now, simulate loading
+      if (!walletInfo?.address) {
+        setIsLoading(false)
+        return
+      }
+
+      console.log(`🔍 Loading credentials from PersonaChain for ${walletInfo.address}`)
+      const chainCredentials = await personaChainService.getCredentials(walletInfo.address)
+      
+      console.log(`✅ Loaded ${chainCredentials.length} credentials from PersonaChain`)
+      setCredentials(chainCredentials)
       setIsLoading(false)
-      setCredentials([])
     } catch (error) {
       console.error('Failed to load credentials:', error)
       setIsLoading(false)
+    }
+  }
+
+  const loadNetworkStatus = async () => {
+    try {
+      const status = await personaChainService.getNetworkStatus()
+      setNetworkStatus(status)
+      console.log(`📡 PersonaChain network status:`, status)
+    } catch (error) {
+      console.error('Failed to load network status:', error)
+    }
+  }
+
+  const loadInsights = async () => {
+    try {
+      if (!walletInfo?.address) return
+      
+      const credInsights = await credentialManagementService.getCredentialInsights(walletInfo.address)
+      setInsights(credInsights)
+      console.log(`📊 Loaded credential insights:`, credInsights)
+    } catch (error) {
+      console.error('Failed to load insights:', error)
     }
   }
 
@@ -53,6 +97,26 @@ export default function DashboardPage() {
   const createLinkedInCredential = () => {
     // TODO: Implement LinkedIn credential creation
     alert('LinkedIn credential creation coming soon!')
+  }
+
+  const handleGenerateProof = (credential: PersonaChainCredential) => {
+    setSelectedCredentialForProof(credential)
+    setIsProofModalOpen(true)
+    
+    // Track credential shared event for analytics
+    if (walletInfo?.address) {
+      credentialManagementService.trackCredentialEvent(
+        walletInfo.address,
+        credential.id,
+        'shared',
+        { sharedWith: 'ZK Proof Generation' }
+      )
+    }
+  }
+
+  const handleCloseProofModal = () => {
+    setIsProofModalOpen(false)
+    setSelectedCredentialForProof(null)
   }
 
   const handleSignOut = async () => {
@@ -88,12 +152,20 @@ export default function DashboardPage() {
                 <span className="font-medium">DID:</span>
                 <span className="ml-1 font-mono text-xs">{userDID}</span>
               </div>
-              <button
-                onClick={handleSignOut}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => router.push('/credentials')}
+                  className="text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  Manage Credentials
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -109,6 +181,59 @@ export default function DashboardPage() {
             Manage your verifiable credentials and create new ones to showcase your professional achievements.
           </p>
         </div>
+
+        {/* Renewal Alerts Banner */}
+        {insights && insights.renewalAlerts && insights.renewalAlerts.length > 0 && (
+          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="font-medium text-orange-900">
+                    {insights.renewalAlerts.length} credential{insights.renewalAlerts.length > 1 ? 's' : ''} need renewal
+                  </p>
+                  <p className="text-sm text-orange-700">
+                    Keep your credentials up to date for better verification rates
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/credentials?tab=renewals')}
+                className="text-sm font-medium text-orange-600 hover:text-orange-800 transition-colors"
+              >
+                Review Renewals →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PersonaChain Network Status */}
+        {networkStatus && (
+          <div className={`mb-6 p-4 rounded-lg border ${networkStatus.online ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className={`w-3 h-3 rounded-full mr-3 ${networkStatus.online ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div>
+                  <span className={`font-medium ${networkStatus.online ? 'text-green-800' : 'text-red-800'}`}>
+                    PersonaChain Network: {networkStatus.online ? 'Online' : 'Offline'}
+                  </span>
+                  {networkStatus.blockHeight && (
+                    <span className={`ml-4 text-sm ${networkStatus.online ? 'text-green-600' : 'text-red-600'}`}>
+                      Block #{networkStatus.blockHeight.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {networkStatus.chainId && (
+                <span className={`text-sm ${networkStatus.online ? 'text-green-600' : 'text-red-600'}`}>
+                  {networkStatus.chainId}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -136,6 +261,7 @@ export default function DashboardPage() {
               <div className="ml-4">
                 <h3 className="text-2xl font-bold text-gray-900">0</h3>
                 <p className="text-gray-600">ZK Proofs Generated</p>
+                <p className="text-xs text-gray-400 mt-1">Coming soon</p>
               </div>
             </div>
           </div>
@@ -150,6 +276,7 @@ export default function DashboardPage() {
               <div className="ml-4">
                 <h3 className="text-2xl font-bold text-gray-900">0</h3>
                 <p className="text-gray-600">Credentials Shared</p>
+                <p className="text-xs text-gray-400 mt-1">Coming soon</p>
               </div>
             </div>
           </div>
@@ -238,15 +365,106 @@ export default function DashboardPage() {
           ) : (
             <div className="grid gap-4">
               {credentials.map((credential, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  {/* Credential card content will go here */}
-                  <p>Credential {index + 1}</p>
+                <div key={credential.id || index} className="border border-gray-200 rounded-lg p-6 hover:border-blue-300 transition-colors">
+                  {/* Credential Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center mr-4">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          GitHub Developer Credential
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          @{credential.credentialData.credentialSubject.githubUsername}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        credential.credentialData.credentialSubject.verificationLevel === 'expert' 
+                          ? 'bg-purple-100 text-purple-700'
+                          : credential.credentialData.credentialSubject.verificationLevel === 'experienced'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {credential.credentialData.credentialSubject.verificationLevel?.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Credential Stats */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-900">
+                        {credential.credentialData.credentialSubject.publicRepos}
+                      </div>
+                      <div className="text-xs text-gray-600">Public Repos</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-900">
+                        {credential.credentialData.credentialSubject.followers}
+                      </div>
+                      <div className="text-xs text-gray-600">Followers</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-900">
+                        {credential.credentialData.credentialSubject.accountAgeMonths}m
+                      </div>
+                      <div className="text-xs text-gray-600">Account Age</div>
+                    </div>
+                  </div>
+
+                  {/* Blockchain Info */}
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-green-800">⛓️ Stored on PersonaChain</span>
+                      <span className="text-xs text-green-600">Block #{credential.blockHeight.toLocaleString()}</span>
+                    </div>
+                    <div className="text-xs text-green-700">
+                      <span className="font-medium">Tx Hash:</span>
+                      <span className="ml-1 font-mono break-all">{credential.txHash}</span>
+                    </div>
+                  </div>
+
+                  {/* Credential Actions */}
+                  <div className="flex space-x-3">
+                    <button 
+                      onClick={() => handleGenerateProof(credential)}
+                      className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                    >
+                      Generate ZK Proof
+                    </button>
+                    <button className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                      Share Credential
+                    </button>
+                  </div>
+
+                  {/* Credential Metadata */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Issued: {new Date(credential.credentialData.issuanceDate).toLocaleDateString()}</span>
+                      <span>Status: {credential.status}</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* ZK Proof Modal */}
+      {selectedCredentialForProof && (
+        <ZKProofModal
+          isOpen={isProofModalOpen}
+          onClose={handleCloseProofModal}
+          credential={selectedCredentialForProof}
+        />
+      )}
     </div>
   )
 }

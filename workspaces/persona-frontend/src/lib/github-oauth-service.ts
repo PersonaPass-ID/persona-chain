@@ -3,6 +3,9 @@
 
 import { Octokit } from '@octokit/rest'
 import type { VerifiableCredential, GitHubProfile } from './github-verification'
+import { personaChainService } from './personachain-service'
+import type { PersonaChainResult } from './personachain-service'
+import { credentialManagementService } from './credential-management-service'
 
 export interface GitHubOAuthResult {
   success: boolean
@@ -10,6 +13,9 @@ export interface GitHubOAuthResult {
   credential?: VerifiableCredential
   error?: string
   verificationLevel?: 'basic' | 'experienced' | 'expert'
+  blockchainResult?: PersonaChainResult
+  txHash?: string
+  blockHeight?: number
 }
 
 export class GitHubOAuthService {
@@ -60,12 +66,39 @@ export class GitHubOAuthService {
       const credential = this.createDeveloperCredential(userId, profile, verificationLevel)
 
       console.log(`✅ GitHub OAuth verification complete: ${verificationLevel} level developer`)
+      console.log(`⛓️ Storing credential on PersonaChain...`)
+
+      // Store credential on PersonaChain blockchain
+      const blockchainResult = await personaChainService.storeCredential(walletAddress, credential)
+
+      if (blockchainResult.success) {
+        console.log(`🎉 Credential stored on PersonaChain! TxHash: ${blockchainResult.txHash}`)
+        console.log(`📊 Block Height: ${blockchainResult.blockHeight}`)
+        
+        // Track credential creation event
+        if (blockchainResult.data) {
+          credentialManagementService.trackCredentialEvent(
+            walletAddress,
+            blockchainResult.data.id,
+            'created',
+            {
+              txHash: blockchainResult.txHash,
+              blockHeight: blockchainResult.blockHeight
+            }
+          )
+        }
+      } else {
+        console.error(`❌ Failed to store on PersonaChain: ${blockchainResult.error}`)
+      }
 
       return {
         success: true,
         profile,
         credential,
-        verificationLevel
+        verificationLevel,
+        blockchainResult,
+        txHash: blockchainResult.txHash,
+        blockHeight: blockchainResult.blockHeight
       }
 
     } catch (error) {

@@ -332,6 +332,49 @@ const GitHubVerificationPage = () => {
                 </div>
               )}
 
+              {/* Blockchain Storage Info */}
+              {verificationResult.blockchainResult && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-green-900 mb-4">⛓️ PersonaChain Storage</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Storage Status:</span>
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="font-medium text-green-800">Stored on Blockchain</span>
+                      </div>
+                    </div>
+                    {verificationResult.txHash && (
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Transaction Hash:</span>
+                        <span className="font-mono text-xs text-green-800 break-all">
+                          {verificationResult.txHash}
+                        </span>
+                      </div>
+                    )}
+                    {verificationResult.blockHeight && (
+                      <div className="flex justify-between">
+                        <span className="text-green-700">Block Height:</span>
+                        <span className="font-medium text-green-800">
+                          #{verificationResult.blockHeight.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Network:</span>
+                      <span className="font-medium text-green-800">PersonaChain Testnet</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-green-100 rounded-md">
+                    <p className="text-xs text-green-800">
+                      🔒 Your credential is now immutably stored on PersonaChain blockchain and can be verified by anyone using the transaction hash above.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex space-x-4">
                 <button
