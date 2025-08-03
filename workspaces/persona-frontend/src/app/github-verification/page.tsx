@@ -43,7 +43,8 @@ const GitHubVerificationPage = () => {
 
       const result = await githubOAuthService.createCredentialFromSession(
         userId,
-        walletAddress
+        walletAddress,
+        session
       )
 
       setVerificationResult(result)
