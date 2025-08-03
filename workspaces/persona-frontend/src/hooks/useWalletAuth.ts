@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { walletAuthClient, WalletUser } from '@/lib/wallet-auth-client'
+import { walletAuthClient, WalletUser } from '@/lib/wallet-auth-client-v2'
 
 export type WalletType = 'keplr' | 'leap' | 'cosmostation' | 'terra-station'
 

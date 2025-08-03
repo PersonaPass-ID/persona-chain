@@ -94,7 +94,7 @@ export default function HomePage() {
               Create Your Persona →
             </a>
             <a 
-              href="/login"
+              href="/auth"
               className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg"
             >
               Access →

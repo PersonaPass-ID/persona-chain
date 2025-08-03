@@ -1,18 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { WalletConnectService } from '@/lib/wallet-connect-service'
+import { useWalletAuth } from '@/hooks/useWalletAuth'
 import { personaChainService } from '@/lib/personachain-service'
 import type { PersonaChainCredential } from '@/lib/personachain-service'
 import { credentialManagementService } from '@/lib/credential-management-service'
 import ZKProofModal from '@/components/ZKProofModal'
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
-  const [walletInfo, setWalletInfo] = useState<any>(null)
+  const { isAuthenticated, user, disconnect } = useWalletAuth()
   const [credentials, setCredentials] = useState<PersonaChainCredential[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [networkStatus, setNetworkStatus] = useState<any>(null)
@@ -21,43 +19,31 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<any>(null)
 
   useEffect(() => {
-    if (status === 'loading') return
-    
-    if (!session) {
-      router.push('/')
+    if (!isAuthenticated) {
+      router.push('/auth')
       return
     }
 
-    loadWalletInfo()
     loadNetworkStatus()
-  }, [session, status, router])
+  }, [isAuthenticated, router])
 
   useEffect(() => {
-    if (walletInfo?.address) {
+    if (user?.address) {
       loadCredentials()
       loadInsights()
     }
-  }, [walletInfo])
+  }, [user])
 
-  const loadWalletInfo = async () => {
-    try {
-      const walletService = new WalletConnectService()
-      const wallet = await walletService.getConnectedWallet()
-      setWalletInfo(wallet)
-    } catch (error) {
-      console.error('Failed to load wallet info:', error)
-    }
-  }
 
   const loadCredentials = async () => {
     try {
-      if (!walletInfo?.address) {
+      if (!user?.address) {
         setIsLoading(false)
         return
       }
 
-      console.log(`🔍 Loading credentials from PersonaChain for ${walletInfo.address}`)
-      const chainCredentials = await personaChainService.getCredentials(walletInfo.address)
+      console.log(`🔍 Loading credentials from PersonaChain for ${user.address}`)
+      const chainCredentials = await personaChainService.getCredentials(user.address)
       
       // Ensure chainCredentials is an array
       const credentialsArray = Array.isArray(chainCredentials) ? chainCredentials : []
@@ -82,9 +68,9 @@ export default function DashboardPage() {
 
   const loadInsights = async () => {
     try {
-      if (!walletInfo?.address) return
+      if (!user?.address) return
       
-      const credInsights = await credentialManagementService.getCredentialInsights(walletInfo.address)
+      const credInsights = await credentialManagementService.getCredentialInsights(user.address)
       setInsights(credInsights)
       console.log(`📊 Loaded credential insights:`, credInsights)
     } catch (error) {
@@ -93,7 +79,7 @@ export default function DashboardPage() {
   }
 
   const createGitHubCredential = () => {
-    router.push('/login')
+    router.push('/github-verification')
   }
 
   const createLinkedInCredential = () => {
@@ -106,9 +92,9 @@ export default function DashboardPage() {
     setIsProofModalOpen(true)
     
     // Track credential shared event for analytics
-    if (walletInfo?.address) {
+    if (user?.address) {
       credentialManagementService.trackCredentialEvent(
-        walletInfo.address,
+        user.address,
         credential.id,
         'shared',
         { sharedWith: 'ZK Proof Generation' }
@@ -122,10 +108,11 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' })
+    await disconnect()
+    router.push('/')
   }
 
-  if (status === 'loading' || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -133,11 +120,11 @@ export default function DashboardPage() {
     )
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return null // Redirecting
   }
 
-  const userDID = walletInfo ? `did:personapass:${walletInfo.address.slice(-8)}` : 'Loading...'
+  const userDID = user?.did || 'Loading...'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,7 +164,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {session.user?.name || 'User'}!
+            Welcome back!
           </h2>
           <p className="text-gray-600">
             Manage your verifiable credentials and create new ones to showcase your professional achievements.
