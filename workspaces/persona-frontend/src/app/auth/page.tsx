@@ -31,6 +31,19 @@ export default function AuthPage() {
   } = useWalletAuth()
 
   const [showSigningMessage, setShowSigningMessage] = useState(false)
+  const [securityUnlockRequired, setSecurityUnlockRequired] = useState(false)
+
+  // Check for security unlock requirement in URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const security = urlParams.get('security')
+      if (security === 'unlock_required') {
+        setSecurityUnlockRequired(true)
+        console.log('🔐 SECURITY: Forced wallet unlock required')
+      }
+    }
+  }, [])
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
@@ -120,12 +133,30 @@ export default function AuthPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Connect Your Wallet
-              </h1>
-              <p className="text-gray-600">
-                Sign in to PersonaPass with your Web3 wallet to access your digital identity
-              </p>
+              {securityUnlockRequired ? (
+                <>
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h1 className="text-3xl font-bold text-red-900 mb-2">
+                    🔐 Security Check Required
+                  </h1>
+                  <p className="text-red-700">
+                    For maximum security, you must unlock your wallet with your password and reconnect to access your credentials
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    Connect Your Wallet
+                  </h1>
+                  <p className="text-gray-600">
+                    Sign in to PersonaPass with your Web3 wallet to access your digital identity
+                  </p>
+                </>
+              )}
             </motion.div>
           </div>
 
@@ -136,6 +167,33 @@ export default function AuthPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-white rounded-2xl shadow-lg p-6"
           >
+            {/* Security Alert for Forced Unlock */}
+            {securityUnlockRequired && (
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      🔒 Mandatory Security Verification
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>You were disconnected for security reasons. To access your credentials, you must:</p>
+                      <ul className="mt-2 list-disc list-inside space-y-1">
+                        <li>Unlock your wallet by entering your password</li>
+                        <li>Reconnect to PersonaPass</li>
+                        <li>Sign a verification message to prove wallet ownership</li>
+                      </ul>
+                      <p className="mt-2 font-medium">This ensures only you can access your verifiable credentials.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Connection Status */}
             {showSigningMessage && (
               <motion.div
@@ -183,7 +241,9 @@ export default function AuthPage() {
             {/* Wallet Options */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-700 mb-4">
-                Choose your wallet provider
+                {securityUnlockRequired 
+                  ? '🔐 Unlock your wallet with password and reconnect' 
+                  : 'Choose your wallet provider'}
               </h3>
               
               {availableWallets.map((wallet, index) => (

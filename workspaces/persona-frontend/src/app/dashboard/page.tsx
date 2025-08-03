@@ -19,40 +19,66 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<any>(null)
   const [isWalletVerified, setIsWalletVerified] = useState(false)
   const [isVerifyingWallet, setIsVerifyingWallet] = useState(false)
+  const [needsFreshConnection, setNeedsFreshConnection] = useState(true)
 
-  // MANDATORY wallet signature verification
-  const verifyWalletOwnership = async () => {
+  // MANDATORY wallet unlock and signature verification
+  const forceWalletUnlockAndVerify = async () => {
+    try {
+      setIsVerifyingWallet(true)
+      console.log('🔐 SECURITY: FORCING wallet unlock and verification for dashboard access')
+      
+      // STEP 1: Force wallet disconnect to clear any cached unlocks
+      console.log('🔒 SECURITY: Disconnecting wallet to force fresh authentication...')
+      setNeedsFreshConnection(false) // Reset flag to detect reconnection
+      disconnect()
+      
+      // Wait a moment for disconnect to complete, then redirect to auth
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // STEP 2: Force user to go to auth page to reconnect and unlock wallet
+      console.log('🔑 SECURITY: Redirecting to auth - user must reconnect and UNLOCK wallet with password...')
+      router.push('/auth?security=unlock_required')
+      
+      return false
+      
+    } catch (error) {
+      console.error('🚨 SECURITY: Wallet unlock verification failed:', error)
+      return false
+    } finally {
+      setIsVerifyingWallet(false)
+    }
+  }
+
+  // Verify wallet after reconnection
+  const verifyWalletAfterUnlock = async () => {
     if (!user?.address || !signMessage) {
       console.error('🚨 No user address or signMessage function available')
       return false
     }
 
     try {
-      setIsVerifyingWallet(true)
-      console.log('🔐 SECURITY: Verifying wallet ownership for dashboard access')
+      console.log('🔐 SECURITY: Verifying freshly unlocked wallet ownership')
       
       // Create a unique challenge message
       const timestamp = Date.now()
-      const challengeMessage = `🔐 PersonaPass Dashboard Access\n\nI am the owner of wallet ${user.address}\n\nTimestamp: ${timestamp}\nAccess Level: Full Dashboard\n\nThis signature proves I control this wallet.`
+      const challengeMessage = `🔐 PersonaPass Dashboard Access\n\nI just unlocked my wallet and am the owner of ${user.address}\n\nTimestamp: ${timestamp}\nAccess Level: Full Dashboard\n\nThis signature proves I control this freshly unlocked wallet.`
       
-      console.log('📝 Requesting wallet signature for security verification...')
+      console.log('📝 Requesting wallet signature from freshly unlocked wallet...')
       const signature = await signMessage(challengeMessage)
       
       if (!signature) {
-        console.error('🚨 SECURITY VIOLATION: User refused to sign verification message')
+        console.error('🚨 SECURITY VIOLATION: User refused to sign verification message after unlock')
         return false
       }
       
-      console.log('✅ SECURITY: Wallet signature verified successfully')
+      console.log('✅ SECURITY: Freshly unlocked wallet signature verified successfully')
       console.log('🔑 Signature:', signature.substring(0, 20) + '...')
       
       return true
       
     } catch (error) {
-      console.error('🚨 SECURITY: Wallet verification failed:', error)
+      console.error('🚨 SECURITY: Wallet verification after unlock failed:', error)
       return false
-    } finally {
-      setIsVerifyingWallet(false)
     }
   }
 
@@ -64,24 +90,40 @@ export default function DashboardPage() {
       return
     }
 
-    // SECURITY: Force wallet verification on every dashboard access
+    // SECURITY: Force wallet unlock and verification on every dashboard access
     const performSecurityCheck = async () => {
-      console.log('🔒 SECURITY: Performing mandatory wallet verification...')
-      const verified = await verifyWalletOwnership()
+      console.log('🔒 SECURITY: Performing MANDATORY wallet unlock and verification...')
       
-      if (!verified) {
-        console.log('🚨 SECURITY: Wallet verification failed, redirecting to auth')
-        disconnect()
-        router.push('/auth')
-        return
-      }
-      
-      setIsWalletVerified(true)
-      loadNetworkStatus()
+      // Always force fresh wallet unlock when accessing dashboard
+      console.log('🔑 SECURITY: Forcing fresh wallet connection with password unlock...')
+      await forceWalletUnlockAndVerify()
     }
     
     performSecurityCheck()
   }, [isAuthenticated, isInitializing, router])
+
+  // Detect when user reconnects after forced disconnect
+  useEffect(() => {
+    if (user?.address && !isWalletVerified && !needsFreshConnection) {
+      // User just reconnected, now verify the fresh wallet
+      const verifyReconnectedWallet = async () => {
+        console.log('🔐 SECURITY: User reconnected, verifying freshly unlocked wallet...')
+        const verified = await verifyWalletAfterUnlock()
+        
+        if (verified) {
+          setIsWalletVerified(true)
+          loadNetworkStatus()
+        } else {
+          console.log('🚨 SECURITY: Fresh wallet verification failed after reconnection')
+          setNeedsFreshConnection(true)
+          disconnect()
+          router.push('/auth')
+        }
+      }
+      
+      verifyReconnectedWallet()
+    }
+  }, [user?.address, isWalletVerified, needsFreshConnection])
 
   useEffect(() => {
     if (user?.address && isWalletVerified) {
@@ -193,19 +235,19 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">🔐 Security Verification Required</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">🔐 Wallet Password Required</h2>
             <p className="text-gray-600 mb-6">
-              To protect your credentials, you must sign a message proving you own this wallet.
+              For maximum security, you must unlock your wallet with your password and sign a verification message EVERY TIME you access your credentials.
             </p>
             
             {isVerifyingWallet ? (
               <div className="space-y-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-sm text-blue-600 font-medium">
-                  🔑 Please sign the message in your wallet...
+                  🔑 Disconnecting wallet to force fresh unlock...
                 </p>
                 <p className="text-xs text-gray-500">
-                  Check your wallet for a signature request
+                  You will need to reconnect and enter your wallet password
                 </p>
               </div>
             ) : (
@@ -222,17 +264,17 @@ export default function DashboardPage() {
                         Security Alert
                       </h3>
                       <div className="mt-2 text-sm text-yellow-700">
-                        <p>Without wallet verification, anyone could access these credentials. This signature proves you control wallet <span className="font-mono text-xs">{user?.address}</span>.</p>
+                        <p>Without wallet password unlock, anyone could access these credentials. You must unlock your wallet with your password AND sign a verification message for wallet <span className="font-mono text-xs">{user?.address}</span>.</p>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 <button
-                  onClick={verifyWalletOwnership}
+                  onClick={forceWalletUnlockAndVerify}
                   className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
                 >
-                  🔒 Verify Wallet Ownership
+                  🔒 Unlock Wallet & Enter Password
                 </button>
                 
                 <button
