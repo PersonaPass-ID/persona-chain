@@ -64,9 +64,9 @@ const LoginPage = () => {
 
     setError(null)
     try {
+      // Use standard OAuth flow with redirect
       await signIn('github', {
-        callbackUrl: '/github-verification',
-        redirect: false
+        callbackUrl: '/github-verification'
       })
     } catch (err) {
       setError('Failed to sign in with GitHub')

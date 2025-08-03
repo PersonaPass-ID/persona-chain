@@ -17,6 +17,7 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
+  debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist GitHub access token and profile info
@@ -34,10 +35,6 @@ export const authOptions: NextAuthOptions = {
       session.user.githubUsername = token.githubUsername as string
       return session
     }
-  },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error'
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
