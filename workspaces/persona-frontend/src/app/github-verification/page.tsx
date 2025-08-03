@@ -8,6 +8,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { githubOAuthService } from '@/lib/github-oauth-service'
 import type { GitHubOAuthResult } from '@/lib/github-oauth-service'
+import { WalletConnectService } from '@/lib/wallet-connect-service'
 
 const GitHubVerificationPage = () => {
   const { data: session, status } = useSession()
@@ -15,6 +16,7 @@ const GitHubVerificationPage = () => {
   const [isCreating, setIsCreating] = useState(false)
   const [verificationResult, setVerificationResult] = useState<GitHubOAuthResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [walletInfo, setWalletInfo] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -23,14 +25,39 @@ const GitHubVerificationPage = () => {
   }, [status, router])
 
   useEffect(() => {
-    if (session?.user?.githubUsername && !verificationResult && !isCreating) {
+    // Load wallet info when component mounts
+    loadWalletInfo()
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.githubUsername && !verificationResult && !isCreating && walletInfo) {
       handleCreateCredential()
     }
-  }, [session, verificationResult, isCreating])
+  }, [session, verificationResult, isCreating, walletInfo])
+
+  const loadWalletInfo = async () => {
+    try {
+      const walletService = new WalletConnectService()
+      const wallet = await walletService.getConnectedWallet()
+      if (wallet) {
+        setWalletInfo(wallet)
+      } else {
+        setError('No wallet connected. Please connect your wallet first.')
+      }
+    } catch (error) {
+      console.error('Failed to load wallet info:', error)
+      setError('Failed to connect to wallet. Please ensure your wallet is connected.')
+    }
+  }
 
   const handleCreateCredential = async () => {
     if (!session?.user?.githubUsername) {
       setError('No GitHub session found')
+      return
+    }
+
+    if (!walletInfo?.address) {
+      setError('No wallet connected. Please connect your wallet first.')
       return
     }
 
@@ -39,7 +66,9 @@ const GitHubVerificationPage = () => {
 
     try {
       const userId = `github_${session.user.githubId || Date.now()}`
-      const walletAddress = 'cosmos1mock...address' // TODO: Get from wallet connection
+      const walletAddress = walletInfo.address
+
+      console.log(`🔗 Creating credential for wallet: ${walletAddress}`)
 
       const result = await githubOAuthService.createCredentialFromSession(
         userId,
@@ -156,6 +185,34 @@ const GitHubVerificationPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Wallet Info */}
+        {walletInfo && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-blue-900 mb-4">Connected Wallet</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700">
+                  <span className="font-medium">Provider:</span> {walletInfo.provider.toUpperCase()}
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  <span className="font-medium">Address:</span>
+                  <span className="ml-2 font-mono text-xs">{walletInfo.address}</span>
+                </p>
+                <p className="text-sm text-blue-700 mt-1">
+                  <span className="font-medium">DID:</span>
+                  <span className="ml-2 font-mono text-xs">did:personapass:{walletInfo.address.slice(-8)}</span>
+                </p>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="ml-2 text-sm font-medium text-green-700">Connected</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Verification Status */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
