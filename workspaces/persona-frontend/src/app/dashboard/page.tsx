@@ -59,8 +59,10 @@ export default function DashboardPage() {
       console.log(`🔍 Loading credentials from PersonaChain for ${walletInfo.address}`)
       const chainCredentials = await personaChainService.getCredentials(walletInfo.address)
       
-      console.log(`✅ Loaded ${chainCredentials.length} credentials from PersonaChain`)
-      setCredentials(chainCredentials)
+      // Ensure chainCredentials is an array
+      const credentialsArray = Array.isArray(chainCredentials) ? chainCredentials : []
+      console.log(`✅ Loaded ${credentialsArray.length} credentials from PersonaChain`)
+      setCredentials(credentialsArray)
       setIsLoading(false)
     } catch (error) {
       console.error('Failed to load credentials:', error)

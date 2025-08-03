@@ -83,9 +83,12 @@ export class CredentialManagementService {
       const history = this.getCredentialHistory(walletAddress)
       const analytics = this.getAllCredentialAnalytics(walletAddress)
 
+      // Ensure credentials is an array
+      const credentialsArray = Array.isArray(credentials) ? credentials : []
+
       // Calculate metrics
-      const activeCredentials = credentials.filter(c => c.status === 'active')
-      const expiredCredentials = credentials.filter(c => c.status === 'expired')
+      const activeCredentials = credentialsArray.filter(c => c.status === 'active')
+      const expiredCredentials = credentialsArray.filter(c => c.status === 'expired')
       
       const totalShares = analytics.reduce((sum, a) => sum + a.totalShares, 0)
       const totalVerifications = analytics.reduce((sum, a) => sum + a.totalVerifications, 0)
@@ -109,11 +112,11 @@ export class CredentialManagementService {
 
       // Check renewal status for all credentials
       const renewalAlerts = await Promise.all(
-        credentials.map(c => this.checkRenewalStatus(c))
+        credentialsArray.map(c => this.checkRenewalStatus(c))
       )
 
       const insights: CredentialInsights = {
-        totalCredentials: credentials.length,
+        totalCredentials: credentialsArray.length,
         activeCredentials: activeCredentials.length,
         expiredCredentials: expiredCredentials.length,
         totalShares,
@@ -243,7 +246,8 @@ export class CredentialManagementService {
 
       // Get original credential
       const credentials = await personaChainService.getCredentials(walletAddress)
-      const originalCredential = credentials.find(c => c.id === credentialId)
+      const credentialsArray = Array.isArray(credentials) ? credentials : []
+      const originalCredential = credentialsArray.find(c => c.id === credentialId)
       
       if (!originalCredential) {
         throw new Error('Credential not found')

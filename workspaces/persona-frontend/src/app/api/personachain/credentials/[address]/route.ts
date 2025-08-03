@@ -20,20 +20,24 @@ export async function GET(
     if (!response.ok) {
       // If API returns error, return mock data for now
       console.log(`API returned ${response.status}, using mock data`)
-      return NextResponse.json({
-        credentials: []
-      })
+      return NextResponse.json([]) // Return array, not object
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+    // Ensure we always return an array
+    if (Array.isArray(data)) {
+      return NextResponse.json(data)
+    } else if (data && Array.isArray(data.credentials)) {
+      return NextResponse.json(data.credentials)
+    } else {
+      console.log('Unexpected API response format:', data)
+      return NextResponse.json([])
+    }
     
   } catch (error) {
     console.error('Error fetching credentials:', error)
     // Return empty array on error
-    return NextResponse.json({
-      credentials: []
-    })
+    return NextResponse.json([])
   }
 }
 
