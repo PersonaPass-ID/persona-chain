@@ -10,7 +10,7 @@ import ZKProofModal from '@/components/ZKProofModal'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isAuthenticated, user, disconnect } = useWalletAuth()
+  const { isAuthenticated, user, disconnect, isInitializing } = useWalletAuth()
   const [credentials, setCredentials] = useState<PersonaChainCredential[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [networkStatus, setNetworkStatus] = useState<any>(null)
@@ -19,13 +19,15 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<any>(null)
 
   useEffect(() => {
+    if (isInitializing) return // Wait for initialization to complete
+    
     if (!isAuthenticated) {
       router.push('/auth')
       return
     }
 
     loadNetworkStatus()
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, isInitializing, router])
 
   useEffect(() => {
     if (user?.address) {

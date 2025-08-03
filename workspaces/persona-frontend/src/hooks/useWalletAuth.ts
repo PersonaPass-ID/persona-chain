@@ -15,6 +15,7 @@ export interface WalletAuthState {
   isAuthenticated: boolean
   user: WalletUser | null
   isConnecting: boolean
+  isInitializing: boolean
   error: string | null
   availableWallets: WalletInfo[]
 }
@@ -24,6 +25,7 @@ export function useWalletAuth() {
     isAuthenticated: false,
     user: null,
     isConnecting: false,
+    isInitializing: true,
     error: null,
     availableWallets: []
   })
@@ -35,6 +37,9 @@ export function useWalletAuth() {
 
   const initializeAuth = useCallback(async () => {
     try {
+      // Initialize the wallet auth client first
+      await walletAuthClient.initialize()
+
       // Get available wallets
       const wallets = walletAuthClient.getAvailableWallets().map(w => ({
         type: w.type,
@@ -42,8 +47,8 @@ export function useWalletAuth() {
         isInstalled: w.isInstalled
       }))
 
-      // Check if user is already authenticated
-      const isAuthenticated = walletAuthClient.isAuthenticated()
+      // Check if user is already authenticated (now properly async)
+      const isAuthenticated = await walletAuthClient.isAuthenticated()
       let user: WalletUser | null = null
 
       if (isAuthenticated) {
@@ -70,6 +75,7 @@ export function useWalletAuth() {
         isAuthenticated: isAuthenticated && !!user,
         user,
         availableWallets: wallets,
+        isInitializing: false,
         error: null
       }))
 
@@ -78,6 +84,7 @@ export function useWalletAuth() {
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Initialization failed',
+        isInitializing: false,
         availableWallets: walletAuthClient.getAvailableWallets().map(w => ({
           type: w.type,
           name: w.name,
@@ -230,8 +237,9 @@ export function useWalletAuth() {
     hasWalletsInstalled: () => state.availableWallets.some(w => w.isInstalled),
     
     // Computed properties
-    isReady: state.availableWallets.length > 0,
-    connectionStatus: state.isConnecting ? 'connecting' : 
+    isReady: !state.isInitializing && state.availableWallets.length > 0,
+    connectionStatus: state.isInitializing ? 'initializing' :
+                    state.isConnecting ? 'connecting' : 
                     state.isAuthenticated ? 'connected' : 
                     'disconnected' as const
   }

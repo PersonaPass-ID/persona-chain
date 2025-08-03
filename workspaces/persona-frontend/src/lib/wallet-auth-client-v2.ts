@@ -91,11 +91,23 @@ const PERSONACHAIN_CONFIG = {
 
 export class PersonaWalletAuthClientV2 {
   private currentUser: WalletUser | null = null
+  private isInitialized: boolean = false
+  private initializationPromise: Promise<void> | null = null
 
   constructor() {
-    // Check for existing session
-    this.checkSession()
     console.log('🔐 PersonaWalletAuthClient V2 initialized (SIWE)')
+  }
+
+  /**
+   * Initialize the client and check for existing session
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return
+    if (this.initializationPromise) return this.initializationPromise
+
+    this.initializationPromise = this.checkSession()
+    await this.initializationPromise
+    this.isInitialized = true
   }
 
   /**
@@ -108,6 +120,7 @@ export class PersonaWalletAuthClientV2 {
         const data = await response.json()
         if (data.success && data.user) {
           this.currentUser = data.user
+          console.log('✅ Existing session found:', data.user.did)
         }
       }
     } catch (error) {
@@ -391,7 +404,15 @@ Issued At: ${issuedAt}`
   /**
    * Check if user is authenticated
    */
-  isAuthenticated(): boolean {
+  async isAuthenticated(): Promise<boolean> {
+    await this.initialize()
+    return !!this.currentUser
+  }
+
+  /**
+   * Check if user is authenticated (synchronous version for compatibility)
+   */
+  isAuthenticatedSync(): boolean {
     return !!this.currentUser
   }
 

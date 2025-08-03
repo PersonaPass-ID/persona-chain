@@ -21,6 +21,7 @@ export default function AuthPage() {
     isAuthenticated,
     user,
     isConnecting,
+    isInitializing,
     error,
     availableWallets,
     connectWallet,
@@ -33,10 +34,22 @@ export default function AuthPage() {
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !isInitializing) {
       router.push('/dashboard')
     }
-  }, [isAuthenticated, user, router])
+  }, [isAuthenticated, user, isInitializing, router])
+
+  // Show loading screen while initializing
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-300">Initializing PersonaPass...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleWalletConnect = async (walletType: WalletType) => {
     clearError()
