@@ -24,9 +24,11 @@ export async function GET(
     }
 
     const data = await response.json()
+    console.log('📊 Raw API response data:', JSON.stringify(data, null, 2))
     
     // Transform credentials to match frontend expectations
     if (data && Array.isArray(data.credentials)) {
+      console.log('📋 Processing credentials array:', data.credentials.length, 'items')
       const transformedCredentials = data.credentials.map((cred: any) => {
         // Create base credential structure that matches the frontend expectations
         const transformedCredential = {
@@ -87,14 +89,18 @@ export async function GET(
           }
         }
         
+        console.log('🔄 Transformed credential:', JSON.stringify(transformedCredential, null, 2))
         return transformedCredential
       })
       
+      console.log('✅ Final transformed credentials:', transformedCredentials.length, 'items')
       return NextResponse.json(transformedCredentials)
     } else if (Array.isArray(data)) {
+      console.log('📋 Data is direct array:', data.length, 'items')
+      console.log('📊 Direct array content:', JSON.stringify(data, null, 2))
       return NextResponse.json(data)
     } else {
-      console.log('Unexpected API response format:', data)
+      console.log('❌ Unexpected API response format:', data)
       return NextResponse.json([])
     }
     
