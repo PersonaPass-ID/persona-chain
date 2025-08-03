@@ -18,6 +18,9 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   debug: process.env.NODE_ENV === 'development',
+  // Force use of custom domain for callbacks
+  basePath: '/api/auth',
+  useSecureCookies: true,
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist GitHub access token and profile info
