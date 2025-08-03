@@ -100,7 +100,8 @@ export class PersonaChainService {
 
       console.log(`🌐 Attempting API storage:`, payload)
 
-      const response = await fetch(`${this.API_URL}/credentials`, {
+      // Use our API route to avoid CORS
+      const response = await fetch(`/api/personachain/credentials/${walletAddress}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +212,8 @@ export class PersonaChainService {
       console.log(`🔍 Fetching credentials for ${walletAddress}`)
 
       // Try API first
-      const response = await fetch(`${this.API_URL}/credentials/${walletAddress}`, {
+      // Use our API route to avoid CORS
+      const response = await fetch(`/api/personachain/credentials/${walletAddress}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -240,7 +242,8 @@ export class PersonaChainService {
     try {
       console.log(`🔍 Verifying credential: ${credentialId}`)
 
-      const response = await fetch(`${this.API_URL}/credentials/verify/${credentialId}`, {
+      // Use our API route to avoid CORS
+      const response = await fetch(`/api/personachain/verify/${credentialId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -267,7 +270,8 @@ export class PersonaChainService {
     try {
       console.log(`📡 Checking PersonaChain network status`)
 
-      const response = await fetch(`${this.RPC_URL}/status`, {
+      // Use our API route to avoid CORS
+      const response = await fetch('/api/personachain/status', {
         method: 'GET',
         headers: {
           'Accept': 'application/json'

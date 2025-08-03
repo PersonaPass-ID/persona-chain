@@ -18,10 +18,8 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    // If user has both wallet and is authenticated, go to dashboard
-    if (walletConnected && session) {
-      router.push('/dashboard')
-    }
+    // Don't auto-redirect - let user see the landing page first
+    // They can click "Continue to Dashboard" button when ready
   }, [walletConnected, session, router])
 
   const checkWalletConnection = async () => {
