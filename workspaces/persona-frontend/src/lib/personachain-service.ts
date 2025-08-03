@@ -40,7 +40,7 @@ export class PersonaChainService {
   async storeCredential(
     walletAddress: string,
     credential: VerifiableCredential,
-    walletService?: any
+    walletService?: unknown
   ): Promise<PersonaChainResult> {
     try {
       console.log(`📝 Storing credential on PersonaChain for ${walletAddress}`)
@@ -131,15 +131,15 @@ export class PersonaChainService {
   }
 
   /**
-   * Store credential via direct RPC call
+   * Store credential via direct RPC call (real implementation needed)
    */
   private async storeViaRPC(
     walletAddress: string,
     credential: VerifiableCredential,
-    walletService?: any
+    _walletService?: unknown
   ): Promise<PersonaChainResult> {
     try {
-      console.log(`⛓️ Attempting direct RPC storage`)
+      console.log(`⛓️ Direct RPC storage not yet implemented`)
 
       // Create transaction message for PersonaChain
       const msg = {
@@ -152,34 +152,18 @@ export class PersonaChainService {
         }
       }
 
-      // For now, simulate RPC call success
-      console.log(`📡 RPC message prepared:`, msg)
+      console.log(`📡 RPC message would be:`, msg)
       
-      // In a real implementation, this would:
+      // TODO: Real implementation would:
       // 1. Sign the transaction with the connected wallet
-      // 2. Broadcast to PersonaChain
-      // 3. Wait for confirmation
+      // 2. Broadcast to PersonaChain RPC endpoint
+      // 3. Wait for confirmation and return real txHash/blockHeight
       
-      const mockTxHash = `0xpc${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`
-      const mockBlockHeight = Math.floor(Math.random() * 1000000) + 500000
-
-      console.log(`🔄 Simulated RPC storage - TxHash: ${mockTxHash}`)
+      console.log(`❌ Direct RPC storage not implemented yet`)
 
       return {
-        success: true,
-        data: {
-          id: `rpc_${Date.now()}`,
-          credentialId: credential.credentialSubject.id,
-          issuer: credential.issuer,
-          subject: walletAddress,
-          credentialData: credential,
-          blockHeight: mockBlockHeight,
-          txHash: mockTxHash,
-          timestamp: new Date().toISOString(),
-          status: 'active'
-        },
-        txHash: mockTxHash,
-        blockHeight: mockBlockHeight
+        success: false,
+        error: 'Direct RPC storage not implemented - use PersonaChain API instead'
       }
 
     } catch (error) {
@@ -287,7 +271,7 @@ export class PersonaChainService {
 export const personaChainService = new PersonaChainService()
 
 // Convenience functions
-export const storeCredentialOnChain = (walletAddress: string, credential: VerifiableCredential, walletService?: any) =>
+export const storeCredentialOnChain = (walletAddress: string, credential: VerifiableCredential, walletService?: unknown) =>
   personaChainService.storeCredential(walletAddress, credential, walletService)
 
 export const getCredentialsFromChain = (walletAddress: string) =>

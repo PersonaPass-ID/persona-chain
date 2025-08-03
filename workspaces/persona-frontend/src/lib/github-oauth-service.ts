@@ -1,7 +1,7 @@
 // GitHub OAuth Service - Production authentication with NextAuth.js
 // Handles OAuth flow and creates VCs from authenticated GitHub sessions
 
-import { Octokit } from '@octokit/rest'
+// import { Octokit } from '@octokit/rest' // Reserved for future direct GitHub API usage
 import type { VerifiableCredential, GitHubProfile } from './github-verification'
 import { personaChainService } from './personachain-service'
 import type { PersonaChainResult } from './personachain-service'
@@ -24,7 +24,7 @@ export class GitHubOAuthService {
   /**
    * Create VC from authenticated NextAuth session (client-side)
    */
-  async createCredentialFromSession(userId: string, walletAddress: string, session: any): Promise<GitHubOAuthResult> {
+  async createCredentialFromSession(userId: string, walletAddress: string, session: { user?: { githubUsername?: string }; accessToken?: string }): Promise<GitHubOAuthResult> {
     try {
       if (!session?.user?.githubUsername) {
         return {
@@ -34,7 +34,7 @@ export class GitHubOAuthService {
       }
 
       // Fetch real GitHub profile data using the access token
-      const accessToken = (session as any).accessToken
+      const accessToken = session.accessToken
       if (!accessToken) {
         return {
           success: false,
@@ -230,14 +230,14 @@ export class GitHubOAuthService {
   /**
    * Check if user has valid GitHub session (client-side)
    */
-  hasValidGitHubSession(session: any): boolean {
+  hasValidGitHubSession(session: { user?: { githubUsername?: string } }): boolean {
     return !!(session?.user?.githubUsername)
   }
 
   /**
    * Get current GitHub session info (client-side)
    */
-  getGitHubSessionInfo(session: any) {
+  getGitHubSessionInfo(session: { user?: { githubUsername?: string; githubId?: number; email?: string; name?: string; image?: string } }) {
     if (!session?.user?.githubUsername) {
       return null
     }
@@ -256,11 +256,11 @@ export class GitHubOAuthService {
 export const githubOAuthService = new GitHubOAuthService()
 
 // Convenience functions (updated for client-side usage)
-export const createCredentialFromGitHubSession = (userId: string, walletAddress: string, session: any) =>
+export const createCredentialFromGitHubSession = (userId: string, walletAddress: string, session: { user?: { githubUsername?: string }; accessToken?: string }) =>
   githubOAuthService.createCredentialFromSession(userId, walletAddress, session)
 
-export const hasValidGitHubSession = (session: any) =>
+export const hasValidGitHubSession = (session: { user?: { githubUsername?: string } }) =>
   githubOAuthService.hasValidGitHubSession(session)
 
-export const getGitHubSessionInfo = (session: any) =>
+export const getGitHubSessionInfo = (session: { user?: { githubUsername?: string; githubId?: number; email?: string; name?: string; image?: string } }) =>
   githubOAuthService.getGitHubSessionInfo(session)

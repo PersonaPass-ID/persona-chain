@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
       if (account && profile) {
         token.accessToken = account.access_token
         token.githubId = profile.id
-        token.githubUsername = (profile as any).login
+        token.githubUsername = (profile as { login: string }).login
       }
       return token
     },

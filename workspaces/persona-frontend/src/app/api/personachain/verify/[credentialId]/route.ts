@@ -10,18 +10,21 @@ export async function GET(
   try {
     const { credentialId } = params
     
-    // Make the request server-side (no CORS issues)
-    const response = await fetch(`${API_URL}/credentials/verify/${credentialId}`, {
+    // Make the request server-side (no CORS issues) - Fixed endpoint path
+    const response = await fetch(`${API_URL}/api/verify`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ credentialId })
     })
 
     if (!response.ok) {
-      // Return verified true for now
-      console.log(`API returned ${response.status}, using mock data`)
+      // Return actual error instead of fake verification
+      console.error(`PersonaChain verify API error: ${response.status}`)
       return NextResponse.json({
-        verified: true
+        verified: false,
+        error: `PersonaChain verification unavailable (${response.status})`
       })
     }
 
@@ -30,9 +33,10 @@ export async function GET(
     
   } catch (error) {
     console.error('Error verifying credential:', error)
-    // Return verified true on error
+    // Return actual error instead of fake verification
     return NextResponse.json({
-      verified: true
+      verified: false,
+      error: 'PersonaChain verification connection failed'
     })
   }
 }

@@ -10,8 +10,8 @@ export async function GET(
   try {
     const { address } = params
     
-    // Make the request server-side (no CORS issues)
-    const response = await fetch(`${API_URL}/credentials/${address}`, {
+    // Make the request server-side (no CORS issues) - Fixed endpoint path
+    const response = await fetch(`${API_URL}/api/credentials/${address}`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -49,13 +49,18 @@ export async function POST(
     const { address } = params
     const body = await request.json()
     
-    // Make the request server-side (no CORS issues)
-    const response = await fetch(`${API_URL}/credentials/${address}`, {
+    // Make the request server-side (no CORS issues) - Use correct issue endpoint
+    const response = await fetch(`${API_URL}/api/issue`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        walletAddress: address,
+        credentialType: 'GitHubDeveloperCredential',
+        credentialData: body.credential,
+        verificationMethod: 'wallet'
+      })
     })
 
     if (!response.ok) {
