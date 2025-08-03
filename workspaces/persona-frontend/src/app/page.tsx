@@ -75,41 +75,38 @@ export default function HomePage() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 mb-6">
-            Your Digital Identity,<br />
+            Create Your<br />
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-              Finally Secure
+              Digital Persona
             </span>
           </h1>
           
           <p className="text-xl md:text-2xl leading-relaxed text-gray-600 mb-12 max-w-4xl mx-auto">
-            Create verifiable credentials for GitHub, LinkedIn, and professional achievements. 
-            Store them on PersonaChain and generate privacy-preserving ZK proofs.
+            Build your verified digital identity with GitHub, LinkedIn, and professional credentials. 
+            Own your data on PersonaChain and share ZK proofs privately.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            {!walletConnected ? (
-              <>
-                <button
-                  onClick={connectWallet}
-                  disabled={isConnecting}
-                  className={isConnecting 
-                    ? "bg-gray-400 text-gray-700 px-8 py-4 text-lg font-semibold rounded-lg cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 shadow-lg"
-                  }
-                >
-                  {isConnecting ? 'Connecting...' : 'Get Started →'}
-                </button>
-                <a 
-                  href="/login"
-                  className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-colors"
-                >
-                  Sign In
-                </a>
-              </>
-            ) : (
+            <button
+              onClick={connectWallet}
+              disabled={isConnecting}
+              className={isConnecting 
+                ? "bg-gray-400 text-gray-700 px-10 py-4 text-xl font-bold rounded-xl cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 py-4 text-xl font-bold rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105"
+              }
+            >
+              {isConnecting ? 'Connecting...' : 'Create Your Persona →'}
+            </button>
+            <a 
+              href="/login"
+              className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 hover:shadow-lg"
+            >
+              Sign In
+            </a>
+            {walletConnected && (
               <button
                 onClick={goToDashboard}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 shadow-lg"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg"
               >
                 Go to Dashboard →
               </button>
