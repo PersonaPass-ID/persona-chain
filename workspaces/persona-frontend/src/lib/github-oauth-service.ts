@@ -27,23 +27,16 @@ export class GitHubOAuthService {
         }
       }
 
-      // For client-side, use the session data directly
-      // In production, you'd make an API call to your backend to fetch GitHub data
-      const profile: GitHubProfile = {
-        username: session.user.githubUsername,
-        id: session.user.githubId || Date.now(),
-        accountCreated: new Date(Date.now() - (365 * 24 * 60 * 60 * 1000)).toISOString(), // Mock 1 year old
-        publicRepos: 10, // Mock data - in production, fetch from GitHub API on server side
-        followers: 5,
-        following: 10,
-        avatarUrl: session.user.image || '',
-        name: session.user.name,
-        company: null,
-        location: null,
-        email: session.user.email,
-        bio: null,
-        verified: true
+      // Fetch real GitHub profile data using the access token
+      const accessToken = (session as any).accessToken
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'No GitHub access token available'
+        }
       }
+
+      const profile = await this.fetchRealGitHubProfile(session.user.githubUsername, accessToken)
 
       // Calculate account age from profile
       const accountCreated = new Date(profile.accountCreated)
@@ -150,6 +143,55 @@ export class GitHubOAuthService {
     }
 
     return credential
+  }
+
+  /**
+   * Fetch real GitHub profile data using access token
+   */
+  private async fetchRealGitHubProfile(username: string, accessToken: string): Promise<GitHubProfile> {
+    try {
+      const response = await fetch(`https://api.github.com/users/${username}`, {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'PersonaPass/1.0.0'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`)
+      }
+
+      const userData = await response.json()
+
+      const profile: GitHubProfile = {
+        username: userData.login,
+        id: userData.id,
+        accountCreated: userData.created_at,
+        publicRepos: userData.public_repos,
+        followers: userData.followers,
+        following: userData.following,
+        avatarUrl: userData.avatar_url,
+        name: userData.name,
+        company: userData.company,
+        location: userData.location,
+        email: userData.email,
+        bio: userData.bio,
+        verified: true
+      }
+
+      console.log(`📊 Real GitHub profile fetched for ${username}:`, {
+        repos: profile.publicRepos,
+        followers: profile.followers,
+        accountAge: Math.floor((new Date().getTime() - new Date(profile.accountCreated).getTime()) / (1000 * 60 * 60 * 24 * 30))
+      })
+
+      return profile
+
+    } catch (error) {
+      console.error('❌ Failed to fetch real GitHub profile:', error)
+      throw new Error(`Failed to fetch GitHub profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   /**
