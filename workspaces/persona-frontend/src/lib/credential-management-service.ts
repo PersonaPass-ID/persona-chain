@@ -181,7 +181,17 @@ export class CredentialManagementService {
   async checkRenewalStatus(credential: PersonaChainCredential): Promise<RenewalStatus> {
     try {
       const credentialData = credential.credentialData
-      const issuedDate = new Date(credentialData.issuanceDate)
+      const issuanceDate = credentialData?.issuanceDate || credential.createdAt
+      if (!issuanceDate) {
+        console.warn('⚠️ No issuanceDate found for credential:', credential.id)
+        return {
+          status: 'valid',
+          daysUntilExpiry: 365,
+          recommendRenewal: false,
+          message: 'Unable to check renewal status - missing issuance date'
+        }
+      }
+      const issuedDate = new Date(issuanceDate)
       const now = new Date()
       
       // Calculate age in days

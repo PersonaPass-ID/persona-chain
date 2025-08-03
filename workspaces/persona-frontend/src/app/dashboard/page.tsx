@@ -370,19 +370,19 @@ export default function DashboardPage() {
                           GitHub Developer Credential
                         </h4>
                         <p className="text-sm text-gray-600">
-                          @{credential.credentialData.credentialSubject.githubUsername}
+                          @{credential.credentialData?.credentialSubject?.githubUsername || credential.credentialSubject?.githubUsername || 'identity-verified'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        credential.credentialData.credentialSubject.verificationLevel === 'expert' 
+                        (credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel) === 'expert' 
                           ? 'bg-purple-100 text-purple-700'
-                          : credential.credentialData.credentialSubject.verificationLevel === 'experienced'
+                          : (credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel) === 'experienced'
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-green-100 text-green-700'
                       }`}>
-                        {credential.credentialData.credentialSubject.verificationLevel?.toUpperCase()}
+                        {(credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel || 'basic')?.toUpperCase()}
                       </span>
                     </div>
                   </div>
@@ -391,19 +391,19 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
                       <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData.credentialSubject.publicRepos}
+                        {credential.credentialData?.credentialSubject?.publicRepos || credential.credentialSubject?.publicRepos || 0}
                       </div>
                       <div className="text-xs text-gray-600">Public Repos</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData.credentialSubject.followers}
+                        {credential.credentialData?.credentialSubject?.followers || credential.credentialSubject?.followers || 0}
                       </div>
                       <div className="text-xs text-gray-600">Followers</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData.credentialSubject.accountAgeMonths}m
+                        {credential.credentialData?.credentialSubject?.accountAgeMonths || credential.credentialSubject?.accountAgeMonths || 0}m
                       </div>
                       <div className="text-xs text-gray-600">Account Age</div>
                     </div>
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                   {/* Credential Metadata */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>Issued: {new Date(credential.credentialData.issuanceDate).toLocaleDateString()}</span>
+                      <span>Issued: {new Date(credential.credentialData?.issuanceDate || credential.createdAt || new Date()).toLocaleDateString()}</span>
                       <span>Status: {credential.status}</span>
                     </div>
                   </div>
