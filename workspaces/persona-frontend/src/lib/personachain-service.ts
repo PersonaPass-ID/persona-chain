@@ -60,26 +60,12 @@ export class PersonaChainService {
     } catch (error) {
       console.error('❌ PersonaChain storage error:', error)
       
-      // For now, create a mock storage result to keep the flow working
-      const mockResult: PersonaChainResult = {
-        success: true,
-        data: {
-          id: `pc_${Date.now()}`,
-          credentialId: credential.credentialSubject.id,
-          issuer: credential.issuer,
-          subject: walletAddress,
-          credentialData: credential,
-          blockHeight: Math.floor(Math.random() * 1000000) + 500000,
-          txHash: `0x${Math.random().toString(16).substr(2, 8)}${Date.now().toString(16)}`,
-          timestamp: new Date().toISOString(),
-          status: 'active'
-        },
-        txHash: `0x${Math.random().toString(16).substr(2, 8)}${Date.now().toString(16)}`,
-        blockHeight: Math.floor(Math.random() * 1000000) + 500000
+      // Return actual failure instead of misleading mock data
+      return {
+        success: false,
+        error: 'PersonaChain API authentication required - credentials stored locally only',
+        data: undefined
       }
-
-      console.log(`🔄 Using mock storage result:`, mockResult)
-      return mockResult
     }
   }
 
@@ -138,7 +124,8 @@ export class PersonaChainService {
       console.error('❌ API storage failed:', error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'API storage failed'
+        error: 'PersonaChain API requires authentication - please configure API credentials',
+        data: undefined
       }
     }
   }

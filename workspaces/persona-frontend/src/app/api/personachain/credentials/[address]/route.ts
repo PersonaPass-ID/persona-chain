@@ -59,13 +59,13 @@ export async function POST(
     })
 
     if (!response.ok) {
-      // Return success with mock data for now
-      console.log(`API returned ${response.status}, using mock response`)
+      // Return error instead of misleading mock data
+      console.error(`PersonaChain API error: ${response.status} - ${response.statusText}`)
       return NextResponse.json({
-        success: true,
-        txHash: `0x${Date.now().toString(16)}`,
-        blockHeight: Math.floor(Math.random() * 1000000)
-      })
+        success: false,
+        error: `PersonaChain API unavailable (${response.status})`,
+        note: 'API requires authentication token'
+      }, { status: response.status })
     }
 
     const data = await response.json()
@@ -73,11 +73,11 @@ export async function POST(
     
   } catch (error) {
     console.error('Error storing credential:', error)
-    // Return success with mock data
+    // Return error instead of misleading mock data
     return NextResponse.json({
-      success: true,
-      txHash: `0x${Date.now().toString(16)}`,
-      blockHeight: Math.floor(Math.random() * 1000000)
-    })
+      success: false,
+      error: 'PersonaChain API connection failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
