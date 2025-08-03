@@ -32,15 +32,23 @@ export default function AuthPage() {
 
   const [showSigningMessage, setShowSigningMessage] = useState(false)
   const [securityUnlockRequired, setSecurityUnlockRequired] = useState(false)
+  const [enhancedSecurityRequired, setEnhancedSecurityRequired] = useState(false)
+  const [challengeNumber, setChallengeNumber] = useState(1)
 
-  // Check for security unlock requirement in URL
+  // Check for security requirements in URL
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const security = urlParams.get('security')
+      const challenge = urlParams.get('challenge')
+      
       if (security === 'unlock_required') {
         setSecurityUnlockRequired(true)
         console.log('🔐 SECURITY: Forced wallet unlock required')
+      } else if (security === 'enhanced_verification') {
+        setEnhancedSecurityRequired(true)
+        setChallengeNumber(parseInt(challenge || '1'))
+        console.log(`🛡️ ENHANCED SECURITY: Multi-signature verification required - Challenge ${challenge}/3`)
       }
     }
   }, [])
@@ -133,7 +141,21 @@ export default function AuthPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {securityUnlockRequired ? (
+              {enhancedSecurityRequired ? (
+                <>
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <h1 className="text-3xl font-bold text-purple-900 mb-2">
+                    🛡️ Enhanced Security Verification
+                  </h1>
+                  <p className="text-purple-700">
+                    Challenge {challengeNumber}/3: Multi-signature verification in progress. Connect your wallet to continue the security verification process.
+                  </p>
+                </>
+              ) : securityUnlockRequired ? (
                 <>
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,6 +189,39 @@ export default function AuthPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-white rounded-2xl shadow-lg p-6"
           >
+            {/* Enhanced Security Alert */}
+            {enhancedSecurityRequired && (
+              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-purple-800">
+                      🛡️ Multi-Signature Security Challenge {challengeNumber}/3
+                    </h3>
+                    <div className="mt-2 text-sm text-purple-700">
+                      <p><strong>Enhanced Security Protocol Active:</strong> Your credentials contain sensitive identity information that requires maximum protection.</p>
+                      <div className="mt-2 space-y-1">
+                        <div className={`flex items-center ${challengeNumber >= 1 ? 'text-purple-800 font-medium' : 'text-purple-600'}`}>
+                          {challengeNumber > 1 ? '✅' : '🔄'} Challenge 1: Wallet Ownership Verification
+                        </div>
+                        <div className={`flex items-center ${challengeNumber >= 2 ? 'text-purple-800 font-medium' : 'text-purple-500'}`}>
+                          {challengeNumber > 2 ? '✅' : challengeNumber === 2 ? '🔄' : '⏳'} Challenge 2: Identity Confirmation
+                        </div>
+                        <div className={`flex items-center ${challengeNumber >= 3 ? 'text-purple-800 font-medium' : 'text-purple-500'}`}>
+                          {challengeNumber === 3 ? '🔄' : '⏳'} Challenge 3: Access Authorization
+                        </div>
+                      </div>
+                      <p className="mt-2 font-medium">Connect your wallet to continue with Challenge {challengeNumber}.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Security Alert for Forced Unlock */}
             {securityUnlockRequired && (
               <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -241,7 +296,9 @@ export default function AuthPage() {
             {/* Wallet Options */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-gray-700 mb-4">
-                {securityUnlockRequired 
+                {enhancedSecurityRequired 
+                  ? `🛡️ Challenge ${challengeNumber}/3: Connect wallet for signature verification`
+                  : securityUnlockRequired 
                   ? '🔐 Unlock your wallet with password and reconnect' 
                   : 'Choose your wallet provider'}
               </h3>

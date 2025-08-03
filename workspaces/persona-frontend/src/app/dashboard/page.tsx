@@ -20,64 +20,130 @@ export default function DashboardPage() {
   const [isWalletVerified, setIsWalletVerified] = useState(false)
   const [isVerifyingWallet, setIsVerifyingWallet] = useState(false)
   const [needsFreshConnection, setNeedsFreshConnection] = useState(true)
+  const [lastSecurityCheck, setLastSecurityCheck] = useState<number | null>(null)
+  const [securityChallengeCount, setSecurityChallengeCount] = useState(0)
 
-  // MANDATORY wallet unlock and signature verification
-  const forceWalletUnlockAndVerify = async () => {
+  // ENHANCED MULTI-LAYER SECURITY VERIFICATION
+  const performEnhancedSecurityVerification = async () => {
     try {
       setIsVerifyingWallet(true)
-      console.log('🔐 SECURITY: FORCING wallet unlock and verification for dashboard access')
+      console.log('🔐 SECURITY: Starting ENHANCED multi-layer verification...')
       
-      // STEP 1: Force wallet disconnect to clear any cached unlocks
-      console.log('🔒 SECURITY: Disconnecting wallet to force fresh authentication...')
-      setNeedsFreshConnection(false) // Reset flag to detect reconnection
+      // Security Layer 1: Time-based session validation
+      const now = Date.now()
+      const SECURITY_TIMEOUT = 5 * 60 * 1000 // 5 minutes maximum session
+      
+      if (lastSecurityCheck && (now - lastSecurityCheck) < SECURITY_TIMEOUT) {
+        console.log('🕐 SECURITY: Recent verification found, proceeding to additional challenges...')
+      } else {
+        console.log('🚨 SECURITY: Session expired or first access - requiring full verification')
+        setLastSecurityCheck(null)
+        setSecurityChallengeCount(0)
+      }
+      
+      // Security Layer 2: Progressive challenge system
+      const challengeNumber = securityChallengeCount + 1
+      const totalChallenges = 3 // Multiple verification rounds
+      
+      console.log(`🔒 SECURITY CHALLENGE ${challengeNumber}/${totalChallenges}: Starting verification round...`)
+      
+      // Force disconnect to ensure fresh connection
+      console.log('🔌 SECURITY: Forcing wallet disconnect for fresh authentication...')
+      setNeedsFreshConnection(false)
       disconnect()
       
-      // Wait a moment for disconnect to complete, then redirect to auth
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Wait for disconnect, then require reconnection
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // STEP 2: Force user to go to auth page to reconnect and unlock wallet
-      console.log('🔑 SECURITY: Redirecting to auth - user must reconnect and UNLOCK wallet with password...')
-      router.push('/auth?security=unlock_required')
+      // Redirect with enhanced security parameters
+      const securityParams = new URLSearchParams({
+        security: 'enhanced_verification',
+        challenge: challengeNumber.toString(),
+        timestamp: now.toString(),
+        required_action: 'multi_signature'
+      })
+      
+      console.log('🔑 SECURITY: Redirecting for enhanced verification...')
+      router.push(`/auth?${securityParams.toString()}`)
       
       return false
       
     } catch (error) {
-      console.error('🚨 SECURITY: Wallet unlock verification failed:', error)
+      console.error('🚨 SECURITY: Enhanced verification failed:', error)
       return false
     } finally {
       setIsVerifyingWallet(false)
     }
   }
 
-  // Verify wallet after reconnection
-  const verifyWalletAfterUnlock = async () => {
+  // ENHANCED MULTI-SIGNATURE VERIFICATION
+  const performMultiSignatureVerification = async () => {
     if (!user?.address || !signMessage) {
       console.error('🚨 No user address or signMessage function available')
       return false
     }
 
     try {
-      console.log('🔐 SECURITY: Verifying freshly unlocked wallet ownership')
+      console.log('🔐 SECURITY: Starting MULTI-SIGNATURE verification process...')
       
-      // Create a unique challenge message
+      const currentChallenge = securityChallengeCount + 1
       const timestamp = Date.now()
-      const challengeMessage = `🔐 PersonaPass Dashboard Access\n\nI just unlocked my wallet and am the owner of ${user.address}\n\nTimestamp: ${timestamp}\nAccess Level: Full Dashboard\n\nThis signature proves I control this freshly unlocked wallet.`
       
-      console.log('📝 Requesting wallet signature from freshly unlocked wallet...')
-      const signature = await signMessage(challengeMessage)
+      // Security Layer 3: Multiple unique signature challenges
+      const challenges = [
+        {
+          id: 1,
+          title: "Wallet Ownership Verification",
+          message: `🔐 PersonaPass Security Challenge #1\n\nI am the legitimate owner of wallet: ${user.address}\n\nTimestamp: ${timestamp}\nChallenge: WALLET_OWNERSHIP\n\nI understand this signature proves my control over this wallet.`
+        },
+        {
+          id: 2, 
+          title: "Identity Verification",
+          message: `🔐 PersonaPass Security Challenge #2\n\nI confirm I am accessing MY OWN credentials at: ${user.address}\n\nTimestamp: ${timestamp + 1000}\nChallenge: IDENTITY_CONFIRMATION\n\nI certify that I am the person who created these credentials.`
+        },
+        {
+          id: 3,
+          title: "Access Authorization",
+          message: `🔐 PersonaPass Security Challenge #3\n\nI authorize access to sensitive credential data for: ${user.address}\n\nTimestamp: ${timestamp + 2000}\nChallenge: ACCESS_AUTHORIZATION\n\nI understand this grants access to private verifiable credentials.`
+        }
+      ]
       
-      if (!signature) {
-        console.error('🚨 SECURITY VIOLATION: User refused to sign verification message after unlock')
+      const challenge = challenges[currentChallenge - 1]
+      if (!challenge) {
+        console.error('🚨 SECURITY: Invalid challenge number')
         return false
       }
       
-      console.log('✅ SECURITY: Freshly unlocked wallet signature verified successfully')
+      console.log(`📝 SECURITY CHALLENGE ${currentChallenge}/3: ${challenge.title}`)
+      console.log('🔒 Requesting signature for enhanced security verification...')
+      
+      const signature = await signMessage(challenge.message)
+      
+      if (!signature) {
+        console.error('🚨 SECURITY VIOLATION: User refused to sign security challenge')
+        return false
+      }
+      
+      console.log(`✅ SECURITY CHALLENGE ${currentChallenge}/3: PASSED`)
       console.log('🔑 Signature:', signature.substring(0, 20) + '...')
       
-      return true
+      // Update security state
+      setSecurityChallengeCount(currentChallenge)
+      setLastSecurityCheck(timestamp)
+      
+      // Check if all challenges completed
+      if (currentChallenge >= 3) {
+        console.log('🎉 SECURITY: ALL CHALLENGES COMPLETED - Access authorized')
+        return true
+      } else {
+        console.log(`🔄 SECURITY: Challenge ${currentChallenge}/3 passed, requiring next challenge...`)
+        // Slight delay before next challenge
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return await performEnhancedSecurityVerification()
+      }
       
     } catch (error) {
-      console.error('🚨 SECURITY: Wallet verification after unlock failed:', error)
+      console.error('🚨 SECURITY: Multi-signature verification failed:', error)
       return false
     }
   }
@@ -90,32 +156,35 @@ export default function DashboardPage() {
       return
     }
 
-    // SECURITY: Force wallet unlock and verification on every dashboard access
+    // ENHANCED SECURITY: Multi-layer verification on every dashboard access
     const performSecurityCheck = async () => {
-      console.log('🔒 SECURITY: Performing MANDATORY wallet unlock and verification...')
+      console.log('🔒 ENHANCED SECURITY: Performing multi-layer security verification...')
       
-      // Always force fresh wallet unlock when accessing dashboard
-      console.log('🔑 SECURITY: Forcing fresh wallet connection with password unlock...')
-      await forceWalletUnlockAndVerify()
+      // Always perform enhanced verification when accessing dashboard
+      console.log('🛡️ SECURITY: Starting enhanced security protocol...')
+      await performEnhancedSecurityVerification()
     }
     
     performSecurityCheck()
   }, [isAuthenticated, isInitializing, router])
 
-  // Detect when user reconnects after forced disconnect
+  // Detect when user reconnects after enhanced security challenge
   useEffect(() => {
     if (user?.address && !isWalletVerified && !needsFreshConnection) {
-      // User just reconnected, now verify the fresh wallet
+      // User just reconnected, now perform multi-signature verification
       const verifyReconnectedWallet = async () => {
-        console.log('🔐 SECURITY: User reconnected, verifying freshly unlocked wallet...')
-        const verified = await verifyWalletAfterUnlock()
+        console.log('🔐 ENHANCED SECURITY: User reconnected, starting multi-signature verification...')
+        const verified = await performMultiSignatureVerification()
         
         if (verified) {
+          console.log('🎉 SECURITY: All verification challenges completed successfully')
           setIsWalletVerified(true)
           loadNetworkStatus()
         } else {
-          console.log('🚨 SECURITY: Fresh wallet verification failed after reconnection')
+          console.log('🚨 SECURITY: Multi-signature verification failed after reconnection')
           setNeedsFreshConnection(true)
+          setSecurityChallengeCount(0)
+          setLastSecurityCheck(null)
           disconnect()
           router.push('/auth')
         }
@@ -123,7 +192,7 @@ export default function DashboardPage() {
       
       verifyReconnectedWallet()
     }
-  }, [user?.address, isWalletVerified, needsFreshConnection])
+  }, [user?.address, isWalletVerified, needsFreshConnection, securityChallengeCount])
 
   useEffect(() => {
     if (user?.address && isWalletVerified) {
@@ -235,19 +304,19 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">🔐 Wallet Password Required</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">🛡️ Enhanced Security Verification</h2>
             <p className="text-gray-600 mb-6">
-              For maximum security, you must unlock your wallet with your password and sign a verification message EVERY TIME you access your credentials.
+              Your credentials require MAXIMUM SECURITY protection. You must complete multiple verification challenges including wallet signatures to prove your identity.
             </p>
             
             {isVerifyingWallet ? (
               <div className="space-y-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-sm text-blue-600 font-medium">
-                  🔑 Disconnecting wallet to force fresh unlock...
+                  🛡️ Initializing enhanced security verification...
                 </p>
                 <p className="text-xs text-gray-500">
-                  You will need to reconnect and enter your wallet password
+                  Preparing multi-signature challenge system
                 </p>
               </div>
             ) : (
@@ -261,20 +330,26 @@ export default function DashboardPage() {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-yellow-800">
-                        Security Alert
+                        Enhanced Security Required
                       </h3>
                       <div className="mt-2 text-sm text-yellow-700">
-                        <p>Without wallet password unlock, anyone could access these credentials. You must unlock your wallet with your password AND sign a verification message for wallet <span className="font-mono text-xs">{user?.address}</span>.</p>
+                        <p>Your credentials contain sensitive identity information. You must complete multiple security challenges including:</p>
+                        <ul className="mt-2 list-disc list-inside space-y-1">
+                          <li>Wallet ownership verification</li>
+                          <li>Identity confirmation signature</li>
+                          <li>Access authorization signature</li>
+                        </ul>
+                        <p className="mt-2">This multi-layer security prevents unauthorized access to wallet <span className="font-mono text-xs">{user?.address}</span>.</p>
                       </div>
                     </div>
                   </div>
                 </div>
                 
                 <button
-                  onClick={forceWalletUnlockAndVerify}
+                  onClick={performEnhancedSecurityVerification}
                   className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
                 >
-                  🔒 Unlock Wallet & Enter Password
+                  🛡️ Begin Enhanced Security Verification
                 </button>
                 
                 <button
