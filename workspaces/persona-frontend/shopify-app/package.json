@@ -1,0 +1,19 @@
+{
+  "name": "personapass-age-verification",
+  "version": "1.0.0",
+  "description": "PersonaPass Age Verification for Shopify - Privacy-preserving age gates that convert",
+  "scripts": {
+    "dev": "shopify app dev",
+    "build": "shopify app build",
+    "deploy": "shopify app deploy",
+    "generate": "shopify app generate",
+    "info": "shopify app info"
+  },
+  "dependencies": {
+    "@shopify/app": "^3.0.0",
+    "@shopify/cli": "^3.0.0",
+    "@personapass/verify": "^1.0.0"
+  },
+  "author": "PersonaPass",
+  "license": "MIT"
+}

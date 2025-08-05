@@ -1,0 +1,28 @@
+# PersonaPass Age Verification App Configuration
+
+name = "PersonaPass Age Verification"
+client_id = "YOUR_CLIENT_ID"
+application_url = "https://app.personapass.xyz/shopify"
+embedded = true
+
+[auth]
+redirect_urls = [
+  "https://app.personapass.xyz/shopify/auth/callback",
+  "https://app.personapass.xyz/shopify/auth/callback",
+  "https://app.personapass.xyz/shopify/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-01"
+
+[[webhooks.subscriptions]]
+topics = [ "shop/update", "app/uninstalled" ]
+uri = "/api/webhooks"
+
+[app_proxy]
+url = "https://app.personapass.xyz/shopify/proxy"
+subpath = "personapass"
+prefix = "apps"
+
+[pos]
+embedded = false

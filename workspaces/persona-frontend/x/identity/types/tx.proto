@@ -1,0 +1,66 @@
+syntax = "proto3";
+package personachain.identity;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/PersonaPass-ID/persona-chain/x/identity/types";
+
+// Msg defines the Msg service.
+service Msg {
+  // CreateIdentity creates a new DID for an address
+  rpc CreateIdentity(MsgCreateIdentity) returns (MsgCreateIdentityResponse);
+  
+  // IssueCredential issues a verifiable credential
+  rpc IssueCredential(MsgIssueCredential) returns (MsgIssueCredentialResponse);
+  
+  // VerifyCredential verifies a credential with ZK proof
+  rpc VerifyCredential(MsgVerifyCredential) returns (MsgVerifyCredentialResponse);
+  
+  // RevokeCredential revokes an issued credential
+  rpc RevokeCredential(MsgRevokeCredential) returns (MsgRevokeCredentialResponse);
+}
+
+// MsgCreateIdentity - Create a new DID
+message MsgCreateIdentity {
+  string creator = 1;
+  string did_document = 2;
+}
+
+// MsgCreateIdentityResponse defines the CreateIdentity response type
+message MsgCreateIdentityResponse {}
+
+// MsgIssueCredential - Issue a verifiable credential
+message MsgIssueCredential {
+  string issuer = 1;
+  string subject_did = 2;
+  string credential_type = 3;
+  string credential_data = 4;
+  int64 expiry = 5;
+}
+
+// MsgIssueCredentialResponse defines the IssueCredential response type
+message MsgIssueCredentialResponse {
+  string credential_id = 1;
+}
+
+// MsgVerifyCredential - Verify a credential with ZK proof
+message MsgVerifyCredential {
+  string verifier = 1;
+  string credential_id = 2;
+  string proof_data = 3;
+}
+
+// MsgVerifyCredentialResponse defines the VerifyCredential response type
+message MsgVerifyCredentialResponse {
+  bool verified = 1;
+}
+
+// MsgRevokeCredential - Revoke an issued credential
+message MsgRevokeCredential {
+  string issuer = 1;
+  string credential_id = 2;
+  string reason = 3;
+}
+
+// MsgRevokeCredentialResponse defines the RevokeCredential response type
+message MsgRevokeCredentialResponse {}

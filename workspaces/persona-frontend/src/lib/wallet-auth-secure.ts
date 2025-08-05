@@ -13,6 +13,8 @@
  */
 
 import { secureStorage } from './secure-storage';
+import { signatureVerifier, SignatureData, WalletType } from './crypto/signature-verifier';
+import { didManager } from './did/w3c-did-manager';
 import { webcrypto } from 'crypto';
 
 const crypto = typeof window !== 'undefined' ? window.crypto : webcrypto;
@@ -42,8 +44,10 @@ interface AuthSession {
 
 interface WalletSignature {
   signature: string;
-  publicKey: string;
+  publicKey?: string;
   algorithm: string;
+  walletType?: WalletType;
+  chainId?: string;
 }
 
 class WalletAuthSecure {
@@ -161,7 +165,7 @@ class WalletAuthSecure {
       }
 
       // Generate DID for authenticated wallet
-      const did = this.generateDID(walletAddress);
+      const did = await this.generateDID(walletAddress);
 
       // Create authenticated session
       const session = await this.createAuthenticatedSession(walletAddress, did);
@@ -325,15 +329,7 @@ class WalletAuthSecure {
    * Create challenge message for wallet to sign
    */
   private createChallengeMessage(walletAddress: string, nonce: string, timestamp: number): string {
-    return `PersonaPass Authentication Challenge
-
-Wallet: ${walletAddress}
-Nonce: ${nonce}
-Timestamp: ${timestamp}
-Domain: ${typeof window !== 'undefined' ? window.location.origin : 'localhost'}
-
-By signing this message, you authenticate with PersonaPass.
-This signature cannot be used to authorize transactions.`;
+    return signatureVerifier.createSigningMessage(walletAddress, nonce);
   }
 
   /**
@@ -345,25 +341,29 @@ This signature cannot be used to authorize transactions.`;
     walletAddress: string
   ): Promise<boolean> {
     try {
-      // For production, implement actual signature verification based on wallet type
-      // This is a simplified version - in reality you'd need to:
-      // 1. Detect wallet type (Keplr, Leap, etc.)
-      // 2. Use appropriate cryptographic verification
-      // 3. Verify the signature matches the public key
-      // 4. Verify the public key corresponds to the wallet address
+      // Create SignatureData object for verification
+      const signatureData: SignatureData = {
+        signature: signature.signature,
+        publicKey: signature.publicKey,
+        algorithm: signature.algorithm,
+        walletType: signature.walletType || signatureVerifier.detectWalletType(walletAddress),
+        chainId: signature.chainId
+      };
 
-      // Simulate signature verification (replace with real implementation)
-      const isValid = signature.signature.length > 64 && 
-                     signature.publicKey.length > 32 &&
-                     walletAddress.length > 20;
+      // Verify the signature
+      const result = await signatureVerifier.verifySignature(
+        message,
+        signatureData,
+        walletAddress
+      );
 
-      if (isValid) {
-        console.log(`✅ Signature verified for: ${walletAddress.substring(0, 8)}...`);
+      if (result.isValid) {
+        console.log(`✅ Signature cryptographically verified for: ${walletAddress.substring(0, 8)}...`);
       } else {
-        console.log(`❌ Invalid signature for: ${walletAddress.substring(0, 8)}...`);
+        console.log(`❌ Invalid signature for: ${walletAddress.substring(0, 8)}... - ${result.error}`);
       }
 
-      return isValid;
+      return result.isValid;
 
     } catch (error) {
       console.error('❌ Signature verification error:', error);
@@ -372,11 +372,43 @@ This signature cannot be used to authorize transactions.`;
   }
 
   /**
-   * Generate DID from wallet address
+   * Generate DID from wallet address using W3C standards
    */
-  private generateDID(walletAddress: string): string {
-    const hash = Buffer.from(walletAddress).toString('base64').substring(0, 16);
-    return `did:persona:${hash}`;
+  private async generateDID(walletAddress: string): Promise<string> {
+    try {
+      // Check if DID already exists for this wallet
+      const existingDID = await secureStorage.retrieveSecure<string>(`did:${walletAddress}`);
+      if (existingDID) {
+        return existingDID;
+      }
+
+      // Create new W3C compliant DID
+      const { did, didDocument, keyPair } = await didManager.createDID(walletAddress, {
+        keyType: 'Ed25519',
+        services: [
+          {
+            id: '#wallet-connect',
+            type: 'WalletConnect',
+            serviceEndpoint: walletAddress
+          }
+        ],
+        alsoKnownAs: [`wallet:${walletAddress}`]
+      });
+
+      // Store DID association securely
+      await secureStorage.storeSecure(`did:${walletAddress}`, did);
+      await secureStorage.storeSecure(`did-doc:${did}`, didDocument);
+      await secureStorage.storeSecure(`did-keys:${did}`, keyPair, 24 * 60 * 60 * 1000); // 24 hours
+
+      console.log(`🆔 Created W3C DID for wallet: ${walletAddress.substring(0, 8)}...`);
+      
+      return did;
+    } catch (error) {
+      console.error('DID generation error:', error);
+      // Fallback to simple DID if W3C generation fails
+      const hash = Buffer.from(walletAddress).toString('base64').substring(0, 16);
+      return `did:persona:fallback:${hash}`;
+    }
   }
 
   /**

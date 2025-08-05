@@ -1,0 +1,90 @@
+syntax = "proto3";
+package personachain.identity;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "personachain/identity/identity.proto";
+
+option go_package = "github.com/PersonaPass-ID/persona-chain/x/identity/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Identity queries an identity by address
+  rpc Identity(QueryIdentityRequest) returns (QueryIdentityResponse) {
+    option (google.api.http).get = "/personachain/identity/identity/{address}";
+  }
+  
+  // Credential queries a credential by ID
+  rpc Credential(QueryCredentialRequest) returns (QueryCredentialResponse) {
+    option (google.api.http).get = "/personachain/identity/credential/{credential_id}";
+  }
+  
+  // Credentials queries all credentials for a DID
+  rpc Credentials(QueryCredentialsRequest) returns (QueryCredentialsResponse) {
+    option (google.api.http).get = "/personachain/identity/credentials/{subject_did}";
+  }
+  
+  // Verifications queries verification history for a credential
+  rpc Verifications(QueryVerificationsRequest) returns (QueryVerificationsResponse) {
+    option (google.api.http).get = "/personachain/identity/verifications/{credential_id}";
+  }
+  
+  // Params queries the module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/personachain/identity/params";
+  }
+}
+
+// QueryIdentityRequest is request type for the Query/Identity RPC method
+message QueryIdentityRequest {
+  string address = 1;
+}
+
+// QueryIdentityResponse is response type for the Query/Identity RPC method
+message QueryIdentityResponse {
+  Identity identity = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryCredentialRequest is request type for the Query/Credential RPC method
+message QueryCredentialRequest {
+  string credential_id = 1;
+}
+
+// QueryCredentialResponse is response type for the Query/Credential RPC method
+message QueryCredentialResponse {
+  Credential credential = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryCredentialsRequest is request type for the Query/Credentials RPC method
+message QueryCredentialsRequest {
+  string subject_did = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryCredentialsResponse is response type for the Query/Credentials RPC method
+message QueryCredentialsResponse {
+  repeated Credential credentials = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryVerificationsRequest is request type for the Query/Verifications RPC method
+message QueryVerificationsRequest {
+  string credential_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryVerificationsResponse is response type for the Query/Verifications RPC method
+message QueryVerificationsResponse {
+  repeated Verification verifications = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
