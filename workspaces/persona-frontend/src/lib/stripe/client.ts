@@ -4,10 +4,12 @@
 import Stripe from 'stripe';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Server-side Stripe client
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
-});
+// Server-side Stripe client (lazy initialization to avoid build errors)
+export const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    })
+  : null;
 
 // Client-side Stripe instance
 let stripePromise: Promise<any> | null = null;
@@ -49,6 +51,10 @@ export async function createOrUpdateCustomer(
   email: string,
   metadata: Record<string, string> = {}
 ): Promise<Stripe.Customer> {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   const existingCustomers = await stripe.customers.list({
     email,
     limit: 1
@@ -74,6 +80,10 @@ export async function createSubscription(
   customerId: string,
   priceId: string
 ): Promise<Stripe.Subscription> {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   return stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: priceId }],
@@ -87,6 +97,10 @@ export async function recordVerificationUsage(
   customerId: string,
   quantity: number = 1
 ): Promise<Stripe.UsageRecord> {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   // Get the subscription item for usage-based billing
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
@@ -119,6 +133,10 @@ export async function recordVerificationUsage(
 export async function createSetupIntent(
   customerId: string
 ): Promise<Stripe.SetupIntent> {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   return stripe.setupIntents.create({
     customer: customerId,
     payment_method_types: ['card'],
@@ -131,6 +149,10 @@ export async function createBillingPortalSession(
   customerId: string,
   returnUrl: string
 ): Promise<string> {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl
@@ -145,6 +167,10 @@ export function constructWebhookEvent(
   signature: string,
   webhookSecret: string
 ): Stripe.Event {
+  if (!stripe) {
+    throw new Error('Stripe not configured - STRIPE_SECRET_KEY missing');
+  }
+  
   return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
 }
 
@@ -184,6 +210,10 @@ export async function getUsageStatistics(
 
 // Check if customer has active subscription
 export async function hasActiveSubscription(customerId: string): Promise<boolean> {
+  if (!stripe) {
+    return false; // No stripe = no subscription
+  }
+  
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
     status: 'active',

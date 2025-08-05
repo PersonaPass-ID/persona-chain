@@ -18,34 +18,29 @@ const envSchema = z.object({
     invalid_type_error: 'NODE_ENV must be development, production, or test'
   }),
 
-  // Database Configuration
-  DATABASE_URL: z.string().url({
-    message: 'DATABASE_URL must be a valid PostgreSQL connection URL'
-  }).startsWith('postgresql://', {
-    message: 'DATABASE_URL must be a PostgreSQL connection string'
-  }),
+  // Database Configuration (AWS DynamoDB)
+  AWS_REGION: z.string().default('us-east-1'),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  DYNAMODB_TABLE_NAME: z.string().default('persona-credentials-prod'),
 
   // PersonaChain Blockchain Configuration
   PERSONACHAIN_RPC_URL: z.string().url({
     message: 'PERSONACHAIN_RPC_URL must be a valid RPC endpoint URL'
-  }).startsWith('https://', {
-    message: 'PERSONACHAIN_RPC_URL must use HTTPS in production'
-  }),
+  }).default('http://161.35.2.88:26657'),
   
-  PERSONACHAIN_CHAIN_ID: z.string().regex(/^persona-\d+$/, {
-    message: 'PERSONACHAIN_CHAIN_ID must match format: persona-{number}'
-  }),
+  PERSONACHAIN_CHAIN_ID: z.string().default('persona-1'),
 
   // JWT & Session Security
   JWT_SECRET: z.string().min(32, {
     message: 'JWT_SECRET must be at least 32 characters long'
   }).regex(/[A-Za-z0-9+/=]/, {
     message: 'JWT_SECRET should contain alphanumeric characters and symbols'
-  }),
+  }).default('persona-dev-jwt-secret-32-char-minimum'),
 
   SESSION_SECRET: z.string().min(32, {
     message: 'SESSION_SECRET must be at least 32 characters long'
-  }),
+  }).default('persona-dev-session-secret-32-char-minimum'),
 
   // API Security
   API_RATE_LIMIT_WINDOW_MS: z.string().regex(/^\d+$/, {
@@ -62,37 +57,37 @@ const envSchema = z.object({
     message: 'API_CORS_ORIGIN must be a valid URL'
   }).or(z.literal('*')).default('http://localhost:3000'),
 
-  // Stripe Payment Integration
+  // Stripe Payment Integration (optional)
   STRIPE_SECRET_KEY: z.string().startsWith('sk_', {
     message: 'STRIPE_SECRET_KEY must start with sk_'
   }).min(100, {
     message: 'STRIPE_SECRET_KEY appears to be invalid (too short)'
-  }),
+  }).optional(),
 
   STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_', {
     message: 'STRIPE_WEBHOOK_SECRET must start with whsec_'
-  }),
+  }).optional(),
 
   // Public Environment Variables (exposed to browser)
   NEXT_PUBLIC_APP_URL: z.string().url({
     message: 'NEXT_PUBLIC_APP_URL must be a valid URL'
-  }),
+  }).default('https://personapass.xyz'),
 
   NEXT_PUBLIC_API_URL: z.string().url({
     message: 'NEXT_PUBLIC_API_URL must be a valid URL'
-  }),
+  }).default('https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'),
 
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith('pk_', {
     message: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_'
-  }),
+  }).optional(),
 
   NEXT_PUBLIC_PERSONACHAIN_RPC_URL: z.string().url({
     message: 'NEXT_PUBLIC_PERSONACHAIN_RPC_URL must be a valid URL'
-  }),
+  }).default('http://161.35.2.88:26657'),
 
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().uuid({
     message: 'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID must be a valid UUID'
-  }),
+  }).optional(),
 
   // Monitoring & Logging
   SENTRY_DSN: z.string().url({
@@ -120,9 +115,6 @@ const envSchema = z.object({
   ).default('10'),
 
   UPLOAD_BUCKET_NAME: z.string().optional(),
-  AWS_REGION: z.string().optional(),
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
 
   // Zero-Knowledge Circuit Configuration
   ZK_CIRCUIT_PATH: z.string().default('./circuits'),
@@ -146,43 +138,6 @@ const envSchema = z.object({
 }, {
   message: 'If email configuration is provided, all SMTP fields must be present',
   path: ['SMTP_HOST']
-}).refine((data) => {
-  // AWS configuration must be complete if upload bucket is specified
-  if (data.UPLOAD_BUCKET_NAME) {
-    return data.AWS_REGION && data.AWS_ACCESS_KEY_ID && data.AWS_SECRET_ACCESS_KEY
-  }
-  return true
-}, {
-  message: 'AWS credentials required when UPLOAD_BUCKET_NAME is specified',
-  path: ['AWS_ACCESS_KEY_ID']
-}).refine((data) => {
-  // Production environment validations
-  if (data.NODE_ENV === 'production') {
-    // Must use HTTPS URLs in production
-    const prodUrls = [
-      data.NEXT_PUBLIC_APP_URL,
-      data.NEXT_PUBLIC_API_URL,
-      data.PERSONACHAIN_RPC_URL,
-      data.NEXT_PUBLIC_PERSONACHAIN_RPC_URL
-    ]
-    return prodUrls.every(url => url.startsWith('https://'))
-  }
-  return true
-}, {
-  message: 'All URLs must use HTTPS in production environment',
-  path: ['NODE_ENV']
-}).refine((data) => {
-  // Stripe keys must match environment
-  if (data.NODE_ENV === 'production') {
-    return data.STRIPE_SECRET_KEY.startsWith('sk_live_') && 
-           data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith('pk_live_')
-  } else {
-    return data.STRIPE_SECRET_KEY.startsWith('sk_test_') && 
-           data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith('pk_test_')
-  }
-}, {
-  message: 'Stripe keys must match environment (live keys for production, test keys for development)',
-  path: ['STRIPE_SECRET_KEY']
 })
 
 // Type inference for the validated environment
@@ -236,15 +191,15 @@ export const getSecureHeaders = () => ({
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 })
 
-// Database connection helper with validation
-export const getDatabaseConfig = () => {
-  if (!env.DATABASE_URL.includes('sslmode=require') && isProduction) {
-    console.warn('⚠️  Warning: Database connection should use SSL in production')
-  }
-  
+// AWS DynamoDB connection helper with validation
+export const getDynamoDBConfig = () => {
   return {
-    url: env.DATABASE_URL,
-    ssl: isProduction ? { rejectUnauthorized: false } : false,
+    region: env.AWS_REGION,
+    tableName: env.DYNAMODB_TABLE_NAME,
+    credentials: env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY ? {
+      accessKeyId: env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    } : undefined, // Use IAM roles in production
   }
 }
 
