@@ -34,6 +34,10 @@ export default function WalletOnboarding() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Identity creation form state (moved to top level)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
 
   // Reset error when step changes
   useEffect(() => {
@@ -350,9 +354,6 @@ export default function WalletOnboarding() {
 
   // Render identity creation form
   const renderIdentityCreation = () => {
-    const [firstName, setFirstName] = useState('')
-    const [lastName, setLastName] = useState('')
-
     return (
       <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
         <div className="text-center mb-6">
