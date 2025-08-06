@@ -1,9 +1,10 @@
 // End-to-End Web3 Identity Test Flow
 // Tests the complete PersonaPass Web3 identity system
 
-import { DIDResolverService, DIDCreationParams } from './did-resolver'
-import { identityStorage, VerifiableCredential } from './storage/identity-storage'
-import { ZKProofService, ZKProofRequest } from './zk-proofs'
+import { TestDIDResolverService, DIDCreationParams } from './test-did-resolver'
+import { testIdentityStorage, VerifiableCredential } from './storage/test-identity-storage'
+import { TestZKProofService } from './test-zk-proofs'
+import { ZKProofRequest } from './zk-proofs'
 
 export interface TestResult {
   success: boolean
@@ -57,10 +58,10 @@ export class IdentityTestFlow {
       await this.testDIDCreation(testWallet)
       
       // Stage 2: Credential Issuance
-      const did = await this.testCredentialIssuance(testWallet)
+      const credentialId = await this.testCredentialIssuance(testWallet)
       
       // Stage 3: ZK Proof Generation
-      const credential = await this.testZKProofGeneration(testWallet, did)
+      const credential = await this.testZKProofGeneration(testWallet, credentialId)
       
       // Stage 4: ZK Proof Verification
       await this.testZKProofVerification(credential)
@@ -100,16 +101,7 @@ export class IdentityTestFlow {
         publicKey: 'test-public-key-' + Date.now()
       }
 
-      // Mock wallet signature generation for testing
-      const originalGenerator = require('./encryption').WalletSignatureGenerator.generateEncryptionSignature
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = async () => {
-        return 'test-signature-' + Date.now()
-      }
-
-      const result = await DIDResolverService.createDID(creationParams)
-
-      // Restore original function
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = originalGenerator
+      const result = await TestDIDResolverService.createDID(creationParams)
 
       if (result.success && result.did) {
         const timing = Date.now() - startTime
@@ -144,7 +136,7 @@ export class IdentityTestFlow {
       console.log('📜 Testing Credential Issuance...')
 
       // Get the DID that was created
-      const did = await identityStorage.getDIDByWallet(testWallet.address)
+      const did = await testIdentityStorage.getDIDByWallet(testWallet.address)
       
       if (!did) {
         this.addResult(false, 'CREDENTIAL_ISSUANCE', 'No DID found for credential issuance')
@@ -176,20 +168,11 @@ export class IdentityTestFlow {
         }
       }
 
-      // Mock wallet signature for testing
-      const originalGenerator = require('./encryption').WalletSignatureGenerator.generateEncryptionSignature
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = async () => {
-        return 'test-signature-' + Date.now()
-      }
-
-      const result = await identityStorage.storeVerifiableCredential(
+      const result = await testIdentityStorage.storeVerifiableCredential(
         testCredential,
         testWallet.address,
         testWallet.type
       )
-
-      // Restore original function
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = originalGenerator
 
       if (result.success) {
         const timing = Date.now() - startTime
@@ -236,20 +219,11 @@ export class IdentityTestFlow {
         challenge: 'test-challenge-' + Date.now()
       }
 
-      // Mock wallet signature for testing
-      const originalGenerator = require('./encryption').WalletSignatureGenerator.generateEncryptionSignature
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = async () => {
-        return 'test-signature-' + Date.now()
-      }
-
-      const result = await ZKProofService.generateSelectiveDisclosureProof(
+      const result = await TestZKProofService.generateSelectiveDisclosureProof(
         zkRequest,
         testWallet.address,
         testWallet.type
       )
-
-      // Restore original function
-      require('./encryption').WalletSignatureGenerator.generateEncryptionSignature = originalGenerator
 
       if (result.success && result.data) {
         const timing = Date.now() - startTime
@@ -295,7 +269,7 @@ export class IdentityTestFlow {
         verifierDid: 'did:persona:test-verifier'
       }
 
-      const result = await ZKProofService.verifyProof(verificationRequest)
+      const result = await TestZKProofService.verifyProof(verificationRequest)
 
       if (result.success && result.isValid) {
         const timing = Date.now() - startTime
