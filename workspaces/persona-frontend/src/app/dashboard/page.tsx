@@ -6,6 +6,8 @@ import { useWalletAuth } from '@/hooks/useWalletAuth'
 import { personaChainService } from '@/lib/personachain-service'
 import type { PersonaChainCredential } from '@/lib/personachain-service'
 import { credentialManagementService } from '@/lib/credential-management-service'
+import { personaIDToken } from '@/lib/personaid-token'
+import PersonaIDTokenPurchase from '@/components/PersonaIDTokenPurchase'
 import ZKProofModal from '@/components/ZKProofModal'
 
 export default function DashboardPage() {
@@ -22,6 +24,8 @@ export default function DashboardPage() {
   const [needsFreshConnection, setNeedsFreshConnection] = useState(true)
   const [lastSecurityCheck, setLastSecurityCheck] = useState<number | null>(null)
   const [securityChallengeCount, setSecurityChallengeCount] = useState(0)
+  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase'>('overview')
+  const [idBalance, setIDBalance] = useState<string>('0 ID')
 
   // ENHANCED MULTI-LAYER SECURITY VERIFICATION
   const performEnhancedSecurityVerification = async () => {
@@ -197,7 +201,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user?.address && isWalletVerified) {
       loadCredentials()
-      loadInsights()
+      loadInsights() 
+      loadIDBalance()
     }
   }, [user, isWalletVerified])
 
@@ -242,6 +247,20 @@ export default function DashboardPage() {
       console.log(`📊 Loaded credential insights:`, credInsights)
     } catch (error) {
       console.error('Failed to load insights:', error)
+    }
+  }
+
+  const loadIDBalance = async () => {
+    try {
+      if (!user?.address) return
+      
+      const balance = await personaIDToken.getIDBalance(user.address)
+      if (balance) {
+        setIDBalance(balance.formatted)
+        console.log(`💰 ID Token Balance: ${balance.formatted}`)
+      }
+    } catch (error) {
+      console.error('Failed to load ID balance:', error)
     }
   }
 
@@ -379,12 +398,22 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold text-gray-900">PersonaPass</h1>
               <span className="ml-2 text-sm text-gray-500">Dashboard</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">ID Balance:</span>
+                <span className="ml-1 font-semibold text-blue-600">{idBalance}</span>
+              </div>
               <div className="text-sm text-gray-600">
                 <span className="font-medium">DID:</span>
                 <span className="ml-1 font-mono text-xs">{userDID}</span>
               </div>
               <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setActiveTab('purchase')}
+                  className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                >
+                  Buy ID Tokens
+                </button>
                 <button
                   onClick={() => router.push('/credentials')}
                   className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -401,18 +430,48 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        
+        {/* Navigation Tabs */}
+        <div className="border-t border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                { id: 'overview', label: 'Overview', icon: '🏠' },
+                { id: 'credentials', label: 'Credentials', icon: '🏆' },
+                { id: 'purchase', label: 'Buy ID Tokens', icon: '💰' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${(
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  )}`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back!
-          </h2>
-          <p className="text-gray-600">
-            Manage your verifiable credentials and create new ones to showcase your professional achievements.
-          </p>
-        </div>
+        
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Welcome Section */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome back!
+              </h2>
+              <p className="text-gray-600">
+                Manage your verifiable credentials and ID tokens to power your digital sovereignty.
+              </p>
+            </div>
 
         {/* Renewal Alerts Banner */}
         {insights && insights.renewalAlerts && insights.renewalAlerts.length > 0 && (
@@ -574,6 +633,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
+            {/* ID Token Balance Card */}
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-6 mb-8 text-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">PersonaID Token Balance</h3>
+                  <div className="text-3xl font-bold">{idBalance}</div>
+                  <p className="text-blue-100 text-sm mt-2">
+                    Use ID tokens for DID operations, credential creation, and identity verification
+                  </p>
+                </div>
+                <div className="text-right">
+                  <button
+                    onClick={() => setActiveTab('purchase')}
+                    className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+                  >
+                    Buy More Tokens
+                  </button>
+                  <div className="text-blue-100 text-xs mt-2">
+                    Current Rate: $0.01 per ID token
+                  </div>
+                </div>
+              </div>
+            </div>
+
         {/* Existing Credentials */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Credentials</h3>
@@ -687,6 +770,115 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+          </>
+        )}
+
+        {/* Credentials Tab */}
+        {activeTab === 'credentials' && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Manage Your Credentials</h3>
+            
+            {credentials.length === 0 ? (
+              <div className="text-center py-12">
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No credentials yet</h4>
+                <p className="text-gray-600 mb-4">
+                  Create your first verifiable credential to get started
+                </p>
+                <button
+                  onClick={createGitHubCredential}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Create GitHub Credential
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {credentials.map((credential, index) => (
+                  <div key={credential.id || index} className="border border-gray-200 rounded-lg p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                          GitHub Developer Credential
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                          @{credential.credentialData?.credentialSubject?.githubUsername || 'identity-verified'}
+                        </p>
+                        <div className="flex space-x-4 text-sm text-gray-600">
+                          <span>Repos: {credential.credentialData?.credentialSubject?.publicRepos || 0}</span>
+                          <span>Followers: {credential.credentialData?.credentialSubject?.followers || 0}</span>
+                          <span>Age: {credential.credentialData?.credentialSubject?.accountAgeMonths || 0}m</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handleGenerateProof(credential)}
+                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                        >
+                          Generate Proof
+                        </button>
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                          Share
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-4">Create New Credential</h4>
+              <div className="grid md:grid-cols-3 gap-4">
+                <button
+                  onClick={createGitHubCredential}
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gray-900 rounded mr-3 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium">GitHub Developer</span>
+                </button>
+                
+                <button
+                  onClick={createLinkedInCredential}
+                  className="flex items-center p-4 border border-gray-200 rounded-lg opacity-50 cursor-not-allowed"
+                >
+                  <div className="w-8 h-8 bg-blue-600 rounded mr-3 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium block">LinkedIn Professional</span>
+                    <span className="text-xs text-gray-500">Coming Soon</span>
+                  </div>
+                </button>
+                
+                <button className="flex items-center p-4 border border-gray-200 rounded-lg opacity-50 cursor-not-allowed">
+                  <div className="w-8 h-8 bg-green-600 rounded mr-3 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium block">Certificates</span>
+                    <span className="text-xs text-gray-500">Coming Soon</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Purchase Tab */}
+        {activeTab === 'purchase' && (
+          <PersonaIDTokenPurchase />
+        )}
       </main>
 
       {/* ZK Proof Modal */}

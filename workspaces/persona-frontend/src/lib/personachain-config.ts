@@ -6,8 +6,8 @@
 export const PERSONACHAIN_NETWORK_CONFIG = {
   chainId: 'personachain-1', // Your actual working PersonaChain
   chainName: 'PersonaChain Identity Network',
-  rpc: 'http://3.95.230.14:26657', // Working validator RPC
-  rest: 'http://3.95.230.14:1317', // Working REST endpoint
+  rpc: 'http://13.221.89.96:26657', // Working validator RPC (updated IP)
+  rest: 'http://13.221.89.96:1317', // Working REST endpoint (updated IP)
   bip44: {
     coinType: 118, // Standard Cosmos coin type
   },

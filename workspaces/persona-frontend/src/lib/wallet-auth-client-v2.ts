@@ -60,8 +60,8 @@ declare global {
 const PERSONACHAIN_CONFIG = {
   chainId: 'personachain-1', // Your actual PersonaChain network!
   chainName: 'PersonaChain Identity Network', 
-  rpc: 'http://3.95.230.14:26657', // Working validator RPC
-  rest: 'http://3.95.230.14:1317', // Working REST API
+  rpc: 'http://13.221.89.96:26657', // Working validator RPC (updated IP)
+  rest: 'http://13.221.89.96:1317', // Working REST API (updated IP)
   bip44: { coinType: 118 },
   bech32Config: {
     bech32PrefixAccAddr: 'cosmos', // Using cosmos prefix - your chain uses this
