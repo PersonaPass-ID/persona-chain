@@ -22,138 +22,9 @@ export default function DashboardPage() {
   const [selectedCredentialForProof, setSelectedCredentialForProof] = useState<PersonaChainCredential | null>(null)
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [insights, setInsights] = useState<any>(null)
-  const [isWalletVerified, setIsWalletVerified] = useState(false)
-  const [isVerifyingWallet, setIsVerifyingWallet] = useState(false)
-  const [needsFreshConnection, setNeedsFreshConnection] = useState(true)
-  const [lastSecurityCheck, setLastSecurityCheck] = useState<number | null>(null)
-  const [securityChallengeCount, setSecurityChallengeCount] = useState(0)
   const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase' | 'kyc' | 'vc'>('overview')
   const [idBalance, setIDBalance] = useState<string>('0 ID')
 
-  // ENHANCED MULTI-LAYER SECURITY VERIFICATION
-  const performEnhancedSecurityVerification = async () => {
-    try {
-      setIsVerifyingWallet(true)
-      console.log('🔐 SECURITY: Starting ENHANCED multi-layer verification...')
-      
-      // Security Layer 1: Time-based session validation
-      const now = Date.now()
-      const SECURITY_TIMEOUT = 5 * 60 * 1000 // 5 minutes maximum session
-      
-      if (lastSecurityCheck && (now - lastSecurityCheck) < SECURITY_TIMEOUT) {
-        console.log('🕐 SECURITY: Recent verification found, proceeding to additional challenges...')
-      } else {
-        console.log('🚨 SECURITY: Session expired or first access - requiring full verification')
-        setLastSecurityCheck(null)
-        setSecurityChallengeCount(0)
-      }
-      
-      // Security Layer 2: Progressive challenge system
-      const challengeNumber = securityChallengeCount + 1
-      const totalChallenges = 3 // Multiple verification rounds
-      
-      console.log(`🔒 SECURITY CHALLENGE ${challengeNumber}/${totalChallenges}: Starting verification round...`)
-      
-      // Force disconnect to ensure fresh connection
-      console.log('🔌 SECURITY: Forcing wallet disconnect for fresh authentication...')
-      setNeedsFreshConnection(false)
-      disconnect()
-      
-      // Wait for disconnect, then require reconnection
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Redirect with enhanced security parameters
-      const securityParams = new URLSearchParams({
-        security: 'enhanced_verification',
-        challenge: challengeNumber.toString(),
-        timestamp: now.toString(),
-        required_action: 'multi_signature'
-      })
-      
-      console.log('🔑 SECURITY: Redirecting for enhanced verification...')
-      router.push(`/auth?${securityParams.toString()}`)
-      
-      return false
-      
-    } catch (error) {
-      console.error('🚨 SECURITY: Enhanced verification failed:', error)
-      return false
-    } finally {
-      setIsVerifyingWallet(false)
-    }
-  }
-
-  // ENHANCED MULTI-SIGNATURE VERIFICATION
-  const performMultiSignatureVerification = async () => {
-    if (!user?.address || !signMessage) {
-      console.error('🚨 No user address or signMessage function available')
-      return false
-    }
-
-    try {
-      console.log('🔐 SECURITY: Starting MULTI-SIGNATURE verification process...')
-      
-      const currentChallenge = securityChallengeCount + 1
-      const timestamp = Date.now()
-      
-      // Security Layer 3: Multiple unique signature challenges
-      const challenges = [
-        {
-          id: 1,
-          title: "Wallet Ownership Verification",
-          message: `🔐 PersonaPass Security Challenge #1\n\nI am the legitimate owner of wallet: ${user.address}\n\nTimestamp: ${timestamp}\nChallenge: WALLET_OWNERSHIP\n\nI understand this signature proves my control over this wallet.`
-        },
-        {
-          id: 2, 
-          title: "Identity Verification",
-          message: `🔐 PersonaPass Security Challenge #2\n\nI confirm I am accessing MY OWN credentials at: ${user.address}\n\nTimestamp: ${timestamp + 1000}\nChallenge: IDENTITY_CONFIRMATION\n\nI certify that I am the person who created these credentials.`
-        },
-        {
-          id: 3,
-          title: "Access Authorization",
-          message: `🔐 PersonaPass Security Challenge #3\n\nI authorize access to sensitive credential data for: ${user.address}\n\nTimestamp: ${timestamp + 2000}\nChallenge: ACCESS_AUTHORIZATION\n\nI understand this grants access to private verifiable credentials.`
-        }
-      ]
-      
-      const challenge = challenges[currentChallenge - 1]
-      if (!challenge) {
-        console.error('🚨 SECURITY: Invalid challenge number')
-        return false
-      }
-      
-      console.log(`📝 SECURITY CHALLENGE ${currentChallenge}/3: ${challenge.title}`)
-      console.log('🔒 Requesting signature for enhanced security verification...')
-      
-      const signature = await signMessage(challenge.message)
-      
-      if (!signature) {
-        console.error('🚨 SECURITY VIOLATION: User refused to sign security challenge')
-        return false
-      }
-      
-      console.log(`✅ SECURITY CHALLENGE ${currentChallenge}/3: PASSED`)
-      console.log('🔑 Signature:', signature.substring(0, 20) + '...')
-      
-      // Update security state
-      setSecurityChallengeCount(currentChallenge)
-      setLastSecurityCheck(timestamp)
-      
-      // Check if all challenges completed
-      if (currentChallenge >= 3) {
-        console.log('🎉 SECURITY: ALL CHALLENGES COMPLETED - Access authorized')
-        return true
-      } else {
-        console.log(`🔄 SECURITY: Challenge ${currentChallenge}/3 passed, requiring next challenge...`)
-        // Slight delay before next challenge
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        return await performEnhancedSecurityVerification()
-      }
-      
-    } catch (error) {
-      console.error('🚨 SECURITY: Multi-signature verification failed:', error)
-      return false
-    }
-  }
 
   useEffect(() => {
     if (isInitializing) return // Wait for initialization to complete
@@ -163,51 +34,14 @@ export default function DashboardPage() {
       return
     }
 
-    // ENHANCED SECURITY: Multi-layer verification on every dashboard access
-    const performSecurityCheck = async () => {
-      console.log('🔒 ENHANCED SECURITY: Performing multi-layer security verification...')
-      
-      // Always perform enhanced verification when accessing dashboard
-      console.log('🛡️ SECURITY: Starting enhanced security protocol...')
-      await performEnhancedSecurityVerification()
-    }
-    
-    performSecurityCheck()
-  }, [isAuthenticated, isInitializing, router])
-
-  // Detect when user reconnects after enhanced security challenge
-  useEffect(() => {
-    if (user?.address && !isWalletVerified && !needsFreshConnection) {
-      // User just reconnected, now perform multi-signature verification
-      const verifyReconnectedWallet = async () => {
-        console.log('🔐 ENHANCED SECURITY: User reconnected, starting multi-signature verification...')
-        const verified = await performMultiSignatureVerification()
-        
-        if (verified) {
-          console.log('🎉 SECURITY: All verification challenges completed successfully')
-          setIsWalletVerified(true)
-          loadNetworkStatus()
-        } else {
-          console.log('🚨 SECURITY: Multi-signature verification failed after reconnection')
-          setNeedsFreshConnection(true)
-          setSecurityChallengeCount(0)
-          setLastSecurityCheck(null)
-          disconnect()
-          router.push('/auth')
-        }
-      }
-      
-      verifyReconnectedWallet()
-    }
-  }, [user?.address, isWalletVerified, needsFreshConnection, securityChallengeCount])
-
-  useEffect(() => {
-    if (user?.address && isWalletVerified) {
+    // Simple dashboard load - just load data if authenticated
+    if (user?.address) {
       loadCredentials()
       loadInsights() 
       loadIDBalance()
+      loadNetworkStatus()
     }
-  }, [user, isWalletVerified])
+  }, [isAuthenticated, isInitializing, user?.address, router])
 
 
   const loadCredentials = async () => {
@@ -315,81 +149,6 @@ export default function DashboardPage() {
 
   const userDID = user?.did || 'Loading...'
 
-  // Show security verification screen if wallet not verified
-  if (!isWalletVerified) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">🛡️ Enhanced Security Verification</h2>
-            <p className="text-gray-600 mb-6">
-              Your credentials require MAXIMUM SECURITY protection. You must complete multiple verification challenges including wallet signatures to prove your identity.
-            </p>
-            
-            {isVerifyingWallet ? (
-              <div className="space-y-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-sm text-blue-600 font-medium">
-                  🛡️ Initializing enhanced security verification...
-                </p>
-                <p className="text-xs text-gray-500">
-                  Preparing multi-signature challenge system
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-800">
-                        Enhanced Security Required
-                      </h3>
-                      <div className="mt-2 text-sm text-yellow-700">
-                        <p>Your credentials contain sensitive identity information. You must complete multiple security challenges including:</p>
-                        <ul className="mt-2 list-disc list-inside space-y-1">
-                          <li>Wallet ownership verification</li>
-                          <li>Identity confirmation signature</li>
-                          <li>Access authorization signature</li>
-                        </ul>
-                        <p className="mt-2">This multi-layer security prevents unauthorized access to wallet <span className="font-mono text-xs">{user?.address}</span>.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={performEnhancedSecurityVerification}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  🛡️ Begin Enhanced Security Verification
-                </button>
-                
-                <button
-                  onClick={() => {
-                    disconnect()
-                    router.push('/auth')
-                  }}
-                  className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm"
-                >
-                  Cancel & Sign Out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
