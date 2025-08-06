@@ -444,7 +444,10 @@ export default function WalletOnboarding() {
           <p className="text-sm text-gray-600 mb-3">
             Write down a 12-word phrase to recover your account
           </p>
-          <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700">
+          <button 
+            onClick={() => alert('Recovery phrase feature coming soon!')}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700"
+          >
             Generate Recovery Phrase
           </button>
         </div>
@@ -454,7 +457,10 @@ export default function WalletOnboarding() {
           <p className="text-sm text-gray-600 mb-3">
             Add trusted friends who can help you recover your account
           </p>
-          <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700">
+          <button 
+            onClick={() => alert('Social recovery feature coming soon!')}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700"
+          >
             Add Guardians
           </button>
         </div>
@@ -521,7 +527,10 @@ export default function WalletOnboarding() {
       </div>
 
       <div className="space-y-3">
-        <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700">
+        <button 
+          onClick={() => window.location.href = '/dashboard'}
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700"
+        >
           View Dashboard
         </button>
         
