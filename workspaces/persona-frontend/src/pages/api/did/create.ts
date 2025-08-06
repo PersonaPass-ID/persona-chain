@@ -4,9 +4,11 @@ import { IdentityEncryption } from '../../../lib/encryption'
 
 interface CreateDIDRequest {
   walletAddress: string
-  walletType: 'keplr' | 'leap'
+  walletType?: 'keplr' | 'leap'
+  authMethod?: 'keplr' | 'leap'  // Alternative field name from frontend
   firstName?: string
   lastName?: string
+  identifier?: string  // Wallet address identifier from frontend
   publicKey?: string
   serviceEndpoints?: Array<{
     id: string
@@ -35,19 +37,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
+    console.log('🔍 DID creation request body:', JSON.stringify(req.body, null, 2))
+    
     const { 
       walletAddress, 
       walletType, 
+      authMethod,
       firstName, 
       lastName, 
+      identifier,
       publicKey, 
       serviceEndpoints 
     }: CreateDIDRequest = req.body
 
-    if (!walletAddress || !walletType) {
+    // Use authMethod if walletType is not provided (frontend compatibility)
+    const effectiveWalletType = walletType || authMethod
+    
+    console.log(`🔧 Parsed fields - walletAddress: ${walletAddress}, walletType: ${walletType}, authMethod: ${authMethod}, effectiveWalletType: ${effectiveWalletType}`)
+    
+    if (!walletAddress || !effectiveWalletType) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: walletAddress, walletType'
+        error: 'Missing required fields: walletAddress, walletType/authMethod'
       })
     }
 
@@ -108,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const storageResult = await realIdentityStorage.storeDIDDocumentDirect(
       did,
       walletAddress,
-      walletType,
+      effectiveWalletType,
       didDocument,
       encryptedData,
       contentHash,
@@ -147,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         firstName: firstName || 'PersonaPass',
         lastName: lastName || 'User',
         walletAddress,
-        walletType,
+        walletType: effectiveWalletType,
         verificationMethod: 'wallet-signature',
         issuedAt: new Date().toISOString()
       },
@@ -166,7 +177,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       identityCredential,
       result.did!,
       walletAddress,
-      walletType,
+      effectiveWalletType,
       testSignature
     )
 
