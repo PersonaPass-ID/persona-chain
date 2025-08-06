@@ -9,7 +9,7 @@ import { credentialManagementService } from '@/lib/credential-management-service
 import { personaIDToken } from '@/lib/personaid-token'
 import PersonaIDTokenPurchase from '@/components/PersonaIDTokenPurchase'
 import FlexibleTokenPurchase from '@/components/FlexibleTokenPurchase'
-import KYCVerification from '@/components/KYCVerification'
+import KYCVerificationFlow from '@/components/KYCVerificationFlow'
 import ZKProofModal from '@/components/ZKProofModal'
 import VerifiableCredentialCard from '@/components/VerifiableCredentialCard'
 
@@ -882,7 +882,21 @@ export default function DashboardPage() {
 
         {/* KYC Verification Tab */}
         {activeTab === 'kyc' && (
-          <KYCVerification />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">🆓 FREE Identity Verification</h3>
+            <KYCVerificationFlow
+              userAddress={user?.address || 'unknown'}
+              userEmail={user?.email}
+              onVerificationComplete={(data) => {
+                console.log('🎉 KYC completed:', data)
+                // Reload ID balance to show new tokens
+                loadIDBalance()
+              }}
+              onVerificationSkip={() => {
+                console.log('⏭️ KYC skipped by user')
+              }}
+            />
+          </div>
         )}
 
         {/* Verifiable Credential Tab */}

@@ -4,7 +4,7 @@
 export interface UsageEvent {
   id?: string;
   userId: string;
-  verificationType: 'github_developer' | 'government_age' | 'plaid_financial' | 'educational' | 'healthcare' | 'professional';
+  verificationType: 'github_developer' | 'government_age' | 'didit_identity' | 'educational' | 'healthcare' | 'professional';
   timestamp: string;
   cost: number;
   success: boolean;

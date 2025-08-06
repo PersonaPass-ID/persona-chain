@@ -4,7 +4,6 @@
  */
 
 import { NextApiRequest, NextApiResponse } from 'next'
-import { PersonaDiditProvider } from '@/lib/kyc-providers/persona-didit-provider'
 import crypto from 'crypto'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -56,57 +55,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const webhookData = req.body
     console.log('📨 Didit webhook received:', JSON.stringify(webhookData, null, 2))
 
-    // Initialize provider for webhook processing
-    const diditProvider = new PersonaDiditProvider({
-      templateId: process.env.DIDIT_WORKFLOW_ID || '',
-      apiKey: process.env.DIDIT_API_KEY || '',
-      environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
-      webhookSecret: webhookSecret
-    })
-
-    // Process the webhook
-    const webhookResult = diditProvider.processWebhook(webhookData)
+    // Process the webhook data directly
+    const sessionId = webhookData.session_id || webhookData.id
+    const status = webhookData.status || webhookData.verification_status
+    const referenceId = webhookData.reference_id || webhookData.vendor_data?.reference_id
     
-    console.log(`🔄 Webhook processed:`, webhookResult)
+    console.log(`🔄 Processing webhook for session: ${sessionId}, status: ${status}`)
 
     // Handle different verification statuses
-    switch (webhookResult.status) {
+    switch (status) {
       case 'completed':
       case 'passed':
-        console.log(`✅ KYC verification completed for: ${webhookResult.verificationId}`)
-        
-        // Generate zero-knowledge proof for verified identity
-        const zkProofData = diditProvider.generateZkProofData(webhookResult)
-        console.log(`🔐 ZK Proof generated: ${zkProofData.zkProofHash}`)
+      case 'approved':
+        console.log(`✅ KYC verification completed for session: ${sessionId}`)
         
         // TODO: Save verification result to database
-        // TODO: Award ID tokens to verified user
+        // TODO: Award 100 ID tokens to verified user
         // TODO: Create Verifiable Credential for user
+        // TODO: Generate zero-knowledge proof for verified identity
         
         break
         
       case 'failed':
       case 'rejected':
-        console.log(`❌ KYC verification failed for: ${webhookResult.verificationId}`)
+      case 'declined':
+        console.log(`❌ KYC verification failed for session: ${sessionId}`)
         // TODO: Notify user of verification failure
         break
         
       case 'processing':
       case 'pending':
-        console.log(`⏳ KYC verification in progress for: ${webhookResult.verificationId}`)
+        console.log(`⏳ KYC verification in progress for session: ${sessionId}`)
         break
         
       default:
-        console.log(`📝 KYC verification status update: ${webhookResult.status}`)
+        console.log(`📝 KYC verification status update: ${status} for session: ${sessionId}`)
     }
 
     // Acknowledge webhook receipt
     res.status(200).json({ 
       success: true, 
       message: 'Webhook processed successfully',
-      verification_id: webhookResult.verificationId,
-      status: webhookResult.status,
-      cost: webhookResult.cost || 0
+      session_id: sessionId,
+      status: status,
+      reference_id: referenceId
     })
 
   } catch (error: any) {
