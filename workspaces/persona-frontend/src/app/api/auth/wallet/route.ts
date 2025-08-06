@@ -77,14 +77,14 @@ function verifyCosmosMessage(message: string, expectedNonce: string): { success:
     }
     
     // Extract components
-    const addressLine = lines[1]
+    const walletLine = lines.find(line => line.startsWith('Wallet: '))
     const nonceLine = lines.find(line => line.startsWith('Nonce: '))
     
-    if (!addressLine || !nonceLine) {
+    if (!walletLine || !nonceLine) {
       return { success: false, address: null, error: 'Missing required fields' }
     }
     
-    const address = addressLine.trim()
+    const address = walletLine.replace('Wallet: ', '').trim()
     const nonce = nonceLine.replace('Nonce: ', '').trim()
     
     // Verify nonce matches
@@ -92,8 +92,9 @@ function verifyCosmosMessage(message: string, expectedNonce: string): { success:
       return { success: false, address: null, error: 'Invalid nonce' }
     }
     
-    // Basic address validation for Cosmos
-    if (!address.startsWith('persona') || address.length < 20) {
+    // Basic address validation for Cosmos (support multiple prefixes)
+    const cosmosAddressRegex = /^(cosmos|persona|osmo|atom|juno|secret)[0-9a-z]{39,59}$/
+    if (!cosmosAddressRegex.test(address)) {
       return { success: false, address: null, error: 'Invalid Cosmos address format' }
     }
     
