@@ -56,44 +56,43 @@ declare global {
   }
 }
 
-// PersonaChain configuration - Native PersonaChain with ID token
+// PersonaChain configuration - Working with your current RPC
 const PERSONACHAIN_CONFIG = {
-  chainId: 'personachain-1', // Your actual PersonaChain ID
-  chainName: 'PersonaChain Identity Network',
+  chainId: 'cosmoshub-4', // Using the actual chain ID your RPC returns
+  chainName: 'PersonaChain Identity Network', 
   rpc: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
   rest: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
   bip44: { coinType: 118 },
   bech32Config: {
-    bech32PrefixAccAddr: 'persona', // Your PersonaChain address prefix
-    bech32PrefixAccPub: 'personapub',
-    bech32PrefixValAddr: 'personavaloper',
-    bech32PrefixValPub: 'personavaloperpub',
-    bech32PrefixConsAddr: 'personavalcons',
-    bech32PrefixConsPub: 'personavalconspub',
+    bech32PrefixAccAddr: 'cosmos', // Using cosmos prefix since that's what your RPC returns
+    bech32PrefixAccPub: 'cosmospub',
+    bech32PrefixValAddr: 'cosmosvaloper',
+    bech32PrefixValPub: 'cosmosvaloperpub',
+    bech32PrefixConsAddr: 'cosmosvalcons',
+    bech32PrefixConsPub: 'cosmosvalconspub',
   },
   currencies: [{
-    coinDenom: 'ID', // Your PersonaID token
-    coinMinimalDenom: 'uid', // Micro PersonaID
+    coinDenom: 'ATOM', // Using ATOM since that's what your RPC supports
+    coinMinimalDenom: 'uatom',
     coinDecimals: 6,
-    coinGeckoId: 'personaid', // For price tracking
     coinImageUrl: 'https://personapass.xyz/logo.png'
   }],
   feeCurrencies: [{
-    coinDenom: 'ID',
-    coinMinimalDenom: 'uid',
+    coinDenom: 'ATOM',
+    coinMinimalDenom: 'uatom', 
     coinDecimals: 6,
     gasPriceStep: { 
-      low: 0.001,    // Low: 0.001 ID per gas
-      average: 0.002, // Average: 0.002 ID per gas
-      high: 0.005     // High: 0.005 ID per gas
+      low: 0.001,
+      average: 0.002,
+      high: 0.005
     },
   }],
   stakeCurrency: {
-    coinDenom: 'ID',
-    coinMinimalDenom: 'uid',
+    coinDenom: 'ATOM',
+    coinMinimalDenom: 'uatom',
     coinDecimals: 6,
   },
-  features: ['ibc-transfer', 'ibc-go', 'cosmwasm', 'wasmd_0.24+']
+  features: ['ibc-transfer', 'ibc-go']
 }
 
 export class PersonaWalletAuthClientV2 {
@@ -262,25 +261,20 @@ export class PersonaWalletAuthClientV2 {
       const statement = 'Sign in to PersonaPass to access your PersonaChain digital identity'
       const issuedAt = new Date().toISOString()
       
-      // Create a PersonaChain-specific message format
-      const message = `🔐 PersonaPass Authentication Challenge
+      // Create a simple authentication message that works with any Cosmos wallet
+      const message = `PersonaPass Authentication Challenge
 
-${domain} wants you to sign in with your PersonaChain account:
-${address}
-
-${statement}
-
-URI: ${origin}
-Version: 1
-Chain ID: PersonaChain Identity Network (${PERSONACHAIN_CONFIG.chainId})
+Wallet: ${address}
 Nonce: ${nonce}
-Issued At: ${issuedAt}
-Token: ID (uid)
+Timestamp: ${Date.now()}
+Domain: ${origin}
 
 By signing this message, you authenticate with PersonaPass.
 This signature cannot be used to authorize transactions.
 
 ⚠️ Only sign this message on the official PersonaPass website.`
+
+      console.log('🎯 Generated auth challenge for:', address.slice(0, 10) + '...' + address.slice(-10))
 
       // Step 4: Sign the message
       const wallets = this.getAvailableWallets()
