@@ -111,37 +111,17 @@ class PersonaWalletApiClient {
   private mainApiUrl: string     // Main API gateway
 
   constructor() {
-    // API configuration - WALLET-ONLY
-    const envApiUrl = process.env.NEXT_PUBLIC_API_URL
-    console.log('🔍 Debug - Raw env var NEXT_PUBLIC_API_URL:', envApiUrl)
-    
-    // HOTFIX: Override wrong environment variable until Vercel dashboard is fixed
-    let apiUrl = envApiUrl || 'http://localhost:3001'
-    
-    // Force correct load balancer URL in production if wrong IP detected
-    if (apiUrl.includes('161.35.2.88')) {
-      apiUrl = 'https://personapass-api-lb-1061457068.us-east-1.elb.amazonaws.com'
-      console.log('🚨 HOTFIX: Overriding wrong IP with correct load balancer')
+    // Use Next.js API routes - no external API needed!
+    if (typeof window !== 'undefined') {
+      // Browser: use current domain
+      this.mainApiUrl = ''
+    } else {
+      // Server-side: use localhost  
+      this.mainApiUrl = 'http://localhost:3000'
     }
     
-    console.log('🔍 Debug - Initial API URL after fallback and hotfix:', apiUrl)
-    
-    // Ensure HTTPS for production to prevent mixed content errors
-    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && apiUrl.startsWith('http://')) {
-      apiUrl = apiUrl.replace('http://', 'https://')
-      console.log('🔒 Upgraded API URL to HTTPS for production:', apiUrl)
-    }
-    
-    // Don't add /api suffix since endpoints already include it
-    // Remove trailing slash if present for consistent URL building
-    if (apiUrl.endsWith('/')) {
-      apiUrl = apiUrl.slice(0, -1)
-    }
-    
-    this.mainApiUrl = apiUrl
-    
-    console.log('🔗 PersonaWalletApiClient initialized - WALLET-ONLY AUTHENTICATION:')
-    console.log('   📡 Main API:', this.mainApiUrl)
+    console.log('🔗 PersonaWalletApiClient initialized - NEXT.JS API ROUTES:')
+    console.log('   📡 Main API:', this.mainApiUrl || 'Current Domain')
     console.log('   🌍 Window location:', typeof window !== 'undefined' ? window.location.href : 'Server-side')
   }
 
