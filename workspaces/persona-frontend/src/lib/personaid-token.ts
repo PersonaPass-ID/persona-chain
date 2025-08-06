@@ -34,8 +34,8 @@ export class PersonaIDTokenManager {
    */
   getExchangeRate(): { usdPerID: number; idPerUSD: number } {
     return {
-      usdPerID: 0.01, // $0.01 per ID token
-      idPerUSD: 100   // 100 ID tokens per $1
+      usdPerID: 0.0005, // $0.0005 per ID token (competitive with new launches)
+      idPerUSD: 2000    // 2,000 ID tokens per $1 (20x more tokens!)
     }
   }
 
@@ -209,28 +209,28 @@ export class PersonaIDTokenManager {
     return [
       {
         usd: 10,
-        id: 1000,
-        bonus: 0,
-        description: 'Starter pack - 100 DID operations'
+        id: 22000,
+        bonus: 2000,
+        description: 'Starter - 22K tokens + 10% bonus'
       },
       {
         usd: 25,
-        id: 2750,
-        bonus: 250,
+        id: 60000,
+        bonus: 10000,
         popular: true,
-        description: 'Most Popular - 10% bonus'
+        description: 'Popular - 60K tokens + 20% bonus'
       },
       {
         usd: 50,
-        id: 6000,
-        bonus: 1000,
-        description: 'Power User - 20% bonus'
+        id: 130000,
+        bonus: 30000,
+        description: 'Power - 130K tokens + 30% bonus'
       },
       {
         usd: 100,
-        id: 13000,
-        bonus: 3000,
-        description: 'Professional - 30% bonus'
+        id: 300000,
+        bonus: 100000,
+        description: 'Whale - 300K tokens + 50% bonus'
       }
     ]
   }

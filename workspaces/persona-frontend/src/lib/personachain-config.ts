@@ -6,8 +6,8 @@
 export const PERSONACHAIN_NETWORK_CONFIG = {
   chainId: 'personachain-1', // Your actual working PersonaChain
   chainName: 'PersonaChain Identity Network',
-  rpc: 'http://13.221.89.96:26657', // Working validator RPC (updated IP)
-  rest: 'http://13.221.89.96:1317', // Working REST endpoint (updated IP)
+  rpc: 'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:26657', // PersonaChain ALB RPC
+  rest: 'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:1317', // PersonaChain ALB REST
   bip44: {
     coinType: 118, // Standard Cosmos coin type
   },

@@ -24,7 +24,7 @@ export interface PersonaChainResult {
 }
 
 export class PersonaChainService {
-  private readonly RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com'
+  private readonly RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:26657'
   private readonly API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'
   private readonly CHAIN_ID = 'persona-testnet'
 
