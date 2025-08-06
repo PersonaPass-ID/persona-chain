@@ -5,8 +5,8 @@ import { VerifiableCredential } from '../../../lib/storage/identity-storage'
 interface CreateDIDRequest {
   walletAddress: string
   walletType: 'keplr' | 'leap'
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   publicKey?: string
   serviceEndpoints?: Array<{
     id: string
@@ -44,10 +44,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       serviceEndpoints 
     }: CreateDIDRequest = req.body
 
-    if (!walletAddress || !walletType || !firstName || !lastName) {
+    if (!walletAddress || !walletType) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: walletAddress, walletType, firstName, lastName'
+        error: 'Missing required fields: walletAddress, walletType'
       })
     }
 
@@ -57,8 +57,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const creationParams: DIDCreationParams = {
       walletAddress,
       walletType,
-      firstName,
-      lastName,
+      firstName: firstName || 'PersonaPass',
+      lastName: lastName || 'User',
       publicKey,
       serviceEndpoints
     }
@@ -84,8 +84,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       issuanceDate: new Date().toISOString(),
       credentialSubject: {
         id: result.did!,
-        firstName,
-        lastName,
+        firstName: firstName || 'PersonaPass',
+        lastName: lastName || 'User',
         walletAddress,
         walletType,
         verificationMethod: 'wallet-signature',
