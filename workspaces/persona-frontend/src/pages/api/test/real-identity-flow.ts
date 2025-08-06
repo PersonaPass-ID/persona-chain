@@ -4,6 +4,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { realIdentityStorage, VerifiableCredential } from '../../../lib/storage/real-identity-storage'
 import { checkSupabaseConnection } from '../../../lib/storage/supabase-client'
+import { IdentityEncryption } from '../../../lib/encryption'
 
 interface TestResult {
   success: boolean
@@ -74,9 +75,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`${statusIcon} ${stage}: ${message}${timingText}`)
   }
 
+  // Infrastructure connection state
+  let dbConnected = false
+
+  // For server-side testing, we need to bypass wallet signature generation
+  // Create a test signature that matches the expected format (shared across all stages)
+  const testSignature = `test-server-signature-${testWallet.address.slice(-8)}-${Date.now()}`
+
   try {
     // Stage 1: Infrastructure Check
-    let dbConnected = false
     const infraStartTime = Date.now()
     
     try {
@@ -124,11 +131,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           }
         }
 
-        const didResult = await realIdentityStorage.storeDIDDocument(
+        // Encrypt the DID document using test signature
+        const encryptedData = await IdentityEncryption.encryptData(didDocument, testSignature)
+        const contentHash = await IdentityEncryption.generateContentHash(didDocument)
+        
+        // Store directly in database bypassing wallet signature generation
+        const didResult = await realIdentityStorage.storeDIDDocumentDirect(
           did,
           testWallet.address,
           testWallet.type,
-          didDocument
+          didDocument,
+          encryptedData,
+          contentHash,
+          testSignature
         )
 
         const didTiming = Date.now() - didStartTime
@@ -185,10 +200,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
           }
 
-          const credResult = await realIdentityStorage.storeVerifiableCredential(
+          // Use same test signature for credential encryption
+          const encryptedCredential = await IdentityEncryption.encryptData(testCredential, testSignature)
+          const credentialContentHash = await IdentityEncryption.generateContentHash(testCredential)
+          
+          const credResult = await realIdentityStorage.storeVerifiableCredentialDirect(
             testCredential,
             testWallet.address,
-            testWallet.type
+            testWallet.type,
+            encryptedCredential,
+            credentialContentHash,
+            testSignature
           )
 
           const credTiming = Date.now() - credStartTime

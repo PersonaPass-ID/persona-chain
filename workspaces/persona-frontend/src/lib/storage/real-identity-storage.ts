@@ -46,7 +46,7 @@ export interface VerifiableCredentialRecord {
   id: string
   credential_id: string
   credential_type: string
-  holder_did: string
+  subject_did: string
   issuer_did: string
   content_hash: string
   encrypted_content: string
@@ -182,6 +182,76 @@ export class RealIdentityStorageService {
   }
 
   /**
+   * Store DID document directly with pre-computed encryption data
+   * Used for server-side testing to bypass wallet signature generation
+   */
+  async storeDIDDocumentDirect(
+    did: string,
+    walletAddress: string,
+    walletType: string,
+    didDocument: DIDDocument,
+    encryptedData: any,
+    contentHash: string,
+    signature: string
+  ): Promise<StorageResult<IdentityRecord>> {
+    try {
+      console.log(`🔐 Real Storage (Direct): Storing DID document for ${did}`)
+
+      // Store in Supabase with row-level security
+      const identityRecord: Omit<IdentityRecord, 'id' | 'created_at' | 'updated_at'> = {
+        did,
+        wallet_address: walletAddress,
+        content_hash: contentHash,
+        encrypted_content: JSON.stringify(encryptedData),
+        metadata: {
+          type: 'did-document',
+          issuer: 'personachain',
+          wallet_type: walletType,
+          schema_version: '1.0'
+        },
+        encryption_params: {
+          iv: encryptedData.iv,
+          salt: encryptedData.salt,
+          algorithm: 'AES-GCM',
+          key_derivation: 'PBKDF2',
+          iterations: 100000
+        }
+      }
+
+      const { data: storedRecord, error: dbError } = await this.supabase
+        .from('identity_records')
+        .insert(identityRecord)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error('❌ Database storage failed:', dbError)
+        return {
+          success: false,
+          error: `Database storage failed: ${dbError.message}`
+        }
+      }
+
+      console.log(`✅ DID ${did} stored successfully (direct)`)
+
+      return {
+        success: true,
+        data: storedRecord,
+        contentHash,
+        blockchainTxHash: `test-tx-hash-${Date.now()}`,
+        message: 'DID document stored (test mode)'
+      }
+
+    } catch (error) {
+      console.error('❌ Real storage (direct) failed:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Storage error'
+      }
+    }
+  }
+
+  /**
    * Get DID Document with decryption
    */
   async getDIDDocument(
@@ -267,7 +337,7 @@ export class RealIdentityStorageService {
       const credentialRecord: Omit<VerifiableCredentialRecord, 'id' | 'created_at' | 'updated_at'> = {
         credential_id: credential.id,
         credential_type: credential.type.join(','),
-        holder_did: credential.credentialSubject.id,
+        subject_did: credential.credentialSubject.id,
         issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
         content_hash: contentHash,
         encrypted_content: JSON.stringify(encryptedData),
@@ -322,6 +392,79 @@ export class RealIdentityStorageService {
   }
 
   /**
+   * Store verifiable credential directly with pre-computed encryption data
+   * Used for server-side testing to bypass wallet signature generation
+   */
+  async storeVerifiableCredentialDirect(
+    credential: VerifiableCredential,
+    walletAddress: string,
+    walletType: string,
+    encryptedData: any,
+    contentHash: string,
+    signature: string
+  ): Promise<StorageResult<VerifiableCredentialRecord>> {
+    try {
+      console.log(`🎫 Real Storage (Direct): Storing credential ${credential.id}`)
+
+      const credentialRecord: Omit<VerifiableCredentialRecord, 'id' | 'created_at' | 'updated_at'> = {
+        credential_id: credential.id,
+        did: credential.credentialSubject.id,
+        content_hash: contentHash,
+        encrypted_credential: JSON.stringify(encryptedData),
+        credential_type: Array.isArray(credential.type) ? credential.type.join(',') : credential.type,
+        issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
+        subject_did: credential.credentialSubject.id,
+        issuance_date: new Date(credential.issuanceDate).toISOString(),
+        expiration_date: credential.expirationDate ? new Date(credential.expirationDate).toISOString() : null,
+        status: 'valid',
+        encryption_params: {
+          iv: encryptedData.iv,
+          salt: encryptedData.salt,
+          algorithm: 'AES-GCM',
+          key_derivation: 'PBKDF2',
+          iterations: 100000
+        },
+        blockchain_anchor: {
+          tx_hash: `test-cred-tx-${Date.now()}`,
+          block_height: 12345,
+          network: 'personachain-1',
+          anchored_at: new Date().toISOString()
+        }
+      }
+
+      const { data: storedRecord, error: dbError } = await this.supabase
+        .from('verifiable_credentials')
+        .insert(credentialRecord)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error('❌ Credential storage (direct) failed:', dbError)
+        return {
+          success: false,
+          error: `Database error: ${dbError.message}`
+        }
+      }
+
+      console.log(`✅ Credential ${credential.id} stored successfully (direct)`)
+
+      return {
+        success: true,
+        data: storedRecord,
+        contentHash,
+        message: 'Credential stored successfully (test mode)'
+      }
+
+    } catch (error) {
+      console.error('❌ Real credential storage (direct) failed:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Storage error'
+      }
+    }
+  }
+
+  /**
    * Get DID by wallet address
    */
   async getDIDByWallet(walletAddress: string): Promise<string | null> {
@@ -358,7 +501,7 @@ export class RealIdentityStorageService {
       const { data: records, error: dbError } = await this.supabase
         .from('verifiable_credentials')
         .select('*')
-        .eq('holder_did', did)
+        .eq('subject_did', did)
         .eq('status', 'active')
 
       if (dbError) {
@@ -432,7 +575,7 @@ export class RealIdentityStorageService {
       const { count: totalCredentials } = await this.supabase
         .from('verifiable_credentials')
         .select('*', { count: 'exact', head: true })
-        .in('holder_did', 
+        .in('subject_did', 
           this.supabase
             .from('identity_records')
             .select('did')
@@ -443,7 +586,7 @@ export class RealIdentityStorageService {
         .from('verifiable_credentials')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
-        .in('holder_did', 
+        .in('subject_did', 
           this.supabase
             .from('identity_records')
             .select('did')
