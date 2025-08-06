@@ -27,7 +27,7 @@ const envSchema = z.object({
   // PersonaChain Blockchain Configuration
   PERSONACHAIN_RPC_URL: z.string().url({
     message: 'PERSONACHAIN_RPC_URL must be a valid RPC endpoint URL'
-  }).default('http://161.35.2.88:26657'),
+  }).default('https://rpc.personapass.xyz'),
   
   PERSONACHAIN_CHAIN_ID: z.string().default('persona-1'),
 
@@ -75,7 +75,7 @@ const envSchema = z.object({
 
   NEXT_PUBLIC_API_URL: z.string().url({
     message: 'NEXT_PUBLIC_API_URL must be a valid URL'
-  }).default('https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'),
+  }).default('https://api.personapass.xyz'),
 
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith('pk_', {
     message: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_'
@@ -83,7 +83,7 @@ const envSchema = z.object({
 
   NEXT_PUBLIC_PERSONACHAIN_RPC_URL: z.string().url({
     message: 'NEXT_PUBLIC_PERSONACHAIN_RPC_URL must be a valid URL'
-  }).default('http://161.35.2.88:26657'),
+  }).default('https://rpc.personapass.xyz'),
 
   NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().uuid({
     message: 'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID must be a valid UUID'
