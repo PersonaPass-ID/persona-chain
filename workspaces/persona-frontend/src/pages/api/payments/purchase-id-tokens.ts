@@ -35,9 +35,15 @@ export default async function handler(
       })
     }
 
-    if (amount < 100 || amount > 100000) {
+    if (amount < 100 || amount > 1000000) {
       return res.status(400).json({ 
-        error: 'Invalid amount: must be between 100 and 100,000 ID tokens' 
+        error: 'Invalid amount: must be between 100 and 1,000,000 ID tokens' 
+      })
+    }
+
+    if (usdPrice < 1 || usdPrice > 10000) {
+      return res.status(400).json({ 
+        error: 'Invalid price: must be between $1.00 and $10,000.00' 
       })
     }
 

@@ -8,7 +8,10 @@ import type { PersonaChainCredential } from '@/lib/personachain-service'
 import { credentialManagementService } from '@/lib/credential-management-service'
 import { personaIDToken } from '@/lib/personaid-token'
 import PersonaIDTokenPurchase from '@/components/PersonaIDTokenPurchase'
+import FlexibleTokenPurchase from '@/components/FlexibleTokenPurchase'
+import KYCVerification from '@/components/KYCVerification'
 import ZKProofModal from '@/components/ZKProofModal'
+import VerifiableCredentialCard from '@/components/VerifiableCredentialCard'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -24,7 +27,7 @@ export default function DashboardPage() {
   const [needsFreshConnection, setNeedsFreshConnection] = useState(true)
   const [lastSecurityCheck, setLastSecurityCheck] = useState<number | null>(null)
   const [securityChallengeCount, setSecurityChallengeCount] = useState(0)
-  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase' | 'kyc' | 'vc'>('overview')
   const [idBalance, setIDBalance] = useState<string>('0 ID')
 
   // ENHANCED MULTI-LAYER SECURITY VERIFICATION
@@ -438,6 +441,8 @@ export default function DashboardPage() {
               {[
                 { id: 'overview', label: 'Overview', icon: '🏠' },
                 { id: 'credentials', label: 'Credentials', icon: '🏆' },
+                { id: 'kyc', label: 'Identity Verification', icon: '🛡️' },
+                { id: 'vc', label: 'Proof of Personhood', icon: '✅' },
                 { id: 'purchase', label: 'Buy ID Tokens', icon: '💰' }
               ].map((tab) => (
                 <button
@@ -875,9 +880,31 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* KYC Verification Tab */}
+        {activeTab === 'kyc' && (
+          <KYCVerification />
+        )}
+
+        {/* Verifiable Credential Tab */}
+        {activeTab === 'vc' && (
+          <VerifiableCredentialCard
+            user={{
+              id: user?.address || 'unknown',
+              email: user?.address || '',
+              walletAddress: user?.address,
+              kycStatus: 'completed', // TODO: Get actual KYC status
+              kycProvider: 'sumsub',
+              verificationLevel: 'enhanced',
+              zkProofHash: 'abc123def456789...',
+              vcCreatedAt: new Date().toISOString(),
+              tokensAwarded: 100
+            }}
+          />
+        )}
+
         {/* Purchase Tab */}
         {activeTab === 'purchase' && (
-          <PersonaIDTokenPurchase />
+          <FlexibleTokenPurchase />
         )}
       </main>
 
