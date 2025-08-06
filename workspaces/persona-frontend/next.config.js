@@ -70,7 +70,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob: https://images.personapass.xyz",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://api.stripe.com https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com https://*.amazonaws.com http://161.35.2.88:26657 wss://*.walletconnect.org https://*.walletconnect.org",
+              "connect-src 'self' https://api.stripe.com https://api.personapass.xyz https://rpc.personapass.xyz https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com https://*.amazonaws.com http://161.35.2.88:26657 wss://*.walletconnect.org https://*.walletconnect.org",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.walletconnect.org",
               "frame-ancestors 'none'",
               "base-uri 'self'",

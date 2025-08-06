@@ -404,10 +404,20 @@ class WalletAuthSecure {
       
       return did;
     } catch (error) {
-      console.error('DID generation error:', error);
-      // Fallback to simple DID if W3C generation fails
-      const hash = Buffer.from(walletAddress).toString('base64').substring(0, 16);
-      return `did:persona:fallback:${hash}`;
+      console.warn('W3C DID generation failed, using simple fallback:', error);
+      // Fallback to simple DID based on wallet address
+      const hash = walletAddress.slice(-8).toLowerCase();
+      const did = `did:personapass:${hash}`;
+      
+      // Store simple DID association
+      try {
+        await secureStorage.storeSecure(`did:${walletAddress}`, did);
+        console.log(`🆔 Created fallback DID for wallet: ${walletAddress.substring(0, 8)}...`);
+      } catch (storageError) {
+        console.error('Failed to store fallback DID:', storageError);
+      }
+      
+      return did;
     }
   }
 
