@@ -98,6 +98,8 @@ class SelectiveDisclosureService {
     {
       name: 'age_verification',
       description: 'Prove age without revealing birthdate',
+      // TODO: CRITICAL - Complete trusted setup ceremony before production
+      // Run: npm run circuits:setup in /circuits directory
       inputSignals: ['birthYear', 'birthMonth', 'birthDay', 'currentYear', 'currentMonth', 'currentDay', 'minAge'],
       outputSignals: ['isOfAge'],
       constraints: 1247,

@@ -8,102 +8,124 @@ import { Badge } from '@/components/ui/badge'
 import { 
   Shield, 
   Zap, 
-  DollarSign, 
-  BarChart3,
   CheckCircle,
   ArrowRight,
   Play,
-  ShoppingBag,
-  Code2,
   Globe,
   Users,
   Lock,
   Sparkles,
   ChevronRight,
-  Wine,
-  Cigarette,
-  Gamepad2,
-  Pill,
-  CreditCard,
-  Building2
+  Key,
+  FileCheck,
+  Eye,
+  Fingerprint,
+  Wallet,
+  Database,
+  Network,
+  Cpu,
+  Building2,
+  GraduationCap,
+  Briefcase,
+  Heart,
+  Car,
+  Home,
+  CreditCard
 } from 'lucide-react'
 
-// Use cases for different industries
-const USE_CASES = [
+// Core identity capabilities
+const IDENTITY_FEATURES = [
   {
-    icon: Wine,
-    title: 'Alcohol & Spirits',
-    description: 'Comply with state laws while maximizing conversion',
-    stat: '73% conversion rate'
+    icon: Key,
+    title: 'Decentralized Identity (DID)',
+    description: 'Create your sovereign digital identity on PersonaChain blockchain',
+    stat: 'Self-sovereign'
   },
   {
-    icon: Cigarette,
-    title: 'Tobacco & Vape',
-    description: 'FDA-compliant age verification in seconds',
-    stat: 'FDA compliant'
+    icon: FileCheck,
+    title: 'Verifiable Credentials (VCs)',
+    description: 'Issue and manage tamper-proof digital credentials for anything',
+    stat: 'Blockchain-verified'
   },
   {
-    icon: Gamepad2,
-    title: 'Gaming & Gambling',
-    description: 'Verify age without friction for online gaming',
-    stat: '<2s verification'
+    icon: Eye,
+    title: 'Zero-Knowledge Proofs',
+    description: 'Prove facts about yourself without revealing personal data',
+    stat: 'Privacy-first'
   },
   {
-    icon: Pill,
-    title: 'Cannabis & CBD',
-    description: 'State-compliant verification for dispensaries',
-    stat: '50-state coverage'
+    icon: Shield,
+    title: 'Multi-Layer Security',
+    description: 'Enterprise-grade security with wallet-based authentication',
+    stat: 'Bank-level security'
   }
 ]
 
-// Customer testimonials
+// Real-world use cases across life domains
+const LIFE_DOMAINS = [
+  {
+    icon: GraduationCap,
+    title: 'Education & Skills',
+    description: 'Degrees, certifications, achievements, course completions',
+    examples: ['University Degree', 'Professional License', 'Online Course Certificate']
+  },
+  {
+    icon: Briefcase,
+    title: 'Professional Identity',
+    description: 'Work history, skills verification, professional reputation',
+    examples: ['Employment History', 'GitHub Profile', 'LinkedIn Verification']
+  },
+  {
+    icon: Heart,
+    title: 'Health & Medical',
+    description: 'Medical records, vaccinations, health insurance, fitness data',
+    examples: ['Vaccination Records', 'Medical History', 'Insurance Coverage']
+  },
+  {
+    icon: Car,
+    title: 'Licenses & Permits',
+    description: 'Driver\'s license, professional permits, legal certifications',
+    examples: ['Driver License', 'Professional Permit', 'Legal Certification']
+  },
+  {
+    icon: Home,
+    title: 'Personal Life',
+    description: 'Age verification, address proof, relationship status, family',
+    examples: ['Age Verification', 'Address Proof', 'Family Status']
+  },
+  {
+    icon: CreditCard,
+    title: 'Financial Identity',
+    description: 'Credit score, income verification, banking, investment history',
+    examples: ['Credit Score', 'Income Verification', 'Banking History']
+  }
+]
+
+// User testimonials for identity platform
 const TESTIMONIALS = [
   {
-    quote: "PersonaPass increased our conversion rate by 3x compared to traditional ID upload. Game changer!",
-    author: "Sarah Chen",
-    role: "CEO, Premium Spirits Co",
+    quote: "PersonaPass gave me complete control over my digital identity. I can prove my credentials without sharing sensitive data.",
+    author: "Alex Thompson",
+    role: "Software Engineer",
     rating: 5
   },
   {
-    quote: "Finally, age verification that doesn't feel like a security checkpoint. Our customers love it.",
-    author: "Marcus Rodriguez",
-    role: "Founder, Craft Beer Direct",
+    quote: "As a freelancer, having verifiable credentials on blockchain helps me stand out. Clients trust my verified skills.",
+    author: "Maria Garcia",
+    role: "UX Designer & Freelancer",
     rating: 5
   },
   {
-    quote: "Implementation took 10 minutes. We're saving $20K/month on verification costs.",
-    author: "Emily Watson",
-    role: "CTO, VapeNation",
+    quote: "The zero-knowledge proofs are amazing! I can verify my degree without revealing personal details to everyone.",
+    author: "Dr. James Wilson",
+    role: "Medical Professional",
     rating: 5
   }
 ]
 
 export default function LandingPage() {
-  const [email, setEmail] = useState('')
   const [showVideo, setShowVideo] = useState(false)
-
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-    
-    try {
-      const response = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-      
-      if (response.ok) {
-        alert(`Thanks! We will notify ${email} when we launch.`)
-        setEmail('')
-      } else {
-        alert('Something went wrong. Please try again.')
-      }
-    } catch {
-      alert('Thanks for your interest! We will be in touch soon.')
-      setEmail('')
-    }
-  }
+  const [selectedDomain, setSelectedDomain] = useState(0)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-indigo-950 to-gray-950 text-white">
@@ -111,9 +133,9 @@ export default function LandingPage() {
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-2">
         <div className="max-w-7xl mx-auto px-8 text-center">
           <p className="text-sm font-medium">
-            🚀 Launch Week Special: 50% off for the first 100 merchants! 
-            <Link href="/merchant/onboard" className="underline ml-2">
-              Claim your spot →
+            🚀 Now Live: Create your decentralized identity on PersonaChain! 
+            <Link href="/onboard" className="underline ml-2">
+              Get Started →
             </Link>
           </p>
         </div>
@@ -123,57 +145,57 @@ export default function LandingPage() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-8 py-24">
-          <div className="text-center max-w-4xl mx-auto">
+          <div className="text-center max-w-5xl mx-auto">
             <Badge className="mb-6 bg-indigo-500/20 text-indigo-300 border-indigo-500/50">
-              ⚡ 95% cheaper than traditional KYC
+              ⛓️ Powered by PersonaChain Blockchain
             </Badge>
             
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-indigo-400 bg-clip-text text-transparent">
-              Age Verification That Actually Converts
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-indigo-400 bg-clip-text text-transparent leading-tight">
+              Your Complete Digital Identity Platform
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Stop losing 67% of customers to clunky ID uploads. PersonaPass verifies age instantly 
-              using biometric authentication and privacy-preserving technology—no documents, no data storage, just results.
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto">
+              Create verifiable credentials for every aspect of your life. Own your identity with decentralized IDs, 
+              zero-knowledge proofs, and blockchain security. No middlemen, just you in control.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Button
                 size="lg"
                 className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8"
-                onClick={() => window.location.href = '/demo'}
+                onClick={() => window.location.href = '/onboard'}
               >
-                <Play className="mr-2 h-5 w-5" />
-                See Live Demo
+                <Key className="mr-2 h-5 w-5" />
+                Create Your Identity
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 className="border-gray-600 text-lg px-8"
-                onClick={() => window.location.href = '/merchant/onboard'}
+                onClick={() => window.location.href = '/auth'}
               >
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <Wallet className="mr-2 h-5 w-5" />
+                Sign In
               </Button>
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
               <div>
-                <div className="text-3xl font-bold text-indigo-400">$0.05</div>
-                <p className="text-sm text-gray-400">per verification</p>
+                <div className="text-3xl font-bold text-indigo-400">∞</div>
+                <p className="text-sm text-gray-400">credentials supported</p>
               </div>
               <div>
-                <div className="text-3xl font-bold text-green-400">&lt;2s</div>
-                <p className="text-sm text-gray-400">verification time</p>
+                <div className="text-3xl font-bold text-green-400">&lt;5s</div>
+                <p className="text-sm text-gray-400">proof generation</p>
               </div>
               <div>
-                <div className="text-3xl font-bold text-purple-400">3x</div>
-                <p className="text-sm text-gray-400">higher conversion</p>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-yellow-400">100%</div>
+                <div className="text-3xl font-bold text-purple-400">100%</div>
                 <p className="text-sm text-gray-400">privacy preserved</p>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-yellow-400">You</div>
+                <p className="text-sm text-gray-400">own everything</p>
               </div>
             </div>
           </div>
@@ -186,34 +208,34 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-bold mb-6">
-                The $2.3B Problem with Age Verification
+                The Identity Crisis of the Digital Age
               </h2>
               <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-3">
+                  <div className="bg-red-500/20 p-1 rounded">
+                    <Database className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Data silos everywhere</p>
+                    <p className="text-sm text-gray-400">Your credentials locked in corporate systems</p>
+                  </div>
+                </div>
                 <div className="flex items-start gap-3">
                   <div className="bg-red-500/20 p-1 rounded">
                     <Lock className="h-5 w-5 text-red-400" />
                   </div>
                   <div>
-                    <p className="font-semibold">67% cart abandonment</p>
-                    <p className="text-sm text-gray-400">Customers hate uploading IDs</p>
+                    <p className="font-semibold">Privacy violations</p>
+                    <p className="text-sm text-gray-400">Over-sharing personal data for simple verifications</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="bg-red-500/20 p-1 rounded">
-                    <DollarSign className="h-5 w-5 text-red-400" />
+                    <Users className="h-5 w-5 text-red-400" />
                   </div>
                   <div>
-                    <p className="font-semibold">$2-5 per verification</p>
-                    <p className="text-sm text-gray-400">Traditional KYC is expensive</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="bg-red-500/20 p-1 rounded">
-                    <Shield className="h-5 w-5 text-red-400" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Privacy nightmares</p>
-                    <p className="text-sm text-gray-400">Storing sensitive documents = liability</p>
+                    <p className="font-semibold">No real ownership</p>
+                    <p className="text-sm text-gray-400">You don't control your own identity</p>
                   </div>
                 </div>
               </div>
@@ -223,28 +245,28 @@ export default function LandingPage() {
               <div className="bg-gradient-to-br from-indigo-600/20 to-purple-600/20 p-8 rounded-2xl border border-indigo-500/30">
                 <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
                   <Sparkles className="h-6 w-6 text-yellow-400" />
-                  The PersonaPass Solution
+                  The PersonaPass Revolution
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
                     <div>
-                      <p className="font-semibold">One-click verification</p>
-                      <p className="text-sm text-gray-400">Biometric or credential-based, no document uploads</p>
+                      <p className="font-semibold">Self-sovereign identity</p>
+                      <p className="text-sm text-gray-400">You own and control your decentralized identity</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
                     <div>
-                      <p className="font-semibold">Zero-knowledge proofs</p>
-                      <p className="text-sm text-gray-400">Verify age without revealing data</p>
+                      <p className="font-semibold">Zero-knowledge privacy</p>
+                      <p className="text-sm text-gray-400">Prove facts without revealing personal data</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
                     <div>
-                      <p className="font-semibold">95% cost reduction</p>
-                      <p className="text-sm text-gray-400">Just $0.05 per verification</p>
+                      <p className="font-semibold">Blockchain security</p>
+                      <p className="text-sm text-gray-400">Tamper-proof credentials on PersonaChain</p>
                     </div>
                   </div>
                 </div>
@@ -259,18 +281,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">How PersonaPass Works</h2>
-            <p className="text-xl text-gray-300">Age verification in 3 simple steps</p>
+            <p className="text-xl text-gray-300">Build your digital identity in 3 simple steps</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
               <CardContent className="p-8 text-center">
                 <div className="bg-indigo-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold">1</span>
+                  <Key className="h-8 w-8 text-indigo-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Customer Clicks Verify</h3>
+                <h3 className="text-xl font-bold mb-3">Create Your DID</h3>
                 <p className="text-gray-400">
-                  When checking out age-restricted products, customer sees a simple "Verify Age" button
+                  Connect your wallet and create a decentralized identity (DID) on PersonaChain blockchain. No personal data required.
                 </p>
               </CardContent>
             </Card>
@@ -278,11 +300,11 @@ export default function LandingPage() {
             <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
               <CardContent className="p-8 text-center">
                 <div className="bg-indigo-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold">2</span>
+                  <FileCheck className="h-8 w-8 text-indigo-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Verify Identity</h3>
+                <h3 className="text-xl font-bold mb-3">Add Credentials</h3>
                 <p className="text-gray-400">
-                  Customer proves their age using biometric authentication or digital credentials—no documents uploaded
+                  Create verifiable credentials for your education, work, skills, licenses—anything you want to prove about yourself.
                 </p>
               </CardContent>
             </Card>
@@ -290,11 +312,11 @@ export default function LandingPage() {
             <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
               <CardContent className="p-8 text-center">
                 <div className="bg-indigo-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold">3</span>
+                  <Eye className="h-8 w-8 text-indigo-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Instant Access</h3>
+                <h3 className="text-xl font-bold mb-3">Share with Privacy</h3>
                 <p className="text-gray-400">
-                  Verification completes in under 2 seconds. Customer proceeds to checkout. You pay $0.05.
+                  Generate zero-knowledge proofs to verify facts about yourself without revealing sensitive personal information.
                 </p>
               </CardContent>
             </Card>
@@ -305,32 +327,32 @@ export default function LandingPage() {
               size="lg"
               variant="outline"
               className="border-gray-600"
-              onClick={() => setShowVideo(true)}
+              onClick={() => window.location.href = '/onboard'}
             >
-              <Play className="mr-2 h-4 w-4" />
-              Watch 90-Second Demo
+              <Sparkles className="mr-2 h-4 w-4" />
+              Start Building Your Identity
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Use Cases */}
+      {/* Core Features */}
       <div className="py-24 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Built for Every Industry</h2>
-            <p className="text-xl text-gray-300">Compliant age verification for any use case</p>
+            <h2 className="text-4xl font-bold mb-4">Complete Identity Infrastructure</h2>
+            <p className="text-xl text-gray-300">Everything you need for self-sovereign identity</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {USE_CASES.map((useCase, index) => (
+            {IDENTITY_FEATURES.map((feature, index) => (
               <Card key={index} className="bg-gray-800/50 backdrop-blur border-gray-700">
                 <CardContent className="p-6">
-                  <useCase.icon className="h-10 w-10 text-indigo-400 mb-4" />
-                  <h3 className="text-lg font-bold mb-2">{useCase.title}</h3>
-                  <p className="text-sm text-gray-400 mb-4">{useCase.description}</p>
+                  <feature.icon className="h-10 w-10 text-indigo-400 mb-4" />
+                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-gray-400 mb-4">{feature.description}</p>
                   <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/50">
-                    {useCase.stat}
+                    {feature.stat}
                   </Badge>
                 </CardContent>
               </Card>
@@ -339,12 +361,45 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Testimonials */}
+      {/* Life Domains Section */}
       <div className="py-24">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Merchants Love PersonaPass</h2>
-            <p className="text-xl text-gray-300">Join 1,000+ businesses improving conversion</p>
+            <h2 className="text-4xl font-bold mb-4">Credentials for Every Aspect of Life</h2>
+            <p className="text-xl text-gray-300">Create verifiable credentials for everything that matters</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {LIFE_DOMAINS.map((domain, index) => (
+              <Card key={index} className="bg-gray-800/50 backdrop-blur border-gray-700 hover:border-indigo-500/50 transition-colors cursor-pointer" onClick={() => setSelectedDomain(index)}>
+                <CardContent className="p-6">
+                  <domain.icon className="h-12 w-12 text-indigo-400 mb-4" />
+                  <h3 className="text-xl font-bold mb-3">{domain.title}</h3>
+                  <p className="text-sm text-gray-400 mb-4">{domain.description}</p>
+                  <div className="space-y-1">
+                    {domain.examples.slice(0, 2).map((example, i) => (
+                      <div key={i} className="flex items-center text-xs text-gray-500">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-400" />
+                        {example}
+                      </div>
+                    ))}
+                    {domain.examples.length > 2 && (
+                      <div className="text-xs text-indigo-400">+{domain.examples.length - 2} more</div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials */}
+      <div className="py-24 bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">People Love PersonaPass</h2>
+            <p className="text-xl text-gray-300">Join thousands building their digital identity</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -368,50 +423,50 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Integration Options */}
+      {/* Access Your Identity Anywhere */}
       <div className="py-24 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Integrate in Minutes</h2>
-            <p className="text-xl text-gray-300">Works with your existing tech stack</p>
+            <h2 className="text-4xl font-bold mb-4">Access Your Identity Anywhere</h2>
+            <p className="text-xl text-gray-300">Multiple ways to manage and share your credentials</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="bg-gray-800/50 backdrop-blur border-gray-700">
               <CardContent className="p-8 text-center">
-                <ShoppingBag className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-3">Shopify App</h3>
+                <Globe className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-3">Web Dashboard</h3>
                 <p className="text-gray-400 mb-4">
-                  One-click install from the Shopify App Store. No coding required.
+                  Manage all your credentials in one secure, user-friendly web interface.
                 </p>
                 <Button variant="outline" className="border-gray-600">
-                  Install App
+                  Open Dashboard
                 </Button>
               </CardContent>
             </Card>
 
             <Card className="bg-gray-800/50 backdrop-blur border-gray-700">
               <CardContent className="p-8 text-center">
-                <Code2 className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-3">JavaScript SDK</h3>
+                <Wallet className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-3">Mobile Wallet</h3>
                 <p className="text-gray-400 mb-4">
-                  Simple SDK for any website. Works with React, Vue, Angular, and vanilla JS.
+                  Coming soon: Native mobile app for iOS and Android with biometric security.
                 </p>
                 <Button variant="outline" className="border-gray-600">
-                  View Docs
+                  Join Waitlist
                 </Button>
               </CardContent>
             </Card>
 
             <Card className="bg-gray-800/50 backdrop-blur border-gray-700">
               <CardContent className="p-8 text-center">
-                <Globe className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-3">REST API</h3>
+                <Network className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-3">QR Code Sharing</h3>
                 <p className="text-gray-400 mb-4">
-                  Full-featured API for custom integrations. Webhooks included.
+                  Generate QR codes to instantly share proofs without revealing personal data.
                 </p>
                 <Button variant="outline" className="border-gray-600">
-                  API Reference
+                  Learn More
                 </Button>
               </CardContent>
             </Card>
@@ -423,58 +478,70 @@ export default function LandingPage() {
       <div className="py-24">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-gray-300">No hidden fees. No monthly minimums.</p>
+            <h2 className="text-4xl font-bold mb-4">Start Free, Upgrade When Ready</h2>
+            <p className="text-xl text-gray-300">Your digital identity platform. Your timeline. Your choice.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
+            <Card className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 backdrop-blur border-indigo-700 relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-indigo-600 text-white px-4 py-1">
+                  Recommended
+                </Badge>
+              </div>
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold mb-2">Starter</h3>
-                <p className="text-gray-400 mb-6">Perfect for small businesses</p>
+                <h3 className="text-2xl font-bold mb-2">Free Forever</h3>
+                <p className="text-gray-300 mb-6">Perfect to get started</p>
                 <div className="mb-6">
                   <span className="text-4xl font-bold">$0</span>
-                  <span className="text-gray-400">/month</span>
+                  <span className="text-gray-300">/month</span>
                 </div>
-                <p className="text-lg mb-6">$0.05 per verification</p>
+                <p className="text-lg mb-6">Complete identity platform</p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Up to 1,000 verifications/mo</span>
+                    <span className="text-sm">Unlimited DIDs</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">All integrations included</span>
+                    <span className="text-sm">50 credentials/month</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Email support</span>
+                    <span className="text-sm">Basic ZK proofs</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <span className="text-sm">Web dashboard access</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
-                  Start Free
+                <Button className="w-full bg-white text-gray-900 hover:bg-gray-100">
+                  Start Free Now
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 backdrop-blur border-indigo-700 relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-indigo-600 text-white px-4 py-1">
-                  Most Popular
-                </Badge>
-              </div>
+            <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
               <CardContent className="p-8">
-                <h3 className="text-2xl font-bold mb-2">Growth</h3>
-                <p className="text-gray-300 mb-6">For growing businesses</p>
+                <h3 className="text-2xl font-bold mb-2">Pro</h3>
+                <p className="text-gray-400 mb-6">For power users</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold">$199</span>
-                  <span className="text-gray-300">/month</span>
+                  <span className="text-4xl font-bold">$9</span>
+                  <span className="text-gray-400">/month</span>
                 </div>
-                <p className="text-lg mb-6">$0.03 per verification</p>
+                <p className="text-lg mb-6">Advanced features</p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Up to 10,000 verifications/mo</span>
+                    <span className="text-sm">Everything in Free</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <span className="text-sm">Unlimited credentials</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <span className="text-sm">Advanced ZK circuits</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
@@ -482,15 +549,11 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Custom branding</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Advanced analytics</span>
+                    <span className="text-sm">Mobile app access</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-white text-gray-900 hover:bg-gray-100">
-                  Start Free Trial
+                <Button variant="outline" className="w-full border-gray-600">
+                  Upgrade to Pro
                 </Button>
               </CardContent>
             </Card>
@@ -498,27 +561,31 @@ export default function LandingPage() {
             <Card className="bg-gray-900/50 backdrop-blur border-gray-800">
               <CardContent className="p-8">
                 <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                <p className="text-gray-400 mb-6">For large organizations</p>
+                <p className="text-gray-400 mb-6">For organizations</p>
                 <div className="mb-6">
                   <span className="text-4xl font-bold">Custom</span>
                 </div>
-                <p className="text-lg mb-6">Volume discounts available</p>
+                <p className="text-lg mb-6">White-label solutions</p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Unlimited verifications</span>
+                    <span className="text-sm">Everything in Pro</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Dedicated support</span>
+                    <span className="text-sm">Bulk user management</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">SLA guarantee</span>
+                    <span className="text-sm">Custom integrations</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400" />
-                    <span className="text-sm">Custom integration</span>
+                    <span className="text-sm">24/7 dedicated support</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-400" />
+                    <span className="text-sm">On-premise deployment</span>
                   </li>
                 </ul>
                 <Button variant="outline" className="w-full border-gray-600">
@@ -530,58 +597,58 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Trust & Compliance Section */}
+      {/* Trust & Security Section */}
       <div className="py-16 bg-gray-900/30">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Enterprise-Grade Security & Compliance</h2>
-            <p className="text-xl text-gray-300">Trusted by Fortune 500 companies</p>
+            <h2 className="text-3xl font-bold mb-4">Your Privacy is Our Promise</h2>
+            <p className="text-xl text-gray-300">Built for self-sovereignty, secured with best practices</p>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-6 gap-8 items-center opacity-70">
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
-                <div className="text-2xl font-bold">SOC 2</div>
+                <div className="text-2xl font-bold">🔐</div>
               </div>
-              <p className="text-xs text-gray-400">Type II Certified</p>
+              <p className="text-xs text-gray-400">Zero-Knowledge</p>
             </div>
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
-                <div className="text-2xl font-bold">GDPR</div>
+                <div className="text-2xl font-bold">⛓️</div>
               </div>
-              <p className="text-xs text-gray-400">Compliant</p>
+              <p className="text-xs text-gray-400">On-Chain Storage</p>
             </div>
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
-                <div className="text-2xl font-bold">CCPA</div>
+                <div className="text-2xl font-bold">🛡️</div>
               </div>
-              <p className="text-xs text-gray-400">Compliant</p>
+              <p className="text-xs text-gray-400">End-to-End Encryption</p>
             </div>
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
-                <div className="text-2xl font-bold">COPPA</div>
+                <div className="text-2xl font-bold">👑</div>
               </div>
-              <p className="text-xs text-gray-400">Safe Harbor</p>
+              <p className="text-xs text-gray-400">Self-Sovereign</p>
             </div>
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
                 <div className="text-2xl font-bold">99.9%</div>
               </div>
-              <p className="text-xs text-gray-400">SLA Uptime</p>
+              <p className="text-xs text-gray-400">Uptime Guarantee</p>
             </div>
             <div className="text-center">
               <div className="bg-gray-800 p-4 rounded-lg mb-2 min-h-[80px] flex items-center justify-center">
-                <div className="text-2xl font-bold">24/7</div>
+                <div className="text-2xl font-bold">🌐</div>
               </div>
-              <p className="text-xs text-gray-400">Monitoring</p>
+              <p className="text-xs text-gray-400">Global Access</p>
             </div>
           </div>
           
           <div className="text-center mt-12">
             <p className="text-sm text-gray-400 max-w-3xl mx-auto">
-              PersonaPass infrastructure is hosted on AWS with end-to-end encryption, 
-              multi-region failover, and zero data storage. All compliance certificates 
-              available upon request.
+              PersonaPass runs on PersonaChain blockchain with cryptographic security. 
+              Your identity data never leaves your control. We don't store, sell, or 
+              access your personal information - that's the power of self-sovereign identity.
             </p>
           </div>
         </div>
@@ -591,30 +658,31 @@ export default function LandingPage() {
       <div className="py-24 bg-gradient-to-r from-indigo-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-8 text-center">
           <h2 className="text-4xl font-bold mb-4">
-            Ready to 3x Your Conversion Rate?
+            Ready to Own Your Digital Identity?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Join 1,000+ merchants using PersonaPass for compliant age verification.
-            Get 50% off your first 3 months during launch week.
+            Join the self-sovereign identity revolution. Create your decentralized identity in minutes 
+            and take control of your digital life forever.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
               className="bg-white text-gray-900 hover:bg-gray-100 text-lg px-8"
-              onClick={() => window.location.href = '/merchant/onboard'}
+              onClick={() => window.location.href = '/onboard'}
             >
-              Start Free Trial
+              <Key className="mr-2 h-5 w-5" />
+              Create Your Identity
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-white text-white hover:bg-white/10 text-lg px-8"
-              onClick={() => window.location.href = '/demo'}
+              onClick={() => window.location.href = '/auth'}
             >
-              <Play className="mr-2 h-5 w-5" />
-              Try Live Demo
+              <Wallet className="mr-2 h-5 w-5" />
+              Sign In
             </Button>
           </div>
         </div>
@@ -626,47 +694,47 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="font-bold mb-4 flex items-center gap-2">
-                <Shield className="h-5 w-5 text-indigo-400" />
+                <Key className="h-5 w-5 text-indigo-400" />
                 PersonaPass
               </h3>
               <p className="text-sm text-gray-400">
-                Privacy-preserving age verification that converts.
+                Your complete digital identity platform. Self-sovereign, secure, and private.
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Product</h4>
+              <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/demo" className="hover:text-white">Live Demo</Link></li>
-                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white">Dashboard</Link></li>
+                <li><Link href="/onboard" className="hover:text-white">Create Identity</Link></li>
+                <li><Link href="/auth" className="hover:text-white">Sign In</Link></li>
                 <li><Link href="/docs" className="hover:text-white">Documentation</Link></li>
-                <li><Link href="/api" className="hover:text-white">API Reference</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <h4 className="font-semibold mb-4">Identity</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/about" className="hover:text-white">About</Link></li>
-                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link href="/careers" className="hover:text-white">Careers</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+                <li><Link href="/did" className="hover:text-white">Decentralized ID</Link></li>
+                <li><Link href="/credentials" className="hover:text-white">Verifiable Credentials</Link></li>
+                <li><Link href="/proofs" className="hover:text-white">Zero-Knowledge Proofs</Link></li>
+                <li><Link href="/blockchain" className="hover:text-white">PersonaChain</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
+              <h4 className="font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-                <li><Link href="/compliance" className="hover:text-white">Compliance</Link></li>
                 <li><Link href="/security" className="hover:text-white">Security</Link></li>
+                <li><Link href="/support" className="hover:text-white">Support</Link></li>
               </ul>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>© 2024 PersonaPass. All rights reserved.</p>
+            <p>© 2024 PersonaPass. Powered by PersonaChain blockchain. Your identity, your control.</p>
           </div>
         </div>
       </footer>
