@@ -6,6 +6,8 @@ import "solidity-coverage";
 import * as dotenv from "dotenv";
 
 dotenv.config();
+// Also load deployment-specific env vars
+dotenv.config({ path: '.env.deployment' });
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -39,7 +41,7 @@ const config: HardhatUserConfig = {
       chainId: 1,
     },
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+      url: (ALCHEMY_API_KEY && ALCHEMY_API_KEY !== 'demo_key') ? `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
       accounts: [PRIVATE_KEY],
       chainId: 11155111,
     },
@@ -49,7 +51,7 @@ const config: HardhatUserConfig = {
       chainId: 137,
     },
     mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+      url: (ALCHEMY_API_KEY && ALCHEMY_API_KEY !== 'demo_key') ? `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_API_KEY}` : 'https://rpc.ankr.com/polygon_mumbai',
       accounts: [PRIVATE_KEY],
       chainId: 80001,
     },
