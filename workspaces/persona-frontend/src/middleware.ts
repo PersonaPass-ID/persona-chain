@@ -56,7 +56,10 @@ export async function middleware(request: NextRequest) {
     // Get session from cookies
     const cookieStore = request.cookies
     const session = await getIronSession<SessionData>(cookieStore as any, sessionOptions)
-    const isAuthenticated = !!session.user
+    
+    // Also check for wallet authentication (temporary fix)
+    const hasWalletSession = cookieStore.get('active_wallet_session')
+    const isAuthenticated = !!session.user || !!hasWalletSession
 
     // Handle protected routes
     if (isProtectedRoute && !isAuthenticated) {
