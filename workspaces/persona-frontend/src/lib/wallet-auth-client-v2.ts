@@ -56,15 +56,15 @@ declare global {
   }
 }
 
-// PersonaChain configuration
+// PersonaChain configuration - Native PersonaChain with ID token
 const PERSONACHAIN_CONFIG = {
-  chainId: 'personachain-1',
-  chainName: 'PersonaChain',
-  rpc: 'https://rpc.personapass.xyz',
-  rest: 'https://api.personapass.xyz',
+  chainId: 'personachain-1', // Your actual PersonaChain ID
+  chainName: 'PersonaChain Identity Network',
+  rpc: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
+  rest: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
   bip44: { coinType: 118 },
   bech32Config: {
-    bech32PrefixAccAddr: 'persona',
+    bech32PrefixAccAddr: 'persona', // Your PersonaChain address prefix
     bech32PrefixAccPub: 'personapub',
     bech32PrefixValAddr: 'personavaloper',
     bech32PrefixValPub: 'personavaloperpub',
@@ -72,21 +72,28 @@ const PERSONACHAIN_CONFIG = {
     bech32PrefixConsPub: 'personavalconspub',
   },
   currencies: [{
-    coinDenom: 'PERSONA',
-    coinMinimalDenom: 'upersona',
+    coinDenom: 'ID', // Your PersonaID token
+    coinMinimalDenom: 'uid', // Micro PersonaID
     coinDecimals: 6,
+    coinGeckoId: 'personaid', // For price tracking
+    coinImageUrl: 'https://personapass.xyz/logo.png'
   }],
   feeCurrencies: [{
-    coinDenom: 'PERSONA',
-    coinMinimalDenom: 'upersona',
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
-    gasPriceStep: { low: 0.01, average: 0.025, high: 0.04 },
+    gasPriceStep: { 
+      low: 0.001,    // Low: 0.001 ID per gas
+      average: 0.002, // Average: 0.002 ID per gas
+      high: 0.005     // High: 0.005 ID per gas
+    },
   }],
   stakeCurrency: {
-    coinDenom: 'PERSONA',
-    coinMinimalDenom: 'upersona',
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
   },
+  features: ['ibc-transfer', 'ibc-go', 'cosmwasm', 'wasmd_0.24+']
 }
 
 export class PersonaWalletAuthClientV2 {
@@ -249,23 +256,31 @@ export class PersonaWalletAuthClientV2 {
 
       const { nonce } = await nonceResponse.json()
 
-      // Step 3: Create custom authentication message for Cosmos wallets
+      // Step 3: Create PersonaChain authentication message
       const domain = window.location.host
       const origin = window.location.origin
-      const statement = 'Sign in to PersonaPass to access your digital identity'
+      const statement = 'Sign in to PersonaPass to access your PersonaChain digital identity'
       const issuedAt = new Date().toISOString()
       
-      // Create a custom message format that works with Cosmos addresses
-      const message = `${domain} wants you to sign in with your Cosmos account:
+      // Create a PersonaChain-specific message format
+      const message = `🔐 PersonaPass Authentication Challenge
+
+${domain} wants you to sign in with your PersonaChain account:
 ${address}
 
 ${statement}
 
 URI: ${origin}
 Version: 1
-Chain ID: ${PERSONACHAIN_CONFIG.chainId}
+Chain ID: PersonaChain Identity Network (${PERSONACHAIN_CONFIG.chainId})
 Nonce: ${nonce}
-Issued At: ${issuedAt}`
+Issued At: ${issuedAt}
+Token: ID (uid)
+
+By signing this message, you authenticate with PersonaPass.
+This signature cannot be used to authorize transactions.
+
+⚠️ Only sign this message on the official PersonaPass website.`
 
       // Step 4: Sign the message
       const wallets = this.getAvailableWallets()
@@ -287,6 +302,8 @@ Issued At: ${issuedAt}`
         message
       )
 
+      console.log('✅ Wallet signed message successfully')
+
       // Step 5: Send signature to backend for verification
       const authResponse = await fetch('/api/auth/wallet', {
         method: 'POST',
@@ -294,8 +311,10 @@ Issued At: ${issuedAt}`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          address,
           message,
-          signature: signResult.signature
+          signature: JSON.stringify(signResult), // Send full signature object
+          walletType: walletType
         })
       })
 
