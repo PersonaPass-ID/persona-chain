@@ -56,15 +56,15 @@ declare global {
   }
 }
 
-// PersonaChain configuration - Working with your current RPC
+// PersonaChain configuration - WORKING PERSONACHAIN!
 const PERSONACHAIN_CONFIG = {
-  chainId: 'cosmoshub-4', // Using the actual chain ID your RPC returns
+  chainId: 'personachain-1', // Your actual PersonaChain network!
   chainName: 'PersonaChain Identity Network', 
-  rpc: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
-  rest: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
+  rpc: 'http://3.95.230.14:26657', // Working validator RPC
+  rest: 'http://3.95.230.14:1317', // Working REST API
   bip44: { coinType: 118 },
   bech32Config: {
-    bech32PrefixAccAddr: 'cosmos', // Using cosmos prefix since that's what your RPC returns
+    bech32PrefixAccAddr: 'cosmos', // Using cosmos prefix - your chain uses this
     bech32PrefixAccPub: 'cosmospub',
     bech32PrefixValAddr: 'cosmosvaloper',
     bech32PrefixValPub: 'cosmosvaloperpub',
@@ -72,14 +72,14 @@ const PERSONACHAIN_CONFIG = {
     bech32PrefixConsPub: 'cosmosvalconspub',
   },
   currencies: [{
-    coinDenom: 'ATOM', // Using ATOM since that's what your RPC supports
-    coinMinimalDenom: 'uatom',
+    coinDenom: 'STAKE', // Using STAKE - that's what your PersonaChain uses
+    coinMinimalDenom: 'ustake',
     coinDecimals: 6,
     coinImageUrl: 'https://personapass.xyz/logo.png'
   }],
   feeCurrencies: [{
-    coinDenom: 'ATOM',
-    coinMinimalDenom: 'uatom', 
+    coinDenom: 'STAKE',
+    coinMinimalDenom: 'ustake', 
     coinDecimals: 6,
     gasPriceStep: { 
       low: 0.001,
@@ -88,8 +88,8 @@ const PERSONACHAIN_CONFIG = {
     },
   }],
   stakeCurrency: {
-    coinDenom: 'ATOM',
-    coinMinimalDenom: 'uatom',
+    coinDenom: 'STAKE',
+    coinMinimalDenom: 'ustake',
     coinDecimals: 6,
   },
   features: ['ibc-transfer', 'ibc-go']

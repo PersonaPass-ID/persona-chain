@@ -4,31 +4,30 @@
  */
 
 export const PERSONACHAIN_NETWORK_CONFIG = {
-  chainId: 'personachain-1',
+  chainId: 'personachain-1', // Your actual working PersonaChain
   chainName: 'PersonaChain Identity Network',
-  rpc: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
-  rest: 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com',
+  rpc: 'http://3.95.230.14:26657', // Working validator RPC
+  rest: 'http://3.95.230.14:1317', // Working REST endpoint
   bip44: {
     coinType: 118, // Standard Cosmos coin type
   },
   bech32Config: {
-    bech32PrefixAccAddr: 'persona',
-    bech32PrefixAccPub: 'personapub',
-    bech32PrefixValAddr: 'personavaloper',
-    bech32PrefixValPub: 'personavaloperpub',
-    bech32PrefixConsAddr: 'personavalcons',
-    bech32PrefixConsPub: 'personavalconspub',
+    bech32PrefixAccAddr: 'cosmos', // Your chain uses cosmos prefix
+    bech32PrefixAccPub: 'cosmospub',
+    bech32PrefixValAddr: 'cosmosvaloper',
+    bech32PrefixValPub: 'cosmosvaloperpub',
+    bech32PrefixConsAddr: 'cosmosvalcons',
+    bech32PrefixConsPub: 'cosmosvalconspub',
   },
   currencies: [{
-    coinDenom: 'ID',
-    coinMinimalDenom: 'uid',
+    coinDenom: 'STAKE', // Your PersonaChain uses STAKE token
+    coinMinimalDenom: 'ustake',
     coinDecimals: 6,
-    coinGeckoId: 'personaid',
     coinImageUrl: 'https://personapass.xyz/logo.png',
   }],
   feeCurrencies: [{
-    coinDenom: 'ID',
-    coinMinimalDenom: 'uid',
+    coinDenom: 'STAKE',
+    coinMinimalDenom: 'ustake',
     coinDecimals: 6,
     gasPriceStep: {
       low: 0.001,
@@ -38,8 +37,8 @@ export const PERSONACHAIN_NETWORK_CONFIG = {
     coinImageUrl: 'https://personapass.xyz/logo.png',
   }],
   stakeCurrency: {
-    coinDenom: 'ID',
-    coinMinimalDenom: 'uid',
+    coinDenom: 'STAKE',
+    coinMinimalDenom: 'ustake',
     coinDecimals: 6,
     coinImageUrl: 'https://personapass.xyz/logo.png',
   },
