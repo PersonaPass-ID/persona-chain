@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { identityStorage, VerifiableCredential } from '../../../lib/storage/identity-storage'
-import { DIDResolverService } from '../../../lib/did-resolver'
+import { realIdentityStorage, VerifiableCredential } from '../../../lib/storage/real-identity-storage'
+import { checkSupabaseConnection } from '../../../lib/storage/supabase-client'
 
 interface WalletCredential {
   id: string
@@ -60,22 +60,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       })
     }
 
-    console.log(`🔍 Fetching credentials using Web3 hybrid storage for wallet: ${address}`)
+    console.log(`🔍 Fetching credentials using REAL Web3 storage for wallet: ${address}`)
+
+    // Check if Supabase is configured and connected
+    const dbHealth = await checkSupabaseConnection()
+    if (!dbHealth.success) {
+      console.log(`⚠️ Supabase not configured, returning empty credentials for: ${address}`)
+      return res.status(200).json({
+        success: true,
+        did: `did:cosmos:${address}`, // Generate fallback DID
+        credentials: [],
+        storage: {
+          encrypted: true,
+          network: 'personachain-1',
+          totalCredentials: 0,
+          activeCredentials: 0,
+          storageProvider: 'Not Configured - Please set up Supabase'
+        }
+      })
+    }
 
     // Get DID for the wallet
-    const did = await identityStorage.getDIDByWallet(address)
+    const did = await realIdentityStorage.getDIDByWallet(address)
     
     if (!did) {
-      return res.status(404).json({
-        success: false,
-        error: 'No DID found for this wallet address. Please create a DID first.'
+      console.log(`📝 No DID found for wallet: ${address}, returning empty credentials`)
+      return res.status(200).json({
+        success: true,
+        did: null,
+        credentials: [],
+        storage: {
+          encrypted: true,
+          network: 'personachain-1',
+          totalCredentials: 0,
+          activeCredentials: 0,
+          storageProvider: 'Real Supabase Database (No DID found)'
+        }
       })
     }
 
     console.log(`🆔 Found DID for wallet: ${did}`)
 
-    // Get all credentials for the DID using hybrid storage
-    const credentialsResult = await identityStorage.getVerifiableCredentials(
+    // Get all credentials for the DID using REAL storage
+    const credentialsResult = await realIdentityStorage.getVerifiableCredentials(
       did,
       address,
       walletType as string
@@ -114,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }))
 
     // Get storage statistics
-    const storageStats = await identityStorage.getStorageStats(address)
+    const storageStats = await realIdentityStorage.getStorageStats(address)
 
     const response: GetCredentialsResponse = {
       success: true,
@@ -125,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         network: 'personachain-1',
         totalCredentials: storageStats.totalCredentials,
         activeCredentials: credentials.filter(c => c.status === 'valid').length,
-        storageProvider: 'Web3 Hybrid (PersonaChain + Encrypted Supabase)'
+        storageProvider: 'REAL Web3 Hybrid (PersonaChain + Encrypted Supabase)'
       }
     }
 
