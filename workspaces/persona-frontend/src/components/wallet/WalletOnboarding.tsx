@@ -97,11 +97,14 @@ export default function WalletOnboarding() {
         walletType: walletType
       }
 
+      // Batch state updates and defer async call
       setWalletInfo(wallet)
       setCurrentStep('existing-user-check')
       
-      // Automatically check for existing user
-      await checkExistingUser(wallet)
+      // Defer the async call to prevent React error
+      setTimeout(() => {
+        checkExistingUser(wallet)
+      }, 100)
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect wallet')
@@ -198,19 +201,29 @@ export default function WalletOnboarding() {
           hasExistingDID: true
         }
         
-        setUserProfile(profile)
-        personaApiClient.storeWalletProfile(existingAuth.profile)
-        setCurrentStep('welcome')
+        // Batch state updates to prevent React error
+        setTimeout(() => {
+          setUserProfile(profile)
+          personaApiClient.storeWalletProfile(existingAuth.profile)
+          setCurrentStep('welcome')
+          setLoading(false)
+        }, 0)
+        return
       } else {
         // New user - continue to identity creation
-        setCurrentStep('identity-creation')
+        setTimeout(() => {
+          setCurrentStep('identity-creation')
+          setLoading(false)
+        }, 0)
+        return
       }
     } catch (err) {
       console.error('Failed to check existing user:', err)
       // Continue to identity creation even if check fails
-      setCurrentStep('identity-creation')
-    } finally {
-      setLoading(false)
+      setTimeout(() => {
+        setCurrentStep('identity-creation')
+        setLoading(false)
+      }, 0)
     }
   }
 
