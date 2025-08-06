@@ -63,9 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`🔍 Fetching credentials using REAL Web3 storage for wallet: ${address}`)
 
     // Check if Supabase is configured and connected
-    const dbHealth = await checkSupabaseConnection()
-    if (!dbHealth.success) {
-      console.log(`⚠️ Supabase not configured, returning empty credentials for: ${address}`)
+    let dbHealth
+    try {
+      dbHealth = await checkSupabaseConnection()
+    } catch (error) {
+      console.log(`⚠️ Supabase initialization failed, returning empty credentials for: ${address}`)
       return res.status(200).json({
         success: true,
         did: `did:cosmos:${address}`, // Generate fallback DID
@@ -75,43 +77,90 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           network: 'personachain-1',
           totalCredentials: 0,
           activeCredentials: 0,
-          storageProvider: 'Not Configured - Please set up Supabase'
+          storageProvider: 'Supabase Not Configured - Please set up environment variables'
         }
       })
     }
-
-    // Get DID for the wallet
-    const did = await realIdentityStorage.getDIDByWallet(address)
     
-    if (!did) {
-      console.log(`📝 No DID found for wallet: ${address}, returning empty credentials`)
+    if (!dbHealth.success) {
+      console.log(`⚠️ Supabase not connected, returning empty credentials for: ${address}`)
       return res.status(200).json({
         success: true,
-        did: null,
+        did: `did:cosmos:${address}`, // Generate fallback DID
         credentials: [],
         storage: {
           encrypted: true,
           network: 'personachain-1',
           totalCredentials: 0,
           activeCredentials: 0,
-          storageProvider: 'Real Supabase Database (No DID found)'
+          storageProvider: 'Supabase Connection Failed - Check configuration'
         }
       })
     }
 
-    console.log(`🆔 Found DID for wallet: ${did}`)
+    // Get DID for the wallet
+    let did, credentialsResult, storageStats
+    
+    try {
+      did = await realIdentityStorage.getDIDByWallet(address)
+      
+      if (!did) {
+        console.log(`📝 No DID found for wallet: ${address}, returning empty credentials`)
+        return res.status(200).json({
+          success: true,
+          did: null,
+          credentials: [],
+          storage: {
+            encrypted: true,
+            network: 'personachain-1',
+            totalCredentials: 0,
+            activeCredentials: 0,
+            storageProvider: 'Real Supabase Database (No DID found)'
+          }
+        })
+      }
 
-    // Get all credentials for the DID using REAL storage
-    const credentialsResult = await realIdentityStorage.getVerifiableCredentials(
-      did,
-      address,
-      walletType as string
-    )
+      console.log(`🆔 Found DID for wallet: ${did}`)
 
-    if (!credentialsResult.success) {
-      return res.status(500).json({
-        success: false,
-        error: credentialsResult.error || 'Failed to fetch credentials'
+      // Get all credentials for the DID using REAL storage
+      credentialsResult = await realIdentityStorage.getVerifiableCredentials(
+        did,
+        address,
+        walletType as string
+      )
+
+      if (!credentialsResult.success) {
+        console.log(`⚠️ Failed to get credentials: ${credentialsResult.error}`)
+        return res.status(200).json({
+          success: true,
+          did,
+          credentials: [],
+          storage: {
+            encrypted: true,
+            network: 'personachain-1',
+            totalCredentials: 0,
+            activeCredentials: 0,
+            storageProvider: 'Real Supabase Database (Query failed)'
+          }
+        })
+      }
+
+      // Get storage statistics
+      storageStats = await realIdentityStorage.getStorageStats(address)
+      
+    } catch (storageError) {
+      console.error(`❌ Storage operation failed for ${address}:`, storageError)
+      return res.status(200).json({
+        success: true,
+        did: `did:cosmos:${address}`, // Generate fallback DID
+        credentials: [],
+        storage: {
+          encrypted: true,
+          network: 'personachain-1',
+          totalCredentials: 0,
+          activeCredentials: 0,
+          storageProvider: 'Storage Error - Check server logs'
+        }
       })
     }
 
@@ -139,9 +188,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         walletType: walletType as string
       }
     }))
-
-    // Get storage statistics
-    const storageStats = await realIdentityStorage.getStorageStats(address)
 
     const response: GetCredentialsResponse = {
       success: true,

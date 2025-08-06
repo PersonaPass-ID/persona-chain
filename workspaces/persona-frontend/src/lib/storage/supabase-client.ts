@@ -11,11 +11,11 @@ function validateEnvironment() {
   }
 
   const missing = Object.entries(requiredEnvVars)
-    .filter(([key, value]) => !value)
+    .filter(([key, value]) => !value || value.includes('your_') || value === '')
     .map(([key]) => key)
 
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`)
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}. Please configure Supabase credentials.`)
   }
 
   return requiredEnvVars as { [K in keyof typeof requiredEnvVars]: string }
