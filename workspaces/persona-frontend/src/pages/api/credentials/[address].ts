@@ -1,19 +1,25 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { identityStorage, VerifiableCredential } from '../../../lib/storage/identity-storage'
+import { DIDResolverService } from '../../../lib/did-resolver'
 
 interface WalletCredential {
   id: string
   did: string
-  type: string
-  status: string
+  type: string[]
+  status: 'valid' | 'revoked' | 'suspended'
   walletAddress: string
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   walletType: string
-  createdAt: string
+  issuanceDate: string
+  expirationDate?: string
+  issuer: string
+  credentialSubject: { [key: string]: any }
   blockchain?: {
-    txHash: string
-    blockHeight: number
+    txHash?: string
+    blockHeight?: number
     network: string
+    contentHash?: string
   }
   verification?: {
     method: string
@@ -23,13 +29,14 @@ interface WalletCredential {
 
 interface GetCredentialsResponse {
   success: boolean
+  did?: string
   credentials?: WalletCredential[]
-  blockchain?: {
+  storage?: {
+    encrypted: boolean
     network: string
-    nodeUrl: string
     totalCredentials: number
     activeCredentials: number
-    latestBlockHeight: number
+    storageProvider: string
   }
   error?: string
 }
@@ -44,6 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   try {
     const { address } = req.query
+    const { walletType = 'keplr' } = req.query
 
     if (!address || typeof address !== 'string') {
       return res.status(400).json({
@@ -52,133 +60,81 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       })
     }
 
-    console.log(`🔍 Fetching credentials for wallet: ${address}`)
+    console.log(`🔍 Fetching credentials using Web3 hybrid storage for wallet: ${address}`)
 
-    const PERSONACHAIN_RPC = process.env.PERSONACHAIN_RPC_URL || 'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:26657'
+    // Get DID for the wallet
+    const did = await identityStorage.getDIDByWallet(address)
     
-    let credentials: WalletCredential[] = []
-    let blockHeight = 1
-    let blockchainSuccess = false
-
-    try {
-      // Query PersonaChain for credentials
-      console.log(`📡 Querying PersonaChain: ${PERSONACHAIN_RPC}`)
-
-      // Query for DID documents
-      const queryData = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'abci_query',
-        params: {
-          path: '/custom/persona/did',
-          data: Buffer.from(address).toString('hex'),
-          prove: false
-        }
-      }
-
-      const response = await fetch(PERSONACHAIN_RPC, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(queryData)
+    if (!did) {
+      return res.status(404).json({
+        success: false,
+        error: 'No DID found for this wallet address. Please create a DID first.'
       })
+    }
 
-      if (response.ok) {
-        const result = await response.json()
-        console.log(`📊 PersonaChain query result:`, result)
+    console.log(`🆔 Found DID for wallet: ${did}`)
 
-        // Get latest block height
-        const statusQuery = {
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'status'
-        }
+    // Get all credentials for the DID using hybrid storage
+    const credentialsResult = await identityStorage.getVerifiableCredentials(
+      did,
+      address,
+      walletType as string
+    )
 
-        const statusResponse = await fetch(PERSONACHAIN_RPC, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(statusQuery)
-        })
+    if (!credentialsResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: credentialsResult.error || 'Failed to fetch credentials'
+      })
+    }
 
-        if (statusResponse.ok) {
-          const statusResult = await statusResponse.json()
-          if (statusResult.result?.sync_info?.latest_block_height) {
-            blockHeight = parseInt(statusResult.result.sync_info.latest_block_height)
-            blockchainSuccess = true
-          }
-        }
-
-        // Parse credentials from blockchain response
-        if (result.result?.response?.value) {
-          try {
-            const decodedValue = Buffer.from(result.result.response.value, 'base64').toString()
-            const didDocument = JSON.parse(decodedValue)
-            
-            // Convert DID document to credential format
-            const credential: WalletCredential = {
-              id: `cred_${didDocument.did}_${Date.now()}`,
-              did: didDocument.did,
-              type: 'WalletIdentityCredential',
-              status: 'verified',
-              walletAddress: address,
-              firstName: didDocument.firstName || 'Unknown',
-              lastName: didDocument.lastName || 'User',
-              walletType: didDocument.walletType || 'keplr',
-              createdAt: didDocument.createdAt || new Date().toISOString(),
-              blockchain: {
-                txHash: didDocument.txHash || 'unknown',
-                blockHeight: blockHeight,
-                network: 'personachain-1'
-              },
-              verification: {
-                method: 'wallet-signature',
-                walletType: didDocument.walletType || 'keplr'
-              }
-            }
-
-            credentials.push(credential)
-            console.log(`✅ Found credential on PersonaChain: ${credential.did}`)
-          } catch (parseError) {
-            console.warn(`⚠️ Failed to parse DID document:`, parseError)
-          }
-        } else {
-          console.log(`📭 No credentials found on PersonaChain for ${address}`)
-        }
-      } else {
-        console.warn(`⚠️ PersonaChain query failed: ${response.status}`)
+    // Convert VerifiableCredentials to WalletCredential format
+    const credentials: WalletCredential[] = (credentialsResult.data || []).map(vc => ({
+      id: vc.id,
+      did: vc.credentialSubject.id,
+      type: Array.isArray(vc.type) ? vc.type : [vc.type],
+      status: 'valid' as const,
+      walletAddress: address,
+      firstName: vc.credentialSubject.firstName,
+      lastName: vc.credentialSubject.lastName,
+      walletType: vc.credentialSubject.walletType || walletType as string,
+      issuanceDate: vc.issuanceDate,
+      expirationDate: vc.expirationDate,
+      issuer: typeof vc.issuer === 'string' ? vc.issuer : vc.issuer.id,
+      credentialSubject: vc.credentialSubject,
+      blockchain: {
+        txHash: vc.proof?.blockchainTxHash || (vc.proof as any)?.blockchainAnchor?.tx_hash,
+        network: 'personachain-1',
+        contentHash: undefined // This would come from storage metadata
+      },
+      verification: {
+        method: 'wallet-signature',
+        walletType: walletType as string
       }
-    } catch (blockchainError) {
-      console.warn(`⚠️ PersonaChain connection failed:`, blockchainError)
-    }
+    }))
 
-    // If no blockchain credentials found, check for recently created DIDs
-    if (credentials.length === 0) {
-      // TODO: Check local storage/database for recent DID creations
-      // For now, we'll return empty array when no credentials exist
-      console.log(`📭 No credentials found for wallet ${address}`)
-    }
+    // Get storage statistics
+    const storageStats = await identityStorage.getStorageStats(address)
 
     const response: GetCredentialsResponse = {
       success: true,
+      did,
       credentials,
-      blockchain: {
+      storage: {
+        encrypted: true,
         network: 'personachain-1',
-        nodeUrl: PERSONACHAIN_RPC,
-        totalCredentials: credentials.length,
-        activeCredentials: credentials.filter(c => c.status === 'verified').length,
-        latestBlockHeight: blockHeight
+        totalCredentials: storageStats.totalCredentials,
+        activeCredentials: credentials.filter(c => c.status === 'valid').length,
+        storageProvider: 'Web3 Hybrid (PersonaChain + Encrypted Supabase)'
       }
     }
 
-    console.log(`✅ Returning ${credentials.length} credentials for ${address}`)
+    console.log(`✅ Returning ${credentials.length} encrypted credentials for ${address}`)
     
     return res.status(200).json(response)
 
   } catch (error) {
-    console.error('❌ Credentials fetch failed:', error)
+    console.error('❌ Web3 credentials fetch failed:', error)
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error'
