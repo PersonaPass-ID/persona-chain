@@ -20,14 +20,14 @@ export const PERSONACHAIN_NETWORK_CONFIG = {
     bech32PrefixConsPub: 'cosmosvalconspub',
   },
   currencies: [{
-    coinDenom: 'STAKE', // Your PersonaChain uses STAKE token
-    coinMinimalDenom: 'ustake',
+    coinDenom: 'ID', // PersonaChain native ID token
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
     coinImageUrl: 'https://personapass.xyz/logo.png',
   }],
   feeCurrencies: [{
-    coinDenom: 'STAKE',
-    coinMinimalDenom: 'ustake',
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
     gasPriceStep: {
       low: 0.001,
@@ -37,8 +37,8 @@ export const PERSONACHAIN_NETWORK_CONFIG = {
     coinImageUrl: 'https://personapass.xyz/logo.png',
   }],
   stakeCurrency: {
-    coinDenom: 'STAKE',
-    coinMinimalDenom: 'ustake',
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
     coinImageUrl: 'https://personapass.xyz/logo.png',
   },

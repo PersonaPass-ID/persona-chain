@@ -72,14 +72,14 @@ const PERSONACHAIN_CONFIG = {
     bech32PrefixConsPub: 'cosmosvalconspub',
   },
   currencies: [{
-    coinDenom: 'STAKE', // Using STAKE - that's what your PersonaChain uses
-    coinMinimalDenom: 'ustake',
+    coinDenom: 'ID', // PersonaChain native ID token
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
     coinImageUrl: 'https://personapass.xyz/logo.png'
   }],
   feeCurrencies: [{
-    coinDenom: 'STAKE',
-    coinMinimalDenom: 'ustake', 
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid', 
     coinDecimals: 6,
     gasPriceStep: { 
       low: 0.001,
@@ -88,8 +88,8 @@ const PERSONACHAIN_CONFIG = {
     },
   }],
   stakeCurrency: {
-    coinDenom: 'STAKE',
-    coinMinimalDenom: 'ustake',
+    coinDenom: 'ID',
+    coinMinimalDenom: 'uid',
     coinDecimals: 6,
   },
   features: ['ibc-transfer', 'ibc-go']
