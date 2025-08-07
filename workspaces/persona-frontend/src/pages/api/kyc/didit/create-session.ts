@@ -47,7 +47,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     webhookUrl,
     siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
     apiKeyPrefix: apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT SET',
-    workflowId: workflowId ? `${workflowId.substring(0, 8)}...` : 'NOT SET'
+    workflowId: workflowId ? `${workflowId.substring(0, 8)}...` : 'NOT SET',
+    fullApiKey: apiKey, // Debug: show full key for troubleshooting
+    fullWorkflowId: workflowId // Debug: show full workflow ID
   })
 
   // Validate required environment variables
@@ -124,12 +126,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!diditResponse.ok) {
       console.error('❌ Didit API error:', diditResponse.status, responseText)
+      console.error('🔍 Debug info:', {
+        apiKey: apiKey?.substring(0, 10) + '...',
+        workflowId: workflowId,
+        endpoint: apiEndpoint,
+        requestHeaders: {
+          'Authorization': `Bearer ${apiKey?.substring(0, 10)}...`,
+          'Content-Type': 'application/json'
+        }
+      })
       
       let errorMessage = 'Session creation failed'
       let troubleshooting: Record<number, string> = {
         400: 'Invalid request format, missing required fields, or invalid workflow_id',
         401: 'Invalid or expired API key - check DIDIT_API_KEY in environment',
-        403: 'API key lacks session creation permissions - check API key scopes in Didit Console',
+        403: 'API key lacks session creation permissions OR workflow_id mismatch - check both API key and workflow ID in Didit Console',
         404: 'Workflow ID not found - verify DIDIT_WORKFLOW_ID matches your Didit Business Console',
         422: 'Validation failed - check required fields and data types',
         429: 'Rate limit exceeded - try again in a moment',
@@ -142,6 +153,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         status_code: diditResponse.status,
         details: responseText,
         troubleshooting: troubleshooting[diditResponse.status] || 'Unexpected error occurred',
+        debug_info: {
+          api_key_provided: !!apiKey,
+          workflow_id_provided: !!workflowId,
+          api_key_prefix: apiKey?.substring(0, 10) + '...',
+          workflow_id: workflowId,
+          endpoint: apiEndpoint,
+          current_credentials: {
+            note: 'If this is a 403 error, you may need to get the workflow ID that matches your new API key from the DIDIT Business Console'
+          }
+        },
         request_sent: sessionRequest
       })
     }
