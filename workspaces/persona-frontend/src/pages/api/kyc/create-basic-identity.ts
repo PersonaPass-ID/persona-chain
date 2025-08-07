@@ -40,14 +40,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🆔 Creating basic identity credential for:', walletAddress)
 
-    // Check if user already has a DID
-    const existingDID = await realIdentityStorage.getDIDByWallet(walletAddress)
+    // Check if user already has a DID, create one if not
+    let existingDID = await realIdentityStorage.getDIDByWallet(walletAddress)
+    
     if (!existingDID) {
-      return res.status(400).json({
-        success: false,
-        error: 'No DID found for this wallet. Please create your identity first.',
-        action_required: 'Complete wallet onboarding first'
-      })
+      console.log('🆔 No DID found, creating new DID for wallet:', walletAddress)
+      
+      // Create a new DID for this wallet
+      const didResult = await realIdentityStorage.storeDIDDocumentDirect(
+        walletAddress,
+        walletType,
+        signature || 'basic_identity_creation'
+      )
+      
+      if (!didResult.success || !didResult.did) {
+        console.error('❌ Failed to create DID:', didResult.error)
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create DID for wallet',
+          details: didResult.error
+        })
+      }
+      
+      existingDID = didResult.did
+      console.log('✅ Created new DID:', existingDID)
     }
 
     // Create a basic identity verification credential

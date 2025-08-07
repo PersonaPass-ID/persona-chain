@@ -200,30 +200,30 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
             </h2>
             
             <p className="text-gray-600 dark:text-gray-300 mb-8">
-              Complete our <strong className="text-green-600">FREE</strong> identity verification 
+              Complete our <strong className="text-blue-600">FREE</strong> identity verification 
               to unlock 100 ID tokens and monthly token rewards. No cost, unlimited verifications!
             </p>
 
             {/* Benefits */}
             <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-6 mb-8 border border-green-200 dark:border-green-700">
-              <h3 className="font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center justify-center">
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center justify-center">
                 <span className="text-lg mr-2">🎁</span>
                 What You Get (100% FREE)
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center text-green-700 dark:text-green-300">
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
                   <span className="mr-2">✅</span>
                   100 ID tokens immediately
                 </div>
-                <div className="flex items-center text-green-700 dark:text-green-300">
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
                   <span className="mr-2">✅</span>
                   100 free tokens every month
                 </div>
-                <div className="flex items-center text-green-700 dark:text-green-300">
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
                   <span className="mr-2">✅</span>
                   Proof of Personhood certificate
                 </div>
-                <div className="flex items-center text-green-700 dark:text-green-300">
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
                   <span className="mr-2">✅</span>
                   Privacy-protected verification
                 </div>
@@ -338,7 +338,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">
+            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
               🎉 Verification Complete!
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
