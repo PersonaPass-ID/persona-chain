@@ -102,11 +102,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Create a basic identity verification credential
+    const credentialId = `cred-basic-${walletAddress.slice(0, 8)}-${Date.now()}`
+    
     const identityCredential = {
       '@context': [
         'https://www.w3.org/2018/credentials/v1',
         'https://personapass.xyz/contexts/identity/v1'
       ],
+      'id': credentialId, // Add missing credential ID
       'type': ['VerifiableCredential', 'ProofOfPersonhoodCredential'],
       'issuer': 'did:persona:issuer:personapass',
       'issuanceDate': new Date().toISOString(),
@@ -146,6 +149,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const credentialContentHash = `cred-hash-${walletAddress.slice(0, 8)}-${Date.now()}`
     
+    console.log('📝 Storing credential with:', {
+      credentialId: identityCredential.id,
+      walletAddress,
+      walletType
+    })
+
     const credentialResult = await realIdentityStorage.storeVerifiableCredentialDirect(
       identityCredential,
       walletAddress,
@@ -157,6 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!credentialResult.success) {
       console.error('❌ Failed to store identity credential:', credentialResult.error)
+      console.error('❌ Credential data:', JSON.stringify(identityCredential, null, 2))
       return res.status(500).json({
         success: false,
         error: 'Failed to store identity credential',
@@ -183,7 +193,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       blockchain: {
         stored: true,
         network: 'PersonaChain',
-        credentialId: credentialResult.credentialId
+        credentialId: credentialId
       },
       next_steps: [
         'Your identity credential is now stored on PersonaChain',
