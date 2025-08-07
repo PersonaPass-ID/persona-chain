@@ -52,13 +52,13 @@ export interface VerifiableCredentialRecord {
   content_hash: string
   encrypted_credential: string  // Actual field name in database
   status: string
-  issued_at: string
-  expires_at?: string
+  issuance_date: string  // Fixed: was issued_at
+  expiration_date?: string  // Fixed: was expires_at
   metadata: any
   encryption_params: any
+  blockchain_anchor?: any
   created_at: string
   updated_at: string
-  blockchain_tx_hash?: string
 }
 
 export interface StorageResult<T = any> {
@@ -353,8 +353,8 @@ export class RealIdentityStorageService {
         content_hash: contentHash,
         encrypted_credential: JSON.stringify(encryptedData), // Fix field name
         status: 'active',
-        issued_at: credential.issuanceDate,
-        expires_at: credential.expirationDate,
+        issuance_date: credential.issuanceDate,  // Fixed: was issued_at
+        expiration_date: credential.expirationDate,  // Fixed: was expires_at
         metadata: {
           type: 'verifiable-credential',
           issuer: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
@@ -435,8 +435,8 @@ export class RealIdentityStorageService {
         content_hash: contentHash,
         encrypted_credential: JSON.stringify(encryptedData), // Fix field name
         status: 'active',
-        issued_at: credential.issuanceDate,
-        expires_at: credential.expirationDate,
+        issuance_date: credential.issuanceDate,  // Fixed: was issued_at
+        expiration_date: credential.expirationDate,  // Fixed: was expires_at
         metadata: {
           type: 'verifiable-credential',
           issuer: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
