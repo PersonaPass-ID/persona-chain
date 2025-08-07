@@ -46,10 +46,11 @@ export interface VerifiableCredentialRecord {
   id: string
   credential_id: string
   credential_type: string
+  did: string  // Required field in actual database schema
   subject_did: string
   issuer_did: string
   content_hash: string
-  encrypted_content: string
+  encrypted_credential: string  // Actual field name in database
   status: string
   issued_at: string
   expires_at?: string
@@ -333,14 +334,24 @@ export class RealIdentityStorageService {
       const encryptedData = await IdentityEncryption.encryptData(credential, walletSignature)
       const contentHash = await IdentityEncryption.generateContentHash(credential)
 
+      // First, get the DID for this wallet to satisfy the required 'did' field
+      const didResult = await this.getDIDByWallet(walletAddress)
+      if (!didResult) {
+        return {
+          success: false,
+          error: 'DID not found for wallet address - must create identity first'
+        }
+      }
+
       // Store in Supabase
       const credentialRecord: Omit<VerifiableCredentialRecord, 'id' | 'created_at' | 'updated_at'> = {
         credential_id: credential.id,
         credential_type: credential.type.join(','),
         subject_did: credential.credentialSubject.id,
         issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
+        did: didResult, // Add the required did field
         content_hash: contentHash,
-        encrypted_content: JSON.stringify(encryptedData),
+        encrypted_credential: JSON.stringify(encryptedData), // Fix field name
         status: 'active',
         issued_at: credential.issuanceDate,
         expires_at: credential.expirationDate,
@@ -406,13 +417,23 @@ export class RealIdentityStorageService {
     try {
       console.log(`🎫 Real Storage (Direct): Storing credential ${credential.id}`)
 
+      // Get the DID for this wallet to satisfy the required 'did' field
+      const didResult = await this.getDIDByWallet(walletAddress)
+      if (!didResult) {
+        return {
+          success: false,
+          error: 'DID not found for wallet address - must create identity first'
+        }
+      }
+
       const credentialRecord: Omit<VerifiableCredentialRecord, 'id' | 'created_at' | 'updated_at'> = {
         credential_id: credential.id,
         credential_type: Array.isArray(credential.type) ? credential.type.join(',') : credential.type,
         subject_did: credential.credentialSubject.id,
         issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
+        did: didResult, // Add the required did field
         content_hash: contentHash,
-        encrypted_content: JSON.stringify(encryptedData),
+        encrypted_credential: JSON.stringify(encryptedData), // Fix field name
         status: 'active',
         issued_at: credential.issuanceDate,
         expires_at: credential.expirationDate,
@@ -428,10 +449,6 @@ export class RealIdentityStorageService {
           algorithm: 'AES-GCM',
           key_derivation: 'PBKDF2',
           iterations: 100000
-        }`,
-          block_height: 12345,
-          network: 'personachain-1',
-          anchored_at: new Date().toISOString()
         }
       }
 
@@ -533,7 +550,7 @@ export class RealIdentityStorageService {
 
       for (const record of records) {
         try {
-          const encryptedData = JSON.parse(record.encrypted_content)
+          const encryptedData = JSON.parse(record.encrypted_credential) // Fix field name
           const decryptionResult = await IdentityEncryption.decryptData(encryptedData, walletSignature)
 
           if (decryptionResult.success && decryptionResult.data) {
