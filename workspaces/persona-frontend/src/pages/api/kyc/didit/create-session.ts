@@ -84,24 +84,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Prepare session request according to Didit API documentation v2
     // Based on official docs: POST https://verification.didit.me/v2/session/
+    // Using minimal required fields to avoid permission issues
     const sessionRequest = {
-      workflow_id: workflowId,
-      reference_id: user_address, // Unique reference for this verification
-      callback_url: webhookUrl,
-      user_data: {
-        first_name: metadata.first_name || 'PersonaPass',
-        last_name: metadata.last_name || 'User', 
-        email: email || `${user_address.slice(0, 8)}@personapass.xyz`
-      },
-      custom_data: {
-        wallet_address: user_address,
-        platform: metadata.platform || 'PersonaPass',
-        tier: metadata.tier || 'free',
-        verification_type: 'proof_of_personhood',
-        created_at: new Date().toISOString()
-      },
-      expiry_time: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours from now
-      locale: 'en'
+      workflow_id: workflowId
     }
 
     console.log('📤 Sending session creation request to Didit API')
