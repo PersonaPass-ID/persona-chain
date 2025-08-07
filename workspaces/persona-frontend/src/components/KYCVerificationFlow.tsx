@@ -345,7 +345,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
               You've successfully completed identity verification and earned <strong>100 free ID tokens</strong>!
             </p>
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-              <p className="text-green-700 dark:text-green-300 text-sm">
+              <p className="text-gray-800 dark:text-gray-200 text-sm">
                 ✨ You're now eligible for 100 free tokens every month!
               </p>
             </div>
