@@ -84,9 +84,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Prepare session request according to Didit API documentation v2
     // Based on official docs: POST https://verification.didit.me/v2/session/
-    // Using minimal required fields to avoid permission issues
     const sessionRequest = {
-      workflow_id: workflowId
+      workflow_id: workflowId,
+      reference_id: `persona-${Date.now()}`, // Unique reference
+      callback_url: webhookUrl
     }
 
     console.log('📤 Sending session creation request to Didit API')
