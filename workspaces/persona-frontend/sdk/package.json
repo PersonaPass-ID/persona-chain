@@ -1,0 +1,93 @@
+{
+  "name": "@personapass/sdk",
+  "version": "1.0.0",
+  "description": "PersonaPass SDK - Privacy-preserving identity verification infrastructure for Web3",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "build:watch": "rollup -c -w",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/persona-hq/persona-frontend.git",
+    "directory": "sdk"
+  },
+  "keywords": [
+    "identity",
+    "verification",
+    "zero-knowledge",
+    "privacy",
+    "zk-proofs",
+    "web3",
+    "blockchain",
+    "personapass",
+    "kyc",
+    "authentication",
+    "circom",
+    "snarkjs",
+    "groth16"
+  ],
+  "author": "PersonaPass Team <team@personapass.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/persona-hq/persona-frontend/issues"
+  },
+  "homepage": "https://personapass.me",
+  "dependencies": {
+    "snarkjs": "^0.7.3"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.11.10",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "^29.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rollup": "^4.9.6",
+    "rollup-plugin-dts": "^6.1.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
