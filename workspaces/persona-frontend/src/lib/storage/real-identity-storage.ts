@@ -352,7 +352,7 @@ export class RealIdentityStorageService {
         did: didResult, // Add the required did field
         content_hash: contentHash,
         encrypted_credential: JSON.stringify(encryptedData), // Fix field name
-        status: 'issued',
+        status: 'valid',
         issuance_date: credential.issuanceDate,  // Fixed: was issued_at
         expiration_date: credential.expirationDate,  // Fixed: was expires_at
         metadata: {
@@ -434,7 +434,7 @@ export class RealIdentityStorageService {
         did: didResult, // Add the required did field
         content_hash: contentHash,
         encrypted_credential: JSON.stringify(encryptedData), // Fix field name
-        status: 'issued',
+        status: 'valid',
         issuance_date: credential.issuanceDate,  // Fixed: was issued_at
         expiration_date: credential.expirationDate,  // Fixed: was expires_at
         metadata: {
