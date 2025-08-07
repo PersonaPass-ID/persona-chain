@@ -9,7 +9,7 @@
 2. Go to **Settings** → **Webhooks**
 3. Add new webhook endpoint:
    - **Webhook URL**: `https://personapass.xyz/api/kyc/didit/webhook`
-   - **Webhook Secret**: `1zkaMW9sInyOWNAjqdSJbmpu_jmFK2m1QSYVgRH3eOA` (from DIDIT_WEBHOOK_SECRET)
+   - **Webhook Secret**: `jSgs3dsvO7DR5l1ZCM7cV44ONVM0MzepLRrJdG4a50o` (from DIDIT_WEBHOOK_SECRET)
    - **Events to Subscribe**:
      - ✅ `verification_completed`
      - ✅ `verification_failed`
@@ -32,10 +32,10 @@
 NEXT_PUBLIC_SITE_URL=https://personapass.xyz
 NEXTAUTH_URL=https://personapass.xyz
 
-# DIDIT Configuration
-DIDIT_API_KEY=uklr7JG0g-ymc7cJRTUNawK9op2p40nsMR3aARozcwY
-DIDIT_WORKFLOW_ID=85262c30-4726-4c64-830d-f277c787b24d  
-DIDIT_WEBHOOK_SECRET=1zkaMW9sInyOWNAjqdSJbmpu_jmFK2m1QSYVgRH3eOA
+# DIDIT Configuration  
+DIDIT_API_KEY=7kMi9c2-cVzKA7S182KSn5SV6hG6juqTU_bzauYO9N0
+DIDIT_WORKFLOW_ID=32998605-eeae-4d97-a134-90b2c4bd553e
+DIDIT_WEBHOOK_SECRET=jSgs3dsvO7DR5l1ZCM7cV44ONVM0MzepLRrJdG4a50o
 DIDIT_ENVIRONMENT=production
 ```
 
