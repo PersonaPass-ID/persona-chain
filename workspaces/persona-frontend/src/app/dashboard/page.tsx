@@ -22,8 +22,10 @@ export default function DashboardPage() {
   const [selectedCredentialForProof, setSelectedCredentialForProof] = useState<PersonaChainCredential | null>(null)
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [insights, setInsights] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase' | 'kyc' | 'vc'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase'>('overview')
+  const [credentialsSubTab, setCredentialsSubTab] = useState<'view' | 'verify' | 'create'>('view')
   const [idBalance, setIDBalance] = useState<string>('0 ID')
+  const [hasIdentity, setHasIdentity] = useState(false)
 
 
   useEffect(() => {
@@ -199,9 +201,7 @@ export default function DashboardPage() {
             <nav className="-mb-px flex space-x-8">
               {[
                 { id: 'overview', label: 'Overview', icon: '🏠' },
-                { id: 'credentials', label: 'Credentials', icon: '🏆' },
-                { id: 'kyc', label: 'Identity Verification', icon: '🛡️' },
-                { id: 'vc', label: 'Proof of Personhood', icon: '✅' },
+                { id: 'credentials', label: 'Credentials & Identity', icon: '🆔' },
                 { id: 'purchase', label: 'Buy ID Tokens', icon: '💰' }
               ].map((tab) => (
                 <button
@@ -539,23 +539,92 @@ export default function DashboardPage() {
 
         {/* Credentials Tab */}
         {activeTab === 'credentials' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Manage Your Credentials</h3>
+          <div className="bg-white rounded-lg shadow-sm">
+            {/* Sub-tabs for credentials */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8 px-6 pt-4">
+                <button
+                  onClick={() => setCredentialsSubTab('verify')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    credentialsSubTab === 'verify'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  🛡️ Identity Verification
+                </button>
+                <button
+                  onClick={() => setCredentialsSubTab('view')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    credentialsSubTab === 'view'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  📜 My Credentials
+                </button>
+                <button
+                  onClick={() => setCredentialsSubTab('create')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    credentialsSubTab === 'create'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  ➕ Create New
+                </button>
+              </nav>
+            </div>
             
-            {credentials.length === 0 ? (
+            <div className="p-6">
+              {/* Identity Verification Sub-tab */}
+              {credentialsSubTab === 'verify' && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6">🆔 Verify Your Identity</h3>
+                  <p className="text-gray-600 mb-6">
+                    Complete identity verification to unlock personalized credentials and earn ID tokens. 
+                    Choose from free basic verification or enhanced KYC providers.
+                  </p>
+                  <KYCVerificationFlow
+                    userAddress={user?.address || 'unknown'}
+                    userEmail={user?.email}
+                    onVerificationComplete={(data) => {
+                      console.log('🎉 Identity verification completed:', data)
+                      setHasIdentity(true)
+                      setCredentialsSubTab('view')
+                      loadCredentials()
+                      loadIDBalance()
+                    }}
+                    onVerificationSkip={() => {
+                      console.log('⏭️ Verification skipped')
+                      setCredentialsSubTab('view')
+                    }}
+                  />
+                </div>
+              )}
+              
+              {/* View Credentials Sub-tab */}
+              {credentialsSubTab === 'view' && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📜 Your Credentials</h3>
+                  
+                  {credentials.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No credentials yet</h4>
                 <p className="text-gray-600 mb-4">
-                  Create your first verifiable credential to get started
+                  {hasIdentity ? 
+                    'Create your first verifiable credential to get started' :
+                    'Complete identity verification first to create credentials'
+                  }
                 </p>
                 <button
-                  onClick={createGitHubCredential}
+                  onClick={() => hasIdentity ? setCredentialsSubTab('create') : setCredentialsSubTab('verify')}
                   className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Create GitHub Credential
+                  {hasIdentity ? 'Create First Credential' : 'Verify Identity First'}
                 </button>
               </div>
             ) : (
