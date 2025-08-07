@@ -73,6 +73,13 @@ export class CredentialManagementService {
   }
 
   /**
+   * Generate comprehensive credential insights for dashboard
+   */
+  async generateInsights(walletAddress: string): Promise<CredentialInsights> {
+    return this.getCredentialInsights(walletAddress)
+  }
+
+  /**
    * Get comprehensive credential insights for dashboard
    */
   async getCredentialInsights(walletAddress: string): Promise<CredentialInsights> {

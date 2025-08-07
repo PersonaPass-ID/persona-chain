@@ -40,6 +40,14 @@ export class PersonaIDTokenManager {
   }
 
   /**
+   * Get ID token balance for a PersonaChain address (alias for getIDBalance)
+   */
+  async getBalance(address: string): Promise<string> {
+    const balance = await this.getIDBalance(address)
+    return balance ? balance.formatted : '0 ID'
+  }
+
+  /**
    * Get ID token balance for a PersonaChain address
    */
   async getIDBalance(address: string): Promise<PersonaIDBalance | null> {
