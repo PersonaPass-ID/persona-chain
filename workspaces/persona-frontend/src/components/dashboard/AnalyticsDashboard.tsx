@@ -441,7 +441,7 @@ export function AnalyticsDashboard() {
                 </div>
                 <div className="mt-2">
                   <span className={`text-sm ${getStatusColor(analyticsData.verifications.avgProcessingTime, 5, true)}`}>
-                    Target: <5min
+                    Target: &lt;5min
                   </span>
                 </div>
               </CardContent>
@@ -764,7 +764,7 @@ export function AnalyticsDashboard() {
                 </div>
                 <div className="mt-2">
                   <span className={`text-sm ${getStatusColor(analyticsData.performance.apiLatency, 300, true)}`}>
-                    Target: <300ms
+                    Target: &lt;300ms
                   </span>
                 </div>
               </CardContent>
@@ -796,7 +796,7 @@ export function AnalyticsDashboard() {
                 </div>
                 <div className="mt-2">
                   <span className={`text-sm ${getStatusColor(analyticsData.performance.errorRate, 1, true)}`}>
-                    Target: <1%
+                    Target: &lt;1%
                   </span>
                 </div>
               </CardContent>
