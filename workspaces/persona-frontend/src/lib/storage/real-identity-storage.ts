@@ -408,24 +408,27 @@ export class RealIdentityStorageService {
 
       const credentialRecord: Omit<VerifiableCredentialRecord, 'id' | 'created_at' | 'updated_at'> = {
         credential_id: credential.id,
-        did: credential.credentialSubject.id,
-        content_hash: contentHash,
-        encrypted_credential: JSON.stringify(encryptedData),
         credential_type: Array.isArray(credential.type) ? credential.type.join(',') : credential.type,
-        issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
         subject_did: credential.credentialSubject.id,
-        issuance_date: new Date(credential.issuanceDate).toISOString(),
-        expiration_date: credential.expirationDate ? new Date(credential.expirationDate).toISOString() : null,
-        status: 'valid',
+        issuer_did: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
+        content_hash: contentHash,
+        encrypted_content: JSON.stringify(encryptedData),
+        status: 'active',
+        issued_at: credential.issuanceDate,
+        expires_at: credential.expirationDate,
+        metadata: {
+          type: 'verifiable-credential',
+          issuer: typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id,
+          wallet_type: walletType,
+          schema_version: '1.0'
+        },
         encryption_params: {
           iv: encryptedData.iv,
           salt: encryptedData.salt,
           algorithm: 'AES-GCM',
           key_derivation: 'PBKDF2',
           iterations: 100000
-        },
-        blockchain_anchor: {
-          tx_hash: `test-cred-tx-${Date.now()}`,
+        }`,
           block_height: 12345,
           network: 'personachain-1',
           anchored_at: new Date().toISOString()
