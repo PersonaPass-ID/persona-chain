@@ -17,8 +17,8 @@
      - ✅ `session_created`
 
 #### API Configuration
-- **API Key**: `uklr7JG0g-ymc7cJRTUNawK9op2p40nsMR3aARozcwY`
-- **Workflow ID**: `85262c30-4726-4c64-830d-f277c787b24d`
+- **API Key**: `7kMi9c2-cVzKA7S182KSn5SV6hG6juqTU_bzauYO9N0`
+- **Workflow ID**: `32998605-eeae-4d97-a134-90b2c4bd553e`
 - **Environment**: Production
 - **Permissions Required**:
   - ✅ Session Creation
