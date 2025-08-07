@@ -270,10 +270,10 @@ Verification URL: ${data.verificationUrl}`)
 
   if (status === 'loading' || isLoading) {
     return (
-      <div className=\"min-h-screen bg-gray-900 flex items-center justify-center\">
-        <div className=\"text-center\">
-          <Loader2 className=\"w-12 h-12 animate-spin text-purple-500 mx-auto mb-4\" />
-          <p className=\"text-gray-400 text-lg\">Loading Universal Passport...</p>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-500 mx-auto mb-4" />
+          <p className="text-gray-400 text-lg">Loading Universal Passport...</p>
         </div>
       </div>
     )
@@ -284,17 +284,17 @@ Verification URL: ${data.verificationUrl}`)
   }
 
   return (
-    <div className=\"min-h-screen bg-gray-900 text-white\">
-      <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className=\"flex justify-between items-center mb-8\">
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className=\"text-3xl font-bold text-white mb-2\">Universal Passport</h1>
-            <p className=\"text-gray-400\">Your Web3-native identity and credential vault</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Universal Passport</h1>
+            <p className="text-gray-400">Your Web3-native identity and credential vault</p>
           </div>
           <button
             onClick={() => router.push('/dashboard')}
-            className=\"text-purple-400 hover:text-purple-300 transition-colors flex items-center space-x-2\"
+            className="text-purple-400 hover:text-purple-300 transition-colors flex items-center space-x-2"
           >
             <span>← Back to Dashboard</span>
           </button>
@@ -302,14 +302,14 @@ Verification URL: ${data.verificationUrl}`)
 
         {/* Error Alert */}
         {error && (
-          <div className=\"bg-red-900/20 border border-red-500/20 rounded-xl p-4 mb-8 flex items-start space-x-3\">
-            <AlertCircle className=\"w-5 h-5 text-red-400 flex-shrink-0 mt-0.5\" />
+          <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-4 mb-8 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className=\"text-red-400 font-medium mb-1\">Error</h3>
-              <p className=\"text-red-300 text-sm\">{error}</p>
+              <h3 className="text-red-400 font-medium mb-1">Error</h3>
+              <p className="text-red-300 text-sm">{error}</p>
               <button
                 onClick={() => setError(null)}
-                className=\"text-red-400 hover:text-red-300 text-sm underline mt-2\"
+                className="text-red-400 hover:text-red-300 text-sm underline mt-2"
               >
                 Dismiss
               </button>
@@ -319,15 +319,15 @@ Verification URL: ${data.verificationUrl}`)
 
         {/* Wallet Connection Check */}
         {!walletAddress && (
-          <div className=\"bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-6 mb-8 text-center\">
-            <Shield className=\"w-12 h-12 text-yellow-400 mx-auto mb-4\" />
-            <h3 className=\"text-xl font-semibold text-yellow-400 mb-2\">Wallet Connection Required</h3>
-            <p className=\"text-gray-300 mb-4\">
+          <div className="bg-yellow-900/20 border border-yellow-500/20 rounded-xl p-6 mb-8 text-center">
+            <Shield className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-yellow-400 mb-2">Wallet Connection Required</h3>
+            <p className="text-gray-300 mb-4">
               Connect your Keplr wallet to access your Universal Passport
             </p>
             <button
               onClick={() => router.push('/login')}
-              className=\"bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all duration-200 font-medium\"
+              className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all duration-200 font-medium"
             >
               Connect Wallet
             </button>
@@ -356,10 +356,10 @@ Verification URL: ${data.verificationUrl}`)
         )}
 
         {/* Future Enhancements Preview */}
-        <div className=\"mt-16 grid grid-cols-1 md:grid-cols-3 gap-6\">
-          <div className=\"bg-gray-800/50 rounded-xl p-6 border border-gray-700/50\">
-            <h3 className=\"text-lg font-semibold text-white mb-3\">🔮 Coming Soon</h3>
-            <ul className=\"space-y-2 text-sm text-gray-300\">
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+            <h3 className="text-lg font-semibold text-white mb-3">🔮 Coming Soon</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
               <li>• ZK Proof Studio</li>
               <li>• Cross-chain credentials</li>
               <li>• Reputation system</li>
@@ -367,9 +367,9 @@ Verification URL: ${data.verificationUrl}`)
             </ul>
           </div>
           
-          <div className=\"bg-gray-800/50 rounded-xl p-6 border border-gray-700/50\">
-            <h3 className=\"text-lg font-semibold text-white mb-3\">🌐 Multi-Chain</h3>
-            <ul className=\"space-y-2 text-sm text-gray-300\">
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+            <h3 className="text-lg font-semibold text-white mb-3">🌐 Multi-Chain</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
               <li>• Ethereum compatibility</li>
               <li>• Solana integration</li>
               <li>• Cosmos IBC support</li>
@@ -377,9 +377,9 @@ Verification URL: ${data.verificationUrl}`)
             </ul>
           </div>
           
-          <div className=\"bg-gray-800/50 rounded-xl p-6 border border-gray-700/50\">
-            <h3 className=\"text-lg font-semibold text-white mb-3\">🔐 Privacy Features</h3>
-            <ul className=\"space-y-2 text-sm text-gray-300\">
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+            <h3 className="text-lg font-semibold text-white mb-3">🔐 Privacy Features</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
               <li>• Selective disclosure</li>
               <li>• Anonymous sets</li>
               <li>• BBS+ signatures</li>
