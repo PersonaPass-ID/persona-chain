@@ -1,10 +1,37 @@
 /**
  * User Profile API
- * Returns authenticated user profile information
+ * Returns authenticated wallet user profile information
  */
 
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getSession } from 'next-auth/react'
+import { getIronSession } from 'iron-session'
+import { personaChainService } from '@/lib/personachain-service'
+
+// Session interface (matching wallet auth)
+interface SessionData {
+  siwe?: {
+    address: string
+    chainId: number
+    nonce: string
+  }
+  user?: {
+    address: string
+    did: string
+    createdAt: string
+  }
+}
+
+// Session config (matching wallet auth)
+const sessionOptions = {
+  password: process.env.SESSION_SECRET || 'complex_password_at_least_32_characters_long',
+  cookieName: 'personapass-session',
+  cookieOptions: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -12,32 +39,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get session from NextAuth
-    const session = await getSession({ req })
+    // Get wallet session from iron-session
+    const session = await getIronSession<SessionData>(req, res, sessionOptions)
     
-    if (!session || !session.user) {
+    if (!session.user || !session.user.address) {
       return res.status(401).json({ 
         success: false,
         error: 'Not authenticated',
-        message: 'Please sign in to access profile information'
+        message: 'Please connect your wallet to access profile information'
       })
     }
 
-    // Return user profile information
+    // Get additional user data from PersonaChain
+    let credentials = []
+    let credentialCount = 0
+    try {
+      credentials = await personaChainService.getCredentials(session.user.address)
+      credentialCount = Array.isArray(credentials) ? credentials.length : 0
+    } catch (error) {
+      console.log('Failed to fetch credentials:', error)
+      // Non-critical - profile still works
+    }
+
+    // Return wallet user profile information
     return res.status(200).json({
       success: true,
       user: {
-        id: session.user.id || session.user.email,
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image,
-        githubUsername: session.user.githubUsername || session.user.name,
-        githubId: session.user.githubId,
-        provider: 'github'
+        id: session.user.address,
+        address: session.user.address,
+        did: session.user.did,
+        credentialCount,
+        createdAt: session.user.createdAt,
+        provider: 'wallet'
       },
       session: {
-        expires: session.expires,
-        accessToken: session.accessToken ? 'provided' : 'not_provided'
+        authenticated: true,
+        type: 'wallet',
+        chainId: session.siwe?.chainId || 1
       }
     })
 
