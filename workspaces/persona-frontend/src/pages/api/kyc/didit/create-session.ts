@@ -24,6 +24,9 @@ interface DiditSessionResponse {
   status: string
 }
 
+// DIDIT uses simple API key authentication for session creation
+// No OAuth needed - just Bearer token with API key
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -34,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const webhookSecret = process.env.DIDIT_WEBHOOK_SECRET
   const environment = process.env.DIDIT_ENVIRONMENT || 'sandbox'
   
-  // Production-ready configuration
+  // Production-ready configuration - DIDIT API endpoint
   const apiEndpoint = 'https://verification.didit.me/v2/session/'
   const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/kyc/didit/webhook`
   
@@ -82,24 +85,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🚀 Creating FREE Didit verification session for:', user_address)
 
-    // Prepare session request according to Didit API documentation v2
-    // Based on official docs: POST https://verification.didit.me/v2/session/
+    // Use simple API key authentication as per DIDIT documentation
+    // DIDIT uses straightforward API key auth for session creation, not OAuth
+    const accessToken = apiKey
+
+    // Prepare session request according to Didit API documentation v2  
+    // Based on official docs: workflow_id is required, vendor_data and callback are optional
     const sessionRequest = {
       workflow_id: workflowId,
-      reference_id: `persona-${Date.now()}`, // Unique reference
-      callback_url: webhookUrl
+      vendor_data: user_address, // User's wallet address as unique identifier
+      callback: webhookUrl, // Use 'callback' instead of 'callback_url'
+      metadata: metadata || {} // Optional metadata
     }
 
     console.log('📤 Sending session creation request to Didit API')
     console.log('🌐 API Endpoint:', apiEndpoint)
     console.log('📋 Request payload:', JSON.stringify(sessionRequest, null, 2))
-    console.log('🔗 Webhook URL:', sessionRequest.callback_url)
+    console.log('🔗 Webhook URL:', sessionRequest.callback)
+    console.log('🔐 Using DIDIT API key authentication (x-api-key header)')
 
     // Call Didit API to create session with proper headers
+    // IMPORTANT: DIDIT v2 uses 'x-api-key' header, not 'Authorization: Bearer'
     const diditResponse = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': accessToken, // Changed from 'Authorization: Bearer' to 'x-api-key'
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'PersonaPass/1.0.0'
