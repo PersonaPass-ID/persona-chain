@@ -32,6 +32,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const apiKey = process.env.DIDIT_API_KEY
   const workflowId = process.env.DIDIT_WORKFLOW_ID
   const webhookSecret = process.env.DIDIT_WEBHOOK_SECRET
+  const environment = process.env.DIDIT_ENVIRONMENT || 'sandbox'
+  
+  // Production-ready configuration
+  const apiEndpoint = 'https://verification.didit.me/v2/session/'
+  const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/kyc/didit/webhook`
+  
+  console.log('🔧 DIDIT Configuration:', {
+    hasApiKey: !!apiKey,
+    hasWorkflowId: !!workflowId,
+    hasWebhookSecret: !!webhookSecret,
+    environment,
+    apiEndpoint,
+    webhookUrl,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+    apiKeyPrefix: apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT SET',
+    workflowId: workflowId ? `${workflowId.substring(0, 8)}...` : 'NOT SET'
+  })
 
   // Validate required environment variables
   if (!apiKey) {
@@ -63,37 +80,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🚀 Creating FREE Didit verification session for:', user_address)
 
-    // Prepare session request according to Didit API documentation
+    // Prepare session request according to Didit API documentation v2
+    // Based on official docs: POST https://verification.didit.me/v2/session/
     const sessionRequest = {
       workflow_id: workflowId,
-      vendor_data: {
-        reference_id: user_address, // Use wallet address as unique reference
-        user_tier: metadata.tier || 'free',
-        platform: metadata.platform || 'PersonaPass'
-      },
-      callback: `${req.headers.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://personapass.xyz'}/api/kyc/didit/webhook`,
-      metadata: {
+      reference_id: user_address, // Unique reference for this verification
+      callback_url: webhookUrl,
+      user_data: {
         first_name: metadata.first_name || 'PersonaPass',
-        last_name: metadata.last_name || 'User',
-        email: email || `${user_address.slice(0, 8)}@personapass.xyz`,
+        last_name: metadata.last_name || 'User', 
+        email: email || `${user_address.slice(0, 8)}@personapass.xyz`
+      },
+      custom_data: {
         wallet_address: user_address,
+        platform: metadata.platform || 'PersonaPass',
+        tier: metadata.tier || 'free',
         verification_type: 'proof_of_personhood',
         created_at: new Date().toISOString()
       },
-      contact_details: {
-        email: email || `${user_address.slice(0, 8)}@personapass.xyz`
-      }
+      expiry_time: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours from now
+      locale: 'en'
     }
 
     console.log('📤 Sending session creation request to Didit API')
-    console.log('Request payload:', JSON.stringify(sessionRequest, null, 2))
+    console.log('🌐 API Endpoint:', apiEndpoint)
+    console.log('📋 Request payload:', JSON.stringify(sessionRequest, null, 2))
+    console.log('🔗 Webhook URL:', sessionRequest.callback_url)
 
-    // Call Didit API to create session
-    const diditResponse = await fetch('https://verification.didit.me/v2/session/', {
+    // Call Didit API to create session with proper headers
+    const diditResponse = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'PersonaPass/1.0.0'
       },
       body: JSON.stringify(sessionRequest)
     })
@@ -106,10 +127,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       let errorMessage = 'Session creation failed'
       let troubleshooting: Record<number, string> = {
-        400: 'Invalid request format or missing workflow_id',
-        401: 'API key is invalid or expired',
-        403: 'API key lacks session creation permissions',
-        404: 'Workflow ID not found in your Didit account',
+        400: 'Invalid request format, missing required fields, or invalid workflow_id',
+        401: 'Invalid or expired API key - check DIDIT_API_KEY in environment',
+        403: 'API key lacks session creation permissions - check API key scopes in Didit Console',
+        404: 'Workflow ID not found - verify DIDIT_WORKFLOW_ID matches your Didit Business Console',
+        422: 'Validation failed - check required fields and data types',
         429: 'Rate limit exceeded - try again in a moment',
         500: 'Didit server error - try again later'
       }

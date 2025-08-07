@@ -12,6 +12,26 @@ import FlexibleTokenPurchase from '@/components/FlexibleTokenPurchase'
 import KYCVerificationFlow from '@/components/KYCVerificationFlow'
 import ZKProofModal from '@/components/ZKProofModal'
 import VerifiableCredentialCard from '@/components/VerifiableCredentialCard'
+import {
+  Shield,
+  User,
+  Wallet,
+  Plus,
+  ExternalLink,
+  Settings,
+  LogOut,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Zap,
+  Award,
+  Globe,
+  Lock,
+  TrendingUp,
+  Eye,
+  Copy,
+  Loader2
+} from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -22,101 +42,100 @@ export default function DashboardPage() {
   const [selectedCredentialForProof, setSelectedCredentialForProof] = useState<PersonaChainCredential | null>(null)
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [insights, setInsights] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'purchase'>('overview')
-  const [credentialsSubTab, setCredentialsSubTab] = useState<'view' | 'verify' | 'create'>('view')
+  const [activeTab, setActiveTab] = useState<'overview' | 'credentials' | 'identity' | 'purchase'>('overview')
   const [idBalance, setIDBalance] = useState<string>('0 ID')
   const [hasIdentity, setHasIdentity] = useState(false)
-
+  const [showDIDCopy, setShowDIDCopy] = useState(false)
 
   useEffect(() => {
-    if (isInitializing) return // Wait for initialization to complete
+    if (isInitializing) return
     
     if (!isAuthenticated) {
       router.push('/auth')
       return
     }
 
-    // Simple dashboard load - just load data if authenticated
     if (user?.address) {
-      loadCredentials()
-      loadInsights() 
-      loadIDBalance()
-      loadNetworkStatus()
+      loadDashboardData()
     }
   }, [isAuthenticated, isInitializing, user?.address, router])
 
+  const loadDashboardData = async () => {
+    try {
+      await Promise.all([
+        loadCredentials(),
+        loadInsights(), 
+        loadIDBalance(),
+        loadNetworkStatus()
+      ])
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const loadCredentials = async () => {
+    if (!user?.address) return
+    
     try {
-      if (!user?.address) {
-        setIsLoading(false)
-        return
-      }
-
-      console.log(`🔍 Loading credentials from PersonaChain for ${user.address}`)
-      const chainCredentials = await personaChainService.getCredentials(user.address)
-      
-      // Ensure chainCredentials is an array
-      const credentialsArray = Array.isArray(chainCredentials) ? chainCredentials : []
-      console.log(`✅ Loaded ${credentialsArray.length} credentials from PersonaChain`)
-      setCredentials(credentialsArray)
-      setIsLoading(false)
+      console.log('🔍 Loading credentials from PersonaChain for', user.address)
+      const fetchedCredentials = await personaChainService.getCredentials(user.address)
+      console.log('✅ Loaded', fetchedCredentials.length, 'credentials from PersonaChain')
+      setCredentials(fetchedCredentials)
+      setHasIdentity(fetchedCredentials.length > 0)
     } catch (error) {
-      console.error('Failed to load credentials:', error)
-      setIsLoading(false)
+      console.error('❌ Failed to load credentials:', error)
+    }
+  }
+
+  const loadInsights = async () => {
+    if (!user?.address) return
+    
+    try {
+      console.log('📊 Generating credential insights for', user.address)
+      const credentialInsights = await credentialManagementService.generateInsights(user.address)
+      console.log('✅ Generated insights:', credentialInsights)
+      setInsights(credentialInsights)
+    } catch (error) {
+      console.error('❌ Failed to generate insights:', error)
+    }
+  }
+
+  const loadIDBalance = async () => {
+    if (!user?.address) return
+    
+    try {
+      const balance = await personaIDToken.getBalance(user.address)
+      console.log('💰 ID Token Balance:', balance)
+      setIDBalance(`${balance} ID`)
+    } catch (error) {
+      console.error('❌ Failed to load ID balance:', error)
+      setIDBalance('1 ID') // Fallback
     }
   }
 
   const loadNetworkStatus = async () => {
     try {
+      console.log('📡 Checking PersonaChain network status')
       const status = await personaChainService.getNetworkStatus()
+      console.log('📡 PersonaChain network status:', status)
       setNetworkStatus(status)
-      console.log(`📡 PersonaChain network status:`, status)
     } catch (error) {
-      console.error('Failed to load network status:', error)
+      console.error('❌ Failed to load network status:', error)
     }
   }
 
-  const loadInsights = async () => {
-    try {
-      if (!user?.address) return
-      
-      const credInsights = await credentialManagementService.getCredentialInsights(user.address)
-      setInsights(credInsights)
-      console.log(`📊 Loaded credential insights:`, credInsights)
-    } catch (error) {
-      console.error('Failed to load insights:', error)
-    }
-  }
-
-  const loadIDBalance = async () => {
-    try {
-      if (!user?.address) return
-      
-      const balance = await personaIDToken.getIDBalance(user.address)
-      if (balance) {
-        setIDBalance(balance.formatted)
-        console.log(`💰 ID Token Balance: ${balance.formatted}`)
-      }
-    } catch (error) {
-      console.error('Failed to load ID balance:', error)
-    }
-  }
-
-  const createGitHubCredential = () => {
-    router.push('/github-verification')
-  }
-
-  const createLinkedInCredential = () => {
-    // TODO: Implement LinkedIn credential creation
-    alert('LinkedIn credential creation coming soon!')
+  const handleCreateCredential = (credential: PersonaChainCredential) => {
+    setCredentials(prev => [...prev, credential])
+    loadInsights()
+    loadIDBalance()
   }
 
   const handleGenerateProof = (credential: PersonaChainCredential) => {
     setSelectedCredentialForProof(credential)
     setIsProofModalOpen(true)
     
-    // Track credential shared event for analytics
     if (user?.address) {
       credentialManagementService.trackCredentialEvent(
         user.address,
@@ -137,632 +156,441 @@ export default function DashboardPage() {
     router.push('/')
   }
 
+  const copyDID = async () => {
+    if (user?.did) {
+      await navigator.clipboard.writeText(user.did)
+      setShowDIDCopy(true)
+      setTimeout(() => setShowDIDCopy(false), 2000)
+    }
+  }
+
+  const handleVerificationComplete = (verificationData: any) => {
+    console.log('✅ Verification completed:', verificationData)
+    loadCredentials()
+    loadIDBalance()
+  }
+
+  const handleBasicIdentityFallback = async () => {
+    try {
+      console.log('💡 Didit verification failed, using basic identity verification...')
+      console.log('🆔 Creating basic identity verification...')
+      
+      const response = await fetch('/api/kyc/create-basic-identity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_address: user?.address,
+          email: user?.email || `${user?.address?.slice(0, 8)}@personapass.xyz`,
+          verification_type: 'basic_wallet'
+        })
+      })
+      
+      const result = await response.json()
+      console.log('📥 Basic identity response:', result)
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to store identity credential')
+      }
+      
+      handleVerificationComplete(result)
+    } catch (error: any) {
+      console.error('❌ Basic identity creation failed:', error)
+      throw error
+    }
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-500 mx-auto mb-4" />
+          <p className="text-gray-400 text-lg">Loading your identity dashboard...</p>
+        </div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
-    return null // Redirecting
+    return null
   }
 
-  const userDID = user?.did || 'Loading...'
-
+  const userDID = user?.did || 'did:personapass:loading'
+  const trustScore = insights?.trustScore || 0
+  const verifiedCredentials = credentials.filter(c => c.status === 'active').length
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Modern Header */}
+      <header className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-lg mr-3">
-                <span className="font-bold text-lg">PP</span>
+            {/* Logo & Title */}
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                PersonaPass
-              </h1>
-              <span className="ml-2 text-sm text-gray-500">Web3 Identity</span>
+              <div>
+                <h1 className="text-xl font-bold text-white">PersonaPass</h1>
+                <p className="text-sm text-gray-400">Web3 Identity Dashboard</p>
+              </div>
             </div>
+
+            {/* User Info & Actions */}
             <div className="flex items-center space-x-6">
-              <div className="bg-blue-50 px-4 py-2 rounded-lg">
-                <span className="text-xs text-gray-600 block">ID Balance</span>
-                <span className="font-bold text-lg text-blue-600">{idBalance}</span>
+              {/* ID Balance */}
+              <div className="bg-purple-600/20 border border-purple-500/30 rounded-lg px-4 py-2">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-purple-400" />
+                  <span className="text-purple-300 font-medium">{idBalance}</span>
+                </div>
               </div>
-              <div className="hidden lg:block">
-                <span className="text-xs text-gray-500 block">DID</span>
-                <span className="font-mono text-xs text-gray-700">{userDID.slice(0, 20)}...</span>
+
+              {/* DID Display */}
+              <div className="hidden lg:flex items-center space-x-2 bg-gray-700/50 rounded-lg px-3 py-2">
+                <User className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-300 font-mono">
+                  {userDID.length > 30 ? `${userDID.slice(0, 20)}...${userDID.slice(-8)}` : userDID}
+                </span>
+                <button
+                  onClick={copyDID}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  {showDIDCopy ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
-              <div className="flex items-center space-x-3">
+
+              {/* Actions */}
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setActiveTab('purchase')}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2"
                 >
-                  💰 Buy Tokens
+                  <Plus className="w-4 h-4" />
+                  <span>Buy Tokens</span>
                 </button>
+                
                 <button
                   onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                  className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700/50 transition-all duration-200"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
+                  <LogOut className="w-5 h-5" />
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-        
-        {/* Navigation Tabs */}
-        <div className="border-t border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'overview', label: 'Overview', icon: '🏠' },
-                { id: 'credentials', label: 'Credentials & Identity', icon: '🆔' },
-                { id: 'purchase', label: 'Buy ID Tokens', icon: '💰' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${(
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  )}`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </nav>
           </div>
         </div>
       </header>
 
+      {/* Navigation Tabs */}
+      <div className="bg-gray-800/30 border-b border-gray-700/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'overview', label: 'Overview', icon: TrendingUp },
+              { id: 'identity', label: 'Identity Verification', icon: Shield },
+              { id: 'credentials', label: 'My Credentials', icon: Award },
+              { id: 'purchase', label: 'Buy ID Tokens', icon: Wallet }
+            ].map((tab) => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? 'border-purple-500 text-purple-400'
+                      : 'border-transparent text-gray-400 hover:text-white hover:border-gray-600'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Tab Content */}
+        {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <>
-            {/* Welcome Section */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back!
-              </h2>
-              <p className="text-gray-600">
-                Manage your verifiable credentials and ID tokens to power your digital sovereignty.
-              </p>
-            </div>
-
-        {/* Renewal Alerts Banner */}
-        {insights && insights.renewalAlerts && insights.renewalAlerts.length > 0 && (
-          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div>
-                  <p className="font-medium text-orange-900">
-                    {insights.renewalAlerts.length} credential{insights.renewalAlerts.length > 1 ? 's' : ''} need renewal
-                  </p>
-                  <p className="text-sm text-orange-700">
-                    Keep your credentials up to date for better verification rates
-                  </p>
+          <div className="space-y-8">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Trust Score</p>
+                    <p className="text-3xl font-bold text-white">{trustScore}/100</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-green-400" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${trustScore}%` }}></div>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => router.push('/credentials?tab=renewals')}
-                className="text-sm font-medium text-orange-600 hover:text-orange-800 transition-colors"
-              >
-                Review Renewals →
-              </button>
+
+              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Verified Credentials</p>
+                    <p className="text-3xl font-bold text-white">{verifiedCredentials}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Award className="w-6 h-6 text-purple-400" />
+                  </div>
+                </div>
+                <p className="text-gray-500 text-sm mt-2">Active credentials</p>
+              </div>
+
+              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">ID Token Balance</p>
+                    <p className="text-3xl font-bold text-white">{idBalance.replace(' ID', '')}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-yellow-400" />
+                  </div>
+                </div>
+                <p className="text-gray-500 text-sm mt-2">Available tokens</p>
+              </div>
+
+              <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Network Status</p>
+                    <p className="text-sm font-medium text-green-400">
+                      {networkStatus?.online ? 'Online' : 'Offline'}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <Globe className="w-6 h-6 text-blue-400" />
+                  </div>
+                </div>
+                {networkStatus?.blockHeight && (
+                  <p className="text-gray-500 text-sm mt-2">Block: {networkStatus.blockHeight}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+              <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => setActiveTab('identity')}
+                  className="p-4 bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border border-purple-500/30 rounded-lg hover:from-purple-600/30 hover:to-indigo-600/30 transition-all duration-200 text-left"
+                >
+                  <Shield className="w-8 h-8 text-purple-400 mb-2" />
+                  <h4 className="font-medium text-white">Verify Identity</h4>
+                  <p className="text-sm text-gray-400">Complete identity verification</p>
+                </button>
+
+                <button
+                  onClick={() => router.push('/credentials')}
+                  className="p-4 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-lg hover:from-green-600/30 hover:to-emerald-600/30 transition-all duration-200 text-left"
+                >
+                  <Award className="w-8 h-8 text-green-400 mb-2" />
+                  <h4 className="font-medium text-white">Universal Passport</h4>
+                  <p className="text-sm text-gray-400">Manage your credentials</p>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('purchase')}
+                  className="p-4 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-lg hover:from-yellow-600/30 hover:to-orange-600/30 transition-all duration-200 text-left"
+                >
+                  <Wallet className="w-8 h-8 text-yellow-400 mb-2" />
+                  <h4 className="font-medium text-white">Buy ID Tokens</h4>
+                  <p className="text-sm text-gray-400">Purchase additional tokens</p>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* PersonaChain Network Status */}
-        {networkStatus && (
-          <div className={`mb-6 p-4 rounded-lg border ${networkStatus.online ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-3 ${networkStatus.online ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <div>
-                  <span className={`font-medium ${networkStatus.online ? 'text-green-800' : 'text-red-800'}`}>
-                    PersonaChain Network: {networkStatus.online ? 'Online' : 'Offline'}
-                  </span>
-                  {networkStatus.blockHeight && (
-                    <span className={`ml-4 text-sm ${networkStatus.online ? 'text-green-600' : 'text-red-600'}`}>
-                      Block #{networkStatus.blockHeight?.toLocaleString() || 'Unknown'}
-                    </span>
-                  )}
+        {/* Identity Verification Tab */}
+        {activeTab === 'identity' && (
+          <div className="space-y-6">
+            {/* Verification Status Overview */}
+            <div className="bg-gradient-to-br from-gray-800/50 to-gray-700/30 rounded-xl p-8 border border-gray-600/30">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-1">Identity Verification</h2>
+                    <p className="text-gray-300">Secure, privacy-preserving identity verification</p>
+                  </div>
                 </div>
-              </div>
-              {networkStatus.chainId && (
-                <span className={`text-sm ${networkStatus.online ? 'text-green-600' : 'text-red-600'}`}>
-                  {networkStatus.chainId}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">{credentials.length}</h3>
-                <p className="text-gray-600">Total Credentials</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">0</h3>
-                <p className="text-gray-600">ZK Proofs Generated</p>
-                <p className="text-xs text-gray-400 mt-1">Coming soon</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-2xl font-bold text-gray-900">0</h3>
-                <p className="text-gray-600">Credentials Shared</p>
-                <p className="text-xs text-gray-400 mt-1">Coming soon</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Create New Credential */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Create New Credential</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* GitHub Credential */}
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer" onClick={createGitHubCredential}>
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                  </svg>
-                </div>
-                <h4 className="ml-3 font-semibold text-gray-900">GitHub Developer</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Verify your GitHub profile, repositories, and developer activity
-              </p>
-              <div className="text-xs text-blue-600 font-medium">
-                Click to create →
-              </div>
-            </div>
-
-            {/* LinkedIn Credential */}
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer opacity-50" onClick={createLinkedInCredential}>
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                  </svg>
-                </div>
-                <h4 className="ml-3 font-semibold text-gray-900">LinkedIn Professional</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Verify your LinkedIn profile, connections, and professional experience
-              </p>
-              <div className="text-xs text-gray-400 font-medium">
-                Coming soon
-              </div>
-            </div>
-
-            {/* Certificate Credential */}
-            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer opacity-50">
-              <div className="flex items-center mb-3">
-                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
-                </div>
-                <h4 className="ml-3 font-semibold text-gray-900">Certificates</h4>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Upload and verify professional certificates and achievements
-              </p>
-              <div className="text-xs text-gray-400 font-medium">
-                Coming soon
-              </div>
-            </div>
-          </div>
-        </div>
-
-            {/* ID Token Balance Card */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow p-6 mb-8 text-white">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">PersonaID Token Balance</h3>
-                  <div className="text-3xl font-bold">{idBalance}</div>
-                  <p className="text-blue-100 text-sm mt-2">
-                    Use ID tokens for DID operations, credential creation, and identity verification
-                  </p>
-                </div>
+                
                 <div className="text-right">
-                  <button
-                    onClick={() => setActiveTab('purchase')}
-                    className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                  >
-                    Buy More Tokens
-                  </button>
-                  <div className="text-blue-100 text-xs mt-2">
-                    Current Rate: $0.01 per ID token
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className={`w-3 h-3 rounded-full ${
+                      hasIdentity ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
+                    }`}></span>
+                    <span className="text-sm font-medium text-gray-300">
+                      {hasIdentity ? 'Verified' : 'Pending Verification'}
+                    </span>
                   </div>
+                  <p className="text-xs text-gray-500">Status updated live</p>
+                </div>
+              </div>
+              
+              {/* Benefits Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-green-400 font-medium text-sm">100% Free</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">Unlimited identity verifications with zero cost</p>
+                </div>
+                
+                <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/20">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <span className="text-purple-400 font-medium text-sm">Privacy-First</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">Zero-knowledge proofs protect your sensitive data</p>
+                </div>
+                
+                <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-blue-400 font-medium text-sm">100 ID Tokens</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">Earn tokens immediately upon verification</p>
                 </div>
               </div>
             </div>
-
-        {/* Existing Credentials */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Credentials</h3>
-          
-          {credentials.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No credentials yet</h4>
-              <p className="text-gray-600 mb-4">
-                Create your first verifiable credential to get started with PersonaPass
-              </p>
-              <button
-                onClick={createGitHubCredential}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Create GitHub Credential
-              </button>
+            
+            {/* Verification Flow */}
+            <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
+              <KYCVerificationFlow
+                userAddress={user?.address || ''}
+                userEmail={user?.email}
+                onVerificationComplete={handleVerificationComplete}
+                className="w-full"
+              />
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {credentials.map((credential, index) => (
-                <div key={credential.id || index} className="border border-gray-200 rounded-lg p-6 hover:border-blue-300 transition-colors">
-                  {/* Credential Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center mr-4">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          GitHub Developer Credential
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          @{credential.credentialData?.credentialSubject?.githubUsername || credential.credentialSubject?.githubUsername || 'identity-verified'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        (credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel) === 'expert' 
-                          ? 'bg-purple-100 text-purple-700'
-                          : (credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel) === 'experienced'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {(credential.credentialData?.credentialSubject?.verificationLevel || credential.credentialSubject?.verificationLevel || 'basic')?.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Credential Stats */}
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData?.credentialSubject?.publicRepos || credential.credentialSubject?.publicRepos || 0}
-                      </div>
-                      <div className="text-xs text-gray-600">Public Repos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData?.credentialSubject?.followers || credential.credentialSubject?.followers || 0}
-                      </div>
-                      <div className="text-xs text-gray-600">Followers</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900">
-                        {credential.credentialData?.credentialSubject?.accountAgeMonths || credential.credentialSubject?.accountAgeMonths || 0}m
-                      </div>
-                      <div className="text-xs text-gray-600">Account Age</div>
-                    </div>
-                  </div>
-
-                  {/* Blockchain Info */}
-                  <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-green-800">⛓️ Stored on PersonaChain</span>
-                      <span className="text-xs text-green-600">Block #{credential.blockchain?.blockHeight?.toLocaleString() || credential.blockHeight?.toLocaleString() || 'Pending'}</span>
-                    </div>
-                    <div className="text-xs text-green-700">
-                      <span className="font-medium">Tx Hash:</span>
-                      <span className="ml-1 font-mono break-all">{credential.txHash}</span>
-                    </div>
-                  </div>
-
-                  {/* Credential Actions */}
-                  <div className="flex space-x-3">
-                    <button 
-                      onClick={() => handleGenerateProof(credential)}
-                      className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                    >
-                      Generate ZK Proof
-                    </button>
-                    <button className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-                      Share Credential
-                    </button>
-                  </div>
-
-                  {/* Credential Metadata */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Issued: {new Date(credential.credentialData?.issuanceDate || credential.createdAt || new Date()).toLocaleDateString()}</span>
-                      <span>Status: {credential.status}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-          </>
+          </div>
         )}
 
         {/* Credentials Tab */}
         {activeTab === 'credentials' && (
-          <div className="bg-white rounded-lg shadow-sm">
-            {/* Sub-tabs for credentials */}
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6 pt-4">
-                <button
-                  onClick={() => setCredentialsSubTab('verify')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    credentialsSubTab === 'verify'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  🛡️ Identity Verification
-                </button>
-                <button
-                  onClick={() => setCredentialsSubTab('view')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    credentialsSubTab === 'view'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  📜 My Credentials
-                </button>
-                <button
-                  onClick={() => setCredentialsSubTab('create')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    credentialsSubTab === 'create'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  ➕ Create New
-                </button>
-              </nav>
-            </div>
-            
-            <div className="p-6">
-              {/* Identity Verification Sub-tab */}
-              {credentialsSubTab === 'verify' && (
+          <div className="space-y-6">
+            {/* Header with Stats */}
+            <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/30 rounded-xl p-6 border border-gray-600/30">
+              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">🆔 Verify Your Identity</h3>
-                  <p className="text-gray-600 mb-6">
-                    Complete identity verification to unlock personalized credentials and earn ID tokens. 
-                    Choose from free basic verification or enhanced KYC providers.
-                  </p>
-                  <KYCVerificationFlow
-                    userAddress={user?.address || 'unknown'}
-                    userEmail={user?.email}
-                    onVerificationComplete={(data) => {
-                      console.log('🎉 Identity verification completed:', data)
-                      setHasIdentity(true)
-                      setCredentialsSubTab('view')
-                      loadCredentials()
-                      loadIDBalance()
-                    }}
-                    onVerificationSkip={() => {
-                      console.log('⏭️ Verification skipped')
-                      setCredentialsSubTab('view')
-                    }}
-                  />
+                  <h2 className="text-2xl font-bold text-white mb-1">My Credentials</h2>
+                  <p className="text-gray-300">Your verified digital identity portfolio</p>
                 </div>
-              )}
+                <button
+                  onClick={() => router.push('/credentials')}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2 shadow-lg"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Universal Passport</span>
+                </button>
+              </div>
               
-              {/* View Credentials Sub-tab */}
-              {credentialsSubTab === 'view' && (
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">📜 Your Credentials</h3>
-                  
-                  {credentials.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No credentials yet</h4>
-                <p className="text-gray-600 mb-4">
-                  {hasIdentity ? 
-                    'Create your first verifiable credential to get started' :
-                    'Complete identity verification first to create credentials'
-                  }
+              {/* Credential Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400">{verifiedCredentials}</div>
+                  <div className="text-sm text-gray-400">Verified</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-400">{credentials.length}</div>
+                  <div className="text-sm text-gray-400">Total</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">{trustScore}</div>
+                  <div className="text-sm text-gray-400">Trust Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-400">✓</div>
+                  <div className="text-sm text-gray-400">ZK Ready</div>
+                </div>
+              </div>
+            </div>
+
+            {credentials.length === 0 ? (
+              <div className="bg-gradient-to-br from-gray-800/30 to-gray-700/20 rounded-2xl p-12 border border-gray-600/30 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                  <Award className="w-12 h-12 text-purple-400" />
+                </div>
+                <h3 className="text-2xl font-semibold text-white mb-3">Build Your Identity Portfolio</h3>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Complete identity verification to start building your verifiable credential collection
                 </p>
                 <button
-                  onClick={() => hasIdentity ? setCredentialsSubTab('create') : setCredentialsSubTab('verify')}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  onClick={() => setActiveTab('identity')}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-lg"
                 >
-                  {hasIdentity ? 'Create First Credential' : 'Verify Identity First'}
+                  Start Verification
                 </button>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {credentials.map((credential, index) => (
-                  <div key={credential.id || index} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                          GitHub Developer Credential
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-4">
-                          @{credential.credentialData?.credentialSubject?.githubUsername || 'identity-verified'}
-                        </p>
-                        <div className="flex space-x-4 text-sm text-gray-600">
-                          <span>Repos: {credential.credentialData?.credentialSubject?.publicRepos || 0}</span>
-                          <span>Followers: {credential.credentialData?.credentialSubject?.followers || 0}</span>
-                          <span>Age: {credential.credentialData?.credentialSubject?.accountAgeMonths || 0}m</span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => handleGenerateProof(credential)}
-                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-200 transition-colors"
-                        >
-                          Generate Proof
-                        </button>
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors">
-                          Share
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {credentials.map((credential) => (
+                  <VerifiableCredentialCard
+                    key={credential.id}
+                    credential={credential}
+                    onGenerateProof={() => handleGenerateProof(credential)}
+                  />
                 ))}
               </div>
             )}
-            
-                </div>
-              )}
-              
-              {/* Create New Credential Sub-tab */}
-              {credentialsSubTab === 'create' && (
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">➕ Create New Credential</h3>
-                  <p className="text-gray-600 mb-6">
-                    Choose the type of verifiable credential you want to create. Each credential provides proof of your skills and achievements.
-                  </p>
-                  
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <button
-                      onClick={createGitHubCredential}
-                      className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-lg transition-all text-left group"
-                    >
-                      <div className="w-12 h-12 bg-gray-900 rounded-lg mb-4 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                        </svg>
-                      </div>
-                      <h4 className="font-semibold text-gray-900 mb-2">GitHub Developer</h4>
-                      <p className="text-sm text-gray-600">Verify your GitHub profile and coding contributions</p>
-                      <p className="text-xs text-blue-600 mt-2">Available Now</p>
-                    </button>
-                    
-                    <div className="p-6 border-2 border-gray-200 rounded-lg opacity-50 cursor-not-allowed text-left">
-                      <div className="w-12 h-12 bg-blue-600 rounded-lg mb-4 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                        </svg>
-                      </div>
-                      <h4 className="font-semibold text-gray-900 mb-2">LinkedIn Professional</h4>
-                      <p className="text-sm text-gray-600">Verify your professional experience</p>
-                      <p className="text-xs text-gray-500 mt-2">Coming Soon</p>
-                    </div>
-                    
-                    <div className="p-6 border-2 border-gray-200 rounded-lg opacity-50 cursor-not-allowed text-left">
-                      <div className="w-12 h-12 bg-purple-600 rounded-lg mb-4 flex items-center justify-center">
-                        <span className="text-2xl">🎓</span>
-                      </div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Academic</h4>
-                      <p className="text-sm text-gray-600">Verify your educational credentials</p>
-                      <p className="text-xs text-gray-500 mt-2">Coming Soon</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
-        )}
-
-        {/* KYC Verification Tab */}
-        {activeTab === 'kyc' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">🆓 FREE Identity Verification</h3>
-            <KYCVerificationFlow
-              userAddress={user?.address || 'unknown'}
-              userEmail={user?.email}
-              onVerificationComplete={(data) => {
-                console.log('🎉 KYC completed:', data)
-                // Reload ID balance to show new tokens
-                loadIDBalance()
-              }}
-              onVerificationSkip={() => {
-                console.log('⏭️ KYC skipped by user')
-              }}
-            />
-          </div>
-        )}
-
-        {/* Verifiable Credential Tab */}
-        {activeTab === 'vc' && (
-          <VerifiableCredentialCard
-            user={{
-              id: user?.address || 'unknown',
-              email: user?.address || '',
-              walletAddress: user?.address,
-              kycStatus: 'completed', // TODO: Get actual KYC status
-              kycProvider: 'sumsub',
-              verificationLevel: 'enhanced',
-              zkProofHash: 'abc123def456789...',
-              vcCreatedAt: new Date().toISOString(),
-              tokensAwarded: 100
-            }}
-          />
         )}
 
         {/* Purchase Tab */}
         {activeTab === 'purchase' && (
-          <FlexibleTokenPurchase />
+          <div className="space-y-6">
+            {/* Purchase Header */}
+            <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/20 rounded-xl p-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center">
+                  <Wallet className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Buy ID Tokens</h2>
+                  <p className="text-gray-300">Power your Web3 identity with PersonaID tokens</p>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-500/10 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span className="text-yellow-400 font-medium">Current Balance: {idBalance}</span>
+                </div>
+                <p className="text-gray-300 text-sm">Use tokens to generate zero-knowledge proofs and access Web3 services</p>
+              </div>
+            </div>
+            
+            {/* Purchase Component */}
+            <div className="max-w-4xl mx-auto">
+              <FlexibleTokenPurchase />
+            </div>
+          </div>
         )}
       </main>
 
       {/* ZK Proof Modal */}
-      {selectedCredentialForProof && (
+      {isProofModalOpen && selectedCredentialForProof && (
         <ZKProofModal
+          credential={selectedCredentialForProof}
           isOpen={isProofModalOpen}
           onClose={handleCloseProofModal}
-          credential={selectedCredentialForProof}
         />
       )}
     </div>

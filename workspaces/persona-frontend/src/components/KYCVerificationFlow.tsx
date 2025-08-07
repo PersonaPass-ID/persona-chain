@@ -48,6 +48,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
 
   const createVerificationSession = async () => {
     setIsLoading(true);
+    setError(null);
     setVerificationStatus('creating');
     setError(null);
 
