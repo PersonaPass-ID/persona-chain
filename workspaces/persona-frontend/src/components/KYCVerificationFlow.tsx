@@ -199,7 +199,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
               Get 100 FREE ID Tokens
             </h2>
             
-            <p className="text-gray-600 dark:text-gray-300 mb-8">
+            <p className="text-black dark:text-white mb-8">
               Complete our <strong className="text-blue-600">FREE</strong> identity verification 
               to unlock 100 ID tokens and monthly token rewards. No cost, unlimited verifications!
             </p>
@@ -211,19 +211,19 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
                 What You Get (100% FREE)
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                <div className="flex items-center text-black dark:text-white">
                   <span className="mr-2">✅</span>
                   100 ID tokens immediately
                 </div>
-                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                <div className="flex items-center text-black dark:text-white">
                   <span className="mr-2">✅</span>
                   100 free tokens every month
                 </div>
-                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                <div className="flex items-center text-black dark:text-white">
                   <span className="mr-2">✅</span>
                   Proof of Personhood certificate
                 </div>
-                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                <div className="flex items-center text-black dark:text-white">
                   <span className="mr-2">✅</span>
                   Privacy-protected verification
                 </div>
@@ -288,7 +288,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Creating Your FREE Verification Session...
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm">
+            <p className="text-black dark:text-white text-sm">
               Setting up your identity verification portal
             </p>
           </motion.div>
@@ -308,7 +308,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Verification Window Opened!
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+            <p className="text-black dark:text-white text-sm mb-6">
               Complete the verification in the new window to get your 100 free ID tokens
             </p>
 
@@ -341,7 +341,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
             <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
               🎉 Verification Complete!
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
+            <p className="text-black dark:text-white mb-4">
               You've successfully completed identity verification and earned <strong>100 free ID tokens</strong>!
             </p>
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
@@ -366,7 +366,7 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
             <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
               Verification Setup Failed
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+            <p className="text-black dark:text-white text-sm mb-6">
               {error || 'Unable to start verification process'}
             </p>
             
