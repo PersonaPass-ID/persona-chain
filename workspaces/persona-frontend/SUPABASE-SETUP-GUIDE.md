@@ -65,19 +65,21 @@ CREATE TABLE IF NOT EXISTS verifiable_credentials (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   credential_id TEXT UNIQUE NOT NULL,
   credential_type TEXT NOT NULL,
-  holder_did TEXT NOT NULL,
+  did TEXT NOT NULL,
+  subject_did TEXT NOT NULL,
   issuer_did TEXT NOT NULL,
   content_hash TEXT NOT NULL,
-  encrypted_content TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'active',
-  issued_at TIMESTAMPTZ NOT NULL,
-  expires_at TIMESTAMPTZ,
+  encrypted_credential TEXT NOT NULL,
+  status TEXT DEFAULT 'valid' CHECK (status IN ('valid', 'revoked', 'suspended')),
+  issuance_date TIMESTAMPTZ NOT NULL,
+  expiration_date TIMESTAMPTZ,
   metadata JSONB NOT NULL DEFAULT '{}',
   encryption_params JSONB NOT NULL,
+  blockchain_anchor JSONB DEFAULT '{}',
   blockchain_tx_hash TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  FOREIGN KEY (holder_did) REFERENCES identity_records(did) ON DELETE CASCADE
+  FOREIGN KEY (did) REFERENCES identity_records(did) ON DELETE CASCADE
 );
 
 -- Zero-Knowledge Proofs Table
@@ -115,7 +117,9 @@ CREATE TABLE IF NOT EXISTS identity_audit_log (
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_identity_records_wallet ON identity_records(wallet_address);
 CREATE INDEX IF NOT EXISTS idx_identity_records_did ON identity_records(did);
-CREATE INDEX IF NOT EXISTS idx_verifiable_credentials_holder ON verifiable_credentials(holder_did);
+CREATE INDEX IF NOT EXISTS idx_verifiable_credentials_did ON verifiable_credentials(did);
+CREATE INDEX IF NOT EXISTS idx_verifiable_credentials_subject ON verifiable_credentials(subject_did);
+CREATE INDEX IF NOT EXISTS idx_verifiable_credentials_issuer ON verifiable_credentials(issuer_did);
 CREATE INDEX IF NOT EXISTS idx_verifiable_credentials_status ON verifiable_credentials(status);
 CREATE INDEX IF NOT EXISTS idx_zk_proofs_credential ON zk_proofs(credential_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_did ON identity_audit_log(did);

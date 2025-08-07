@@ -136,6 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         'created': new Date().toISOString(),
         'proofPurpose': 'assertionMethod',
         'verificationMethod': 'PersonaPass Wallet Verification',
+        'signature': signature || 'wallet_signature_verification',
         'jws': signature || 'wallet_signature_verification'
       }
     }
