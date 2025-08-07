@@ -67,11 +67,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     // Check if DID already exists
     const existingDID = await realIdentityStorage.getDIDByWallet(walletAddress)
     if (existingDID) {
-      console.log(`ℹ️ DID already exists: ${existingDID}`)
-      return res.status(400).json({
-        success: false,
-        error: 'DID already exists for this wallet address'
-      })
+      console.log(`ℹ️ DID already exists: ${existingDID}, returning existing DID`)
+      
+      // Try to get the existing DID document
+      const existingDoc = await realIdentityStorage.getDIDDocument(
+        existingDID,
+        walletAddress,
+        effectiveWalletType
+      )
+      
+      if (existingDoc.success) {
+        return res.status(200).json({
+          success: true,
+          did: existingDID,
+          didDocument: existingDoc.data,
+          message: 'DID already exists, returning existing DID',
+          contentHash: existingDoc.contentHash,
+          txHash: existingDoc.blockchainTxHash
+        })
+      } else {
+        // Return just the DID if we can't retrieve the document
+        return res.status(200).json({
+          success: true,
+          did: existingDID,
+          message: 'DID already exists, returning DID identifier'
+        })
+      }
     }
 
     // Generate DID identifier using wallet address

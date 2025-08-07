@@ -16,7 +16,11 @@
 import { createHash, randomBytes } from 'crypto';
 import { ec as EC } from 'elliptic';
 import * as ed from '@noble/ed25519';
+import { sha512 } from '@noble/hashes/sha512';
 import { base58 } from '@scure/base';
+
+// Set SHA512 for ed25519 (required for browser compatibility)
+ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
 
 // Initialize elliptic curve
 const secp256k1 = new EC('secp256k1');
