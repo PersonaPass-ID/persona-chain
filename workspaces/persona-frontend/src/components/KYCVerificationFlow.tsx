@@ -20,7 +20,7 @@ interface SessionResponse {
   success: boolean;
   session_data?: {
     session_id: string;
-    session_url: string;
+    url: string;  // Changed from session_url to url to match DIDIT API response
     status: string;
   };
   error?: string;
@@ -104,16 +104,16 @@ const KYCVerificationFlow: React.FC<KYCVerificationFlowProps> = ({
       const data: SessionResponse = await response.json();
       console.log('📥 Session creation response:', JSON.stringify(data, null, 2));
 
-      if (data.success && data.session_data?.session_url) {
-        setSessionUrl(data.session_data.session_url);
+      if (data.success && data.session_data?.url) {
+        setSessionUrl(data.session_data.url);
         setVerificationStatus('active');
         console.log('✅ Verification session created successfully!');
-        console.log('🔗 DIDIT Verification URL:', data.session_data.session_url);
+        console.log('🔗 DIDIT Verification URL:', data.session_data.url);
         
         // Try to open verification in new window
         try {
           const verificationWindow = window.open(
-            data.session_data.session_url,
+            data.session_data.url,
             'kyc-verification',
             'width=800,height=900,scrollbars=yes,resizable=yes,menubar=no,toolbar=no,location=no,status=no'
           );

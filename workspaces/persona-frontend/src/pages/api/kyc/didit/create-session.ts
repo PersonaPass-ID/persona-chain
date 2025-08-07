@@ -20,7 +20,7 @@ interface CreateSessionRequest {
 
 interface DiditSessionResponse {
   session_id: string
-  session_url: string
+  url: string  // DIDIT v2 returns 'url' not 'session_url'
   status: string
 }
 
