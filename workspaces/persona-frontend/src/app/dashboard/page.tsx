@@ -153,42 +153,43 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">PersonaPass</h1>
-              <span className="ml-2 text-sm text-gray-500">Dashboard</span>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-lg mr-3">
+                <span className="font-bold text-lg">PP</span>
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                PersonaPass
+              </h1>
+              <span className="ml-2 text-sm text-gray-500">Web3 Identity</span>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">ID Balance:</span>
-                <span className="ml-1 font-semibold text-blue-600">{idBalance}</span>
+              <div className="bg-blue-50 px-4 py-2 rounded-lg">
+                <span className="text-xs text-gray-600 block">ID Balance</span>
+                <span className="font-bold text-lg text-blue-600">{idBalance}</span>
               </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">DID:</span>
-                <span className="ml-1 font-mono text-xs">{userDID}</span>
+              <div className="hidden lg:block">
+                <span className="text-xs text-gray-500 block">DID</span>
+                <span className="font-mono text-xs text-gray-700">{userDID.slice(0, 20)}...</span>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setActiveTab('purchase')}
-                  className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
                 >
-                  Buy ID Tokens
-                </button>
-                <button
-                  onClick={() => router.push('/credentials')}
-                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  Manage Credentials
+                  💰 Buy Tokens
                 </button>
                 <button
                   onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-800 transition-colors"
+                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
                 >
-                  Sign Out
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                 </button>
               </div>
             </div>
