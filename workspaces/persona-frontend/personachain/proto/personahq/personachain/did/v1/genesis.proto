@@ -1,0 +1,19 @@
+syntax = "proto3";
+package personahq.personachain.did.v1;
+
+import "gogoproto/gogo.proto";
+import "personahq/personachain/did/v1/tx.proto";
+
+option go_package = "github.com/personahq/personachain/x/did/types";
+
+// GenesisState defines the DID module's genesis state
+message GenesisState {
+  // params defines all the parameters of the module
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  
+  // dids defines all the DID documents
+  repeated DIDDocument dids = 2 [(gogoproto.nullable) = false];
+  
+  // did_count is the number of DIDs created
+  uint64 did_count = 3;
+}

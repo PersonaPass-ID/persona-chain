@@ -3,6 +3,7 @@
 
 import type { VerifiableCredential } from './github-verification'
 import type { PersonaChainCredential } from './personachain-service'
+import { realZKProofService } from './real-zk-proof-service'
 
 export interface ZKProofRequest {
   credentialId: string
@@ -74,14 +75,22 @@ export class ZKProofService {
       console.log(`🔐 Generating ZK proof for credential ${credential.id}`)
       console.log(`📋 Proof type: ${request.proofType}`)
 
-      // Extract claims based on proof type
-      const claims = this.extractClaims(credential, request)
+      // Try to use real ZK proof service first
+      try {
+        console.log(`🚀 Attempting real ZK proof generation`)
+        const realProof = await realZKProofService.generateRealProof(credential, request)
+        console.log(`✅ Real ZK proof generated successfully: ${realProof.id}`)
+        return realProof
+      } catch (realError) {
+        console.warn(`⚠️ Real ZK proof failed, falling back to mock: ${realError.message}`)
+      }
 
-      // For now, generate a mock ZK proof structure
-      // In production, this would use a real ZK proof library like SnarkJS
+      // Fallback to mock ZK proof
+      console.log(`🔄 Using mock ZK proof generation`)
+      const claims = this.extractClaims(credential, request)
       const mockProof = this.generateMockProof(claims, credential, request)
 
-      console.log(`✅ ZK proof generated successfully: ${mockProof.id}`)
+      console.log(`✅ Mock ZK proof generated successfully: ${mockProof.id}`)
       return mockProof
 
     } catch (error) {
@@ -397,8 +406,20 @@ export class ZKProofService {
     try {
       console.log(`🔍 Verifying ZK proof ${proof.id}`)
 
-      // For now, simulate verification
-      // In production, this would use the verification key and public signals
+      // Try real verification first if this looks like a real proof
+      if (proof.id.startsWith('real_zkp_')) {
+        try {
+          console.log(`🚀 Attempting real ZK proof verification`)
+          const realResult = await realZKProofService.verifyRealProof(proof)
+          console.log(`✅ Real verification result: ${realResult.valid}`)
+          return realResult
+        } catch (realError) {
+          console.warn(`⚠️ Real verification failed, falling back: ${realError.message}`)
+        }
+      }
+
+      // Fallback to mock verification
+      console.log(`🔄 Using mock verification`)
       
       // Check expiration
       if (proof.metadata.expiresAt) {
@@ -408,15 +429,15 @@ export class ZKProofService {
         }
       }
 
-      // Mock verification (in production, use real ZK verification)
-      const isValid = Math.random() > 0.1 // 90% success rate for demo
+      // Mock verification (90% success rate for demo)
+      const isValid = Math.random() > 0.1
 
       if (isValid) {
-        console.log(`✅ Proof verification successful`)
-        return { valid: true, message: 'Proof is valid and verified' }
+        console.log(`✅ Mock proof verification successful`)
+        return { valid: true, message: 'Proof verified (development mode)' }
       } else {
-        console.log(`❌ Proof verification failed`)
-        return { valid: false, message: 'Proof verification failed' }
+        console.log(`❌ Mock proof verification failed`)
+        return { valid: false, message: 'Mock verification failed' }
       }
 
     } catch (error) {

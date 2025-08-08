@@ -6,6 +6,7 @@
 
 import { realIdentityStorage } from './storage/real-identity-storage'
 import type { VerifiableCredential } from './storage/real-identity-storage'
+import { generateNewDID } from './did-utils'
 
 export interface DiditKYCResult {
   session_id: string
@@ -487,7 +488,7 @@ export class DiditVCGeneratorService {
     walletType: string,
     kycResult: DiditKYCResult
   ): Promise<string | null> {
-    const did = `did:persona:${walletAddress.slice(0, 10)}:${Date.now()}`
+    const did = generateNewDID()
     
     const didDocument = {
       '@context': ['https://www.w3.org/ns/did/v1'],

@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { realIdentityStorage, VerifiableCredential } from '../../../lib/storage/real-identity-storage'
 import { IdentityEncryption } from '../../../lib/encryption'
+import { generateNewDID } from '../../../lib/did-utils'
 
 interface CreateDIDRequest {
   walletAddress: string
@@ -95,9 +96,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
     }
 
-    // Generate DID identifier using wallet address
-    const didIdentifier = `real:${walletAddress.slice(0, 10)}:${Date.now()}`
-    const did = `did:persona:${didIdentifier}`
+    // Generate DID using centralized utility for consistency
+    const did = generateNewDID()
 
     // Create DID Document
     const didDocument = {

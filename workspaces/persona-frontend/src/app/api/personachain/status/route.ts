@@ -1,7 +1,7 @@
 // API Route to check PersonaChain status
 import { NextResponse } from 'next/server'
 
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com'
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://98.86.107.175:26657'
 
 export async function GET() {
   try {
@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({
         online: false,
         error: `PersonaChain RPC unavailable (${response.status})`,
-        chainId: 'persona-testnet'
+        chainId: 'personachain-1'
       })
     }
 

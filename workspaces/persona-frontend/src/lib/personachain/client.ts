@@ -6,7 +6,7 @@ import { coins } from '@cosmjs/amino'
 
 // PersonaChain configuration
 const CHAIN_ID = 'personachain-1'
-const RPC_ENDPOINT = 'https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com'
+const RPC_ENDPOINT = 'http://98.86.107.175:26657'
 const DENOM = 'upersona'
 const PREFIX = 'persona'
 

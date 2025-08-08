@@ -1,0 +1,100 @@
+{
+  "genesis_time": "2025-08-08T00:53:49.000000000Z",
+  "chain_id": "personachain-1",
+  "initial_height": "1",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1",
+      "time_iota_ms": "1000"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": ["ed25519"]
+    },
+    "version": {}
+  },
+  "validators": [],
+  "app_hash": "",
+  "app_state": {
+    "auth": {
+      "params": {
+        "max_memo_characters": "256",
+        "tx_sig_limit": "7",
+        "tx_size_cost_per_byte": "10",
+        "sig_verify_cost_ed25519": "590",
+        "sig_verify_cost_secp256k1": "1000"
+      },
+      "accounts": []
+    },
+    "bank": {
+      "params": {
+        "send_enabled": [],
+        "default_send_enabled": true
+      },
+      "balances": [],
+      "supply": [],
+      "denom_metadata": []
+    },
+    "staking": {
+      "params": {
+        "unbonding_time": "1814400s",
+        "max_validators": 100,
+        "max_entries": 7,
+        "historical_entries": 10000,
+        "bond_denom": "persona"
+      },
+      "last_total_power": "0",
+      "last_validator_powers": [],
+      "validators": [],
+      "delegations": [],
+      "unbonding_delegations": [],
+      "redelegations": [],
+      "exported": false
+    },
+    "genutil": {
+      "gen_txs": []
+    },
+    "upgrade": {},
+    "consensus": {
+      "params": {
+        "block": {
+          "max_bytes": "22020096",
+          "max_gas": "-1"
+        },
+        "evidence": {
+          "max_age_num_blocks": "100000",
+          "max_age_duration": "172800000000000",
+          "max_bytes": "1048576"
+        },
+        "validator": {
+          "pub_key_types": ["ed25519"]
+        },
+        "version": {}
+      }
+    },
+    "did": {
+      "params": {},
+      "did_documents": [],
+      "did_document_count": "0"
+    },
+    "credential": {
+      "params": {},
+      "credentials": [],
+      "credential_count": "0"
+    },
+    "zkproof": {
+      "params": {},
+      "circuits": [],
+      "proofs": [],
+      "proof_requests": [],
+      "circuit_count": "0",
+      "proof_count": "0",
+      "proof_request_count": "0"
+    }
+  }
+}

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWalletAuth, WalletType } from '@/hooks/useWalletAuth'
+import { createAppKit } from '@reown/appkit/react'
+import { mainnet, polygon, arbitrum } from '@reown/appkit/networks'
 
 interface WalletAuthModalProps {
   isOpen: boolean
@@ -87,6 +89,16 @@ export default function WalletAuthModal({
       'terra-station': (
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
           <span className="text-white font-bold text-sm">T</span>
+        </div>
+      ),
+      'walletconnect': (
+        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-sm">WC</span>
+        </div>
+      ),
+      'reown': (
+        <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-sm">R</span>
         </div>
       )
     }
@@ -194,7 +206,7 @@ export default function WalletAuthModal({
           {/* Wallet Selection */}
           {isReady && !isAuthenticated && (
             <div className="space-y-3">
-              {(['keplr', 'leap', 'cosmostation', 'terra-station'] as WalletType[]).map((walletType) => {
+              {(['keplr', 'leap', 'cosmostation', 'terra-station', 'reown'] as WalletType[]).map((walletType) => {
                 const wallet = availableWallets.find(w => w.type === walletType)
                 const status = getWalletStatus(walletType)
                 

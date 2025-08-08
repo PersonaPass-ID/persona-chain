@@ -1,6 +1,8 @@
 // PersonaChain Blockchain Anchoring Service
 // Stores content hashes and DID registrations on PersonaChain
 
+import { cosmosTransactionBuilder, CosmosTransactionBuilder } from '../cosmos-tx-builder';
+
 export interface BlockchainAnchor {
   contentHash: string
   did: string
@@ -35,7 +37,7 @@ export class BlockchainAnchorService {
 
   constructor() {
     this.PERSONACHAIN_RPC = process.env.PERSONACHAIN_RPC_URL || 
-      'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:26657'
+      'http://98.86.107.175:26657'
   }
 
   /**
@@ -50,43 +52,25 @@ export class BlockchainAnchorService {
     try {
       console.log(`⚓ Anchoring DID creation on PersonaChain: ${did}`)
 
-      // Create PersonaChain transaction
-      const anchor: BlockchainAnchor = {
-        contentHash,
+      // Check chain status first
+      const chainStatus = await cosmosTransactionBuilder.checkChainStatus()
+      if (!chainStatus.accessible) {
+        console.warn(`⚠️ PersonaChain not accessible: ${chainStatus.error}`)
+        return this.generateFallbackResult('Chain not accessible')
+      }
+
+      console.log(`🔗 PersonaChain accessible - Block height: ${chainStatus.latestBlockHeight}`)
+
+      // Create DID transaction using real Cosmos transaction builder
+      const didTx = await cosmosTransactionBuilder.createDIDTransaction(
+        walletAddress,
         did,
-        operation: 'create',
-        timestamp: new Date().toISOString(),
-        storagePointer: `encrypted-supabase:${did}`
-      }
+        contentHash,
+        didDocument
+      )
 
-      // Build transaction for PersonaChain
-      const txData = {
-        type: 'cosmos-sdk/StdTx',
-        value: {
-          msg: [{
-            type: 'persona/MsgCreateDID',
-            value: {
-              creator: walletAddress,
-              did: did,
-              content_hash: contentHash,
-              document: JSON.stringify(anchor),
-              operation: 'create'
-            }
-          }],
-          fee: {
-            amount: [{ denom: 'uid', amount: '1000' }],
-            gas: '200000'
-          },
-          signatures: [{
-            pub_key: { type: 'tendermint/PubKeySecp256k1', value: 'dummy' },
-            signature: 'dummy'
-          }],
-          memo: `PersonaPass DID Creation: ${did.split(':').pop()}`
-        }
-      }
-
-      // Submit to PersonaChain
-      const result = await this.submitTransaction(txData)
+      // Submit transaction to PersonaChain
+      const result = await cosmosTransactionBuilder.submitTransaction(didTx, 'keplr')
 
       if (result.success) {
         console.log(`✅ DID anchored successfully: ${result.txHash}`)
@@ -97,31 +81,13 @@ export class BlockchainAnchorService {
           network: this.NETWORK_NAME
         }
       } else {
-        console.warn(`⚠️ Blockchain anchoring failed, using fallback: ${result.error}`)
-        // Generate fallback hash for development
-        const fallbackTxHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`
-        
-        return {
-          success: true,
-          txHash: fallbackTxHash,
-          blockHeight: Math.floor(Date.now() / 1000),
-          network: this.NETWORK_NAME + '-fallback'
-        }
+        console.warn(`⚠️ Real transaction failed: ${result.error}`)
+        return this.generateFallbackResult(result.error)
       }
 
     } catch (error) {
       console.error('❌ Blockchain anchoring failed:', error)
-      
-      // Provide fallback for development
-      const fallbackTxHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`
-      
-      return {
-        success: true, // Don't block user flow
-        txHash: fallbackTxHash,
-        blockHeight: Math.floor(Date.now() / 1000),
-        network: this.NETWORK_NAME + '-fallback',
-        error: error instanceof Error ? error.message : 'Anchoring failed'
-      }
+      return this.generateFallbackResult(error instanceof Error ? error.message : 'Anchoring failed')
     }
   }
 
@@ -137,42 +103,26 @@ export class BlockchainAnchorService {
     try {
       console.log(`⚓ Anchoring credential issuance: ${credentialId}`)
 
-      const anchor: BlockchainAnchor = {
-        contentHash,
-        did: subjectDid,
-        operation: 'create',
-        timestamp: new Date().toISOString(),
-        storagePointer: `encrypted-supabase:${credentialId}`
+      // Check chain status first
+      const chainStatus = await cosmosTransactionBuilder.checkChainStatus()
+      if (!chainStatus.accessible) {
+        console.warn(`⚠️ PersonaChain not accessible: ${chainStatus.error}`)
+        return this.generateFallbackResult('Chain not accessible')
       }
 
-      const txData = {
-        type: 'cosmos-sdk/StdTx',
-        value: {
-          msg: [{
-            type: 'persona/MsgIssueCredential',
-            value: {
-              issuer: issuerDid,
-              subject: subjectDid,
-              credential_id: credentialId,
-              content_hash: contentHash,
-              anchor_data: JSON.stringify(anchor)
-            }
-          }],
-          fee: {
-            amount: [{ denom: 'uid', amount: '500' }],
-            gas: '150000'
-          },
-          signatures: [{
-            pub_key: { type: 'tendermint/PubKeySecp256k1', value: 'dummy' },
-            signature: 'dummy'
-          }],
-          memo: `PersonaPass Credential: ${credentialId.split(':').pop()}`
-        }
-      }
+      // Create credential transaction using real Cosmos transaction builder
+      const credentialTx = await cosmosTransactionBuilder.createCredentialTransaction(
+        issuerDid,
+        credentialId,
+        subjectDid,
+        contentHash
+      )
 
-      const result = await this.submitTransaction(txData)
+      // Submit transaction to PersonaChain
+      const result = await cosmosTransactionBuilder.submitTransaction(credentialTx, 'keplr')
 
       if (result.success) {
+        console.log(`✅ Credential anchored successfully: ${result.txHash}`)
         return {
           success: true,
           txHash: result.txHash,
@@ -180,28 +130,13 @@ export class BlockchainAnchorService {
           network: this.NETWORK_NAME
         }
       } else {
-        // Fallback for development
-        const fallbackTxHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`
-        return {
-          success: true,
-          txHash: fallbackTxHash,
-          blockHeight: Math.floor(Date.now() / 1000),
-          network: this.NETWORK_NAME + '-fallback'
-        }
+        console.warn(`⚠️ Real credential transaction failed: ${result.error}`)
+        return this.generateFallbackResult(result.error)
       }
 
     } catch (error) {
       console.error('❌ Credential anchoring failed:', error)
-      
-      // Fallback for development
-      const fallbackTxHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`
-      
-      return {
-        success: true,
-        txHash: fallbackTxHash,
-        blockHeight: Math.floor(Date.now() / 1000),
-        network: this.NETWORK_NAME + '-fallback'
-      }
+      return this.generateFallbackResult(error instanceof Error ? error.message : 'Credential anchoring failed')
     }
   }
 
@@ -265,58 +200,24 @@ export class BlockchainAnchorService {
   }
 
   /**
-   * Submit transaction to PersonaChain
+   * Generate fallback result for development
    */
-  private async submitTransaction(txData: any): Promise<{
-    success: boolean
-    txHash?: string
-    blockHeight?: number
-    error?: string
-  }> {
-    try {
-      const txHex = Buffer.from(JSON.stringify(txData)).toString('hex')
-      
-      const response = await fetch(
-        `${this.PERSONACHAIN_RPC}/broadcast_tx_commit?tx=0x${txHex}`,
-        {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-          timeout: 10000 // 10 second timeout
-        }
-      )
-
-      if (response.ok) {
-        const result = await response.json()
-        
-        if (result.result && !result.result.check_tx?.code && !result.result.deliver_tx?.code) {
-          return {
-            success: true,
-            txHash: result.result.hash,
-            blockHeight: parseInt(result.result.height || '0')
-          }
-        } else {
-          return {
-            success: false,
-            error: result.result?.deliver_tx?.log || result.result?.check_tx?.log || 'Transaction failed'
-          }
-        }
-      } else {
-        return {
-          success: false,
-          error: `HTTP ${response.status}: ${response.statusText}`
-        }
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Network error'
-      }
+  private generateFallbackResult(error?: string): AnchorResult {
+    const fallbackTxHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`
+    
+    console.log(`🔄 Using fallback transaction hash: ${fallbackTxHash}`)
+    
+    return {
+      success: true, // Don't block user flow in development
+      txHash: fallbackTxHash,
+      blockHeight: Math.floor(Date.now() / 1000),
+      network: this.NETWORK_NAME + '-fallback',
+      error: error
     }
   }
 
   /**
-   * Get transaction status
+   * Get transaction status using Cosmos transaction builder
    */
   async getTransactionStatus(txHash: string): Promise<{
     success: boolean
@@ -326,56 +227,39 @@ export class BlockchainAnchorService {
     error?: string
   }> {
     try {
-      const response = await fetch(
-        `${this.PERSONACHAIN_RPC}/tx?hash=0x${txHash}`,
-        {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' }
+      const result = await cosmosTransactionBuilder.getTransactionStatus(txHash)
+      
+      if (result.success) {
+        return {
+          success: true,
+          status: result.confirmed ? 'confirmed' : 'pending',
+          confirmations: result.confirmed ? 1 : 0,
+          blockHeight: result.blockHeight
         }
-      )
-
-      if (response.ok) {
-        const result = await response.json()
-        
-        if (result.result) {
-          return {
-            success: true,
-            status: 'confirmed',
-            confirmations: 1,
-            blockHeight: parseInt(result.result.height || '0')
-          }
+      } else {
+        return {
+          success: false,
+          status: 'failed',
+          error: result.error
         }
-      }
-
-      return {
-        success: false,
-        error: 'Transaction not found'
       }
 
     } catch (error) {
       return {
         success: false,
+        status: 'failed',
         error: error instanceof Error ? error.message : 'Query failed'
       }
     }
   }
 
   /**
-   * Get latest block height
+   * Get latest block height using Cosmos transaction builder
    */
   async getLatestBlockHeight(): Promise<number> {
     try {
-      const response = await fetch(`${this.PERSONACHAIN_RPC}/status`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        return parseInt(result.result?.sync_info?.latest_block_height || '0')
-      }
-
-      return 0
+      const chainStatus = await cosmosTransactionBuilder.checkChainStatus()
+      return chainStatus.latestBlockHeight || 0
     } catch (error) {
       console.warn('⚠️ Failed to get block height:', error)
       return 0

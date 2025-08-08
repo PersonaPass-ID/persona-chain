@@ -1,0 +1,135 @@
+syntax = "proto3";
+package personahq.personachain.did.v1;
+
+import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/personahq/personachain/x/did/types";
+
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+  
+  rpc CreateDID(MsgCreateDID) returns (MsgCreateDIDResponse);
+  rpc UpdateDID(MsgUpdateDID) returns (MsgUpdateDIDResponse);
+  rpc DeactivateDID(MsgDeactivateDID) returns (MsgDeactivateDIDResponse);
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// DIDDocument represents a W3C DID Document
+message DIDDocument {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string id = 1;
+  repeated string context = 2 [(gogoproto.jsontag) = "@context"];
+  repeated VerificationMethod verification_method = 3 [(gogoproto.jsontag) = "verificationMethod"];
+  repeated string authentication = 4;
+  repeated string assertion_method = 5 [(gogoproto.jsontag) = "assertionMethod"];
+  repeated string key_agreement = 6 [(gogoproto.jsontag) = "keyAgreement"];
+  repeated string capability_invocation = 7 [(gogoproto.jsontag) = "capabilityInvocation"];
+  repeated string capability_delegation = 8 [(gogoproto.jsontag) = "capabilityDelegation"];
+  repeated Service service = 9;
+  google.protobuf.Timestamp created = 10 [(gogoproto.stdtime) = true];
+  google.protobuf.Timestamp updated = 11 [(gogoproto.stdtime) = true];
+  bool deactivated = 12;
+  string version_id = 13 [(gogoproto.jsontag) = "versionId"];
+  string next_version_id = 14 [(gogoproto.jsontag) = "nextVersionId"];
+  string previous_version_id = 15 [(gogoproto.jsontag) = "previousVersionId"];
+}
+
+// VerificationMethod represents a DID verification method
+message VerificationMethod {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string id = 1;
+  string type = 2;
+  string controller = 3;
+  string public_key_multibase = 4 [(gogoproto.jsontag) = "publicKeyMultibase"];
+}
+
+// Service represents a DID service
+message Service {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string id = 1;
+  string type = 2;
+  repeated string service_endpoint = 3 [(gogoproto.jsontag) = "serviceEndpoint"];
+}
+
+// MsgCreateDID defines the message for creating a new DID
+message MsgCreateDID {
+  option (cosmos.msg.v1.signer) = "controller";
+  option (amino.name) = "personachain/did/MsgCreateDID";
+  
+  string controller = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  DIDDocument did_document = 2 [(gogoproto.jsontag) = "didDocument"];
+}
+
+// MsgCreateDIDResponse defines the response for MsgCreateDID
+message MsgCreateDIDResponse {
+  string id = 1;
+}
+
+// MsgUpdateDID defines the message for updating a DID
+message MsgUpdateDID {
+  option (cosmos.msg.v1.signer) = "controller";
+  option (amino.name) = "personachain/did/MsgUpdateDID";
+  
+  string controller = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string id = 2;
+  DIDDocument did_document = 3 [(gogoproto.jsontag) = "didDocument"];
+}
+
+// MsgUpdateDIDResponse defines the response for MsgUpdateDID
+message MsgUpdateDIDResponse {}
+
+// MsgDeactivateDID defines the message for deactivating a DID
+message MsgDeactivateDID {
+  option (cosmos.msg.v1.signer) = "controller";
+  option (amino.name) = "personachain/did/MsgDeactivateDID";
+  
+  string controller = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string id = 2;
+}
+
+// MsgDeactivateDIDResponse defines the response for MsgDeactivateDID
+message MsgDeactivateDIDResponse {}
+
+// Params defines the parameters for the DID module
+message Params {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_stringer) = false;
+
+  uint64 max_did_document_size = 1 [(gogoproto.jsontag) = "maxDidDocumentSize"];
+  uint64 max_verification_methods = 2 [(gogoproto.jsontag) = "maxVerificationMethods"];
+  uint64 max_services = 3 [(gogoproto.jsontag) = "maxServices"];
+  string did_creation_fee = 4 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "didCreationFee"
+  ];
+  string did_update_fee = 5 [
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "didUpdateFee"
+  ];
+}
+
+// MsgUpdateParams defines the message for updating module parameters
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "personachain/did/MsgUpdateParams";
+  
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams
+message MsgUpdateParamsResponse {}

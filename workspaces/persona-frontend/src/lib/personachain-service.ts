@@ -25,8 +25,9 @@ export interface PersonaChainResult {
 
 export class PersonaChainService {
   private readonly RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://personachain-alb-37941478.us-east-1.elb.amazonaws.com:26657'
+  private readonly FALLBACK_RPC = 'http://98.86.107.175:26657' // Direct validator fallback
   private readonly API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod'
-  private readonly CHAIN_ID = 'persona-testnet'
+  private readonly CHAIN_ID = 'personachain-1'
 
   constructor() {
     console.log(`🔗 PersonaChain Service initialized`)

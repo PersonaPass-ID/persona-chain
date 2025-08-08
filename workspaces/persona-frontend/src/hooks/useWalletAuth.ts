@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { walletAuthClient, WalletUser } from '@/lib/wallet-auth-client-v2'
 
-export type WalletType = 'keplr' | 'leap' | 'cosmostation' | 'terra-station'
+export type WalletType = 'keplr' | 'leap' | 'cosmostation' | 'terra-station' | 'reown'
 
 export interface WalletInfo {
   type: WalletType

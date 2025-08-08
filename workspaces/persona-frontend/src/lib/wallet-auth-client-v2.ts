@@ -138,7 +138,7 @@ export class PersonaWalletAuthClientV2 {
    * Get available wallets
    */
   getAvailableWallets(): Array<{
-    type: 'keplr' | 'leap' | 'cosmostation' | 'terra-station'
+    type: 'keplr' | 'leap' | 'cosmostation' | 'terra-station' | 'reown'
     name: string
     isInstalled: boolean
     wallet?: UniversalWallet
@@ -167,6 +167,12 @@ export class PersonaWalletAuthClientV2 {
         name: 'Terra Station',
         isInstalled: !!window.station,
         wallet: window.station as UniversalWallet
+      },
+      {
+        type: 'reown',
+        name: 'Reown (300+ Wallets)',
+        isInstalled: true, // Always available (web-based)
+        wallet: undefined // Handled separately
       }
     ]
   }
@@ -174,13 +180,33 @@ export class PersonaWalletAuthClientV2 {
   /**
    * Connect to a specific wallet
    */
-  async connectWallet(walletType: 'keplr' | 'leap' | 'cosmostation' | 'terra-station'): Promise<{
+  async connectWallet(walletType: 'keplr' | 'leap' | 'cosmostation' | 'terra-station' | 'reown'): Promise<{
     success: boolean
     address?: string
     publicKey?: string
     error?: string
   }> {
     try {
+      // Handle Reown separately
+      if (walletType === 'reown') {
+        const { ReownWalletAdapter, defaultReownConfig } = await import('../lib/wallet-adapters/reown-adapter')
+        const reownAdapter = new ReownWalletAdapter(defaultReownConfig)
+        
+        const result = await reownAdapter.connect()
+        if (result.success && result.address) {
+          return {
+            success: true,
+            address: result.address,
+            publicKey: 'reown-wallet-key' // Placeholder - will handle properly later
+          }
+        } else {
+          return {
+            success: false,
+            error: result.error || 'Reown connection failed'
+          }
+        }
+      }
+
       const wallets = this.getAvailableWallets()
       const selectedWallet = wallets.find(w => w.type === walletType)
 
@@ -226,7 +252,7 @@ export class PersonaWalletAuthClientV2 {
   /**
    * Complete wallet authentication flow using SIWE pattern
    */
-  async authenticateWithWallet(walletType: 'keplr' | 'leap' | 'cosmostation' | 'terra-station'): Promise<{
+  async authenticateWithWallet(walletType: 'keplr' | 'leap' | 'cosmostation' | 'terra-station' | 'reown'): Promise<{
     success: boolean
     user?: WalletUser
     error?: string
