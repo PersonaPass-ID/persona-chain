@@ -15,6 +15,9 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	"github.com/spf13/cobra"
 	tmcfg "github.com/cometbft/cometbft/config"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
@@ -78,6 +81,24 @@ func initRootCmd(rootCmd *cobra.Command) {
 		debug.Cmd(),
 		keys.Commands(),
 	)
+
+	// Add comprehensive genesis commands based on Context7 docs
+	genesisCmd := &cobra.Command{
+		Use:   "genesis",
+		Short: "Application's genesis-related subcommands",
+	}
+	
+	encodingConfig := app.MakeEncodingConfig()
+	
+	genesisCmd.AddCommand(
+		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, genutiltypes.DefaultMessageValidator, authcodec.NewBech32Codec("personavaloper")),
+		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, authcodec.NewBech32Codec("persona")),
+		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
+		genutilcli.AddGenesisAccountCmd(app.DefaultNodeHome, authcodec.NewBech32Codec("persona")),
+		genutilcli.MigrateGenesisCmd(nil),
+	)
+	rootCmd.AddCommand(genesisCmd)
 
 	// Add server commands (start, etc)
 	server.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
