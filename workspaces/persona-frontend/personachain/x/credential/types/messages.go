@@ -91,6 +91,7 @@ func (msg *MsgCreateCredential) GetSignBytes() []byte {
 func (m *MsgCreateCredential) ProtoMessage()  {}
 func (m *MsgCreateCredential) Reset()         { *m = MsgCreateCredential{} }
 func (m *MsgCreateCredential) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreateCredential) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgCreateCredential" }
 
 // MsgCreateCredentialResponse defines the response for MsgCreateCredential
 type MsgCreateCredentialResponse struct {
@@ -101,6 +102,7 @@ type MsgCreateCredentialResponse struct {
 func (m *MsgCreateCredentialResponse) ProtoMessage()  {}
 func (m *MsgCreateCredentialResponse) Reset()         { *m = MsgCreateCredentialResponse{} }
 func (m *MsgCreateCredentialResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreateCredentialResponse) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgCreateCredentialResponse" }
 
 // MsgRevokeCredential defines the message to revoke a verifiable credential
 type MsgRevokeCredential struct {
@@ -147,6 +149,7 @@ func (msg *MsgRevokeCredential) GetSignBytes() []byte {
 func (m *MsgRevokeCredential) ProtoMessage()  {}
 func (m *MsgRevokeCredential) Reset()         { *m = MsgRevokeCredential{} }
 func (m *MsgRevokeCredential) String() string { return proto.CompactTextString(m) }
+func (m *MsgRevokeCredential) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgRevokeCredential" }
 
 // MsgRevokeCredentialResponse defines the response for MsgRevokeCredential
 type MsgRevokeCredentialResponse struct{}
@@ -155,6 +158,7 @@ type MsgRevokeCredentialResponse struct{}
 func (m *MsgRevokeCredentialResponse) ProtoMessage()  {}
 func (m *MsgRevokeCredentialResponse) Reset()         { *m = MsgRevokeCredentialResponse{} }
 func (m *MsgRevokeCredentialResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgRevokeCredentialResponse) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgRevokeCredentialResponse" }
 
 // MsgCreatePresentation defines the message to create a verifiable presentation
 type MsgCreatePresentation struct {
@@ -220,6 +224,7 @@ func (msg *MsgCreatePresentation) GetSignBytes() []byte {
 func (m *MsgCreatePresentation) ProtoMessage()  {}
 func (m *MsgCreatePresentation) Reset()         { *m = MsgCreatePresentation{} }
 func (m *MsgCreatePresentation) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreatePresentation) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgCreatePresentation" }
 
 // MsgCreatePresentationResponse defines the response for MsgCreatePresentation
 type MsgCreatePresentationResponse struct {
@@ -230,3 +235,4 @@ type MsgCreatePresentationResponse struct {
 func (m *MsgCreatePresentationResponse) ProtoMessage()  {}
 func (m *MsgCreatePresentationResponse) Reset()         { *m = MsgCreatePresentationResponse{} }
 func (m *MsgCreatePresentationResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreatePresentationResponse) XXX_MessageName() string { return "personahq.personachain.credential.v1.MsgCreatePresentationResponse" }

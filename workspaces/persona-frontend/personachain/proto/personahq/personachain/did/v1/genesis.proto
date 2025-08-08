@@ -4,7 +4,7 @@ package personahq.personachain.did.v1;
 import "gogoproto/gogo.proto";
 import "personahq/personachain/did/v1/tx.proto";
 
-option go_package = "github.com/personahq/personachain/x/did/types";
+option go_package = "github.com/PersonaPass-ID/personachain/x/did/types";
 
 // GenesisState defines the DID module's genesis state
 message GenesisState {

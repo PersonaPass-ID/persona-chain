@@ -16,8 +16,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"github.com/personahq/personachain/x/did/keeper"
-	"github.com/personahq/personachain/x/did/types"
+	"github.com/PersonaPass-ID/personachain/x/did/keeper"
+	"github.com/PersonaPass-ID/personachain/x/did/types"
 )
 
 // Type check to ensure the interface is properly implemented

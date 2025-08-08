@@ -6,7 +6,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "personahq/personachain/did/v1/tx.proto";
 
-option go_package = "github.com/personahq/personachain/x/did/types";
+option go_package = "github.com/PersonaPass-ID/personachain/x/did/types";
 
 service Query {
   // DID queries a DID document by ID

@@ -4,7 +4,7 @@ import (
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/personahq/personachain/x/zkproof/types"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 // InitGenesis initializes the module's state from a provided genesis state.

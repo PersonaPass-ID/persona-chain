@@ -9,7 +9,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/personahq/personachain/x/zkproof/types"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 type msgServer struct {

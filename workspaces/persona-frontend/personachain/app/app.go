@@ -1,84 +1,86 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
 
-	"cosmossdk.io/depinject"
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/upgrade"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmjson "github.com/cometbft/cometbft/libs/json"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
+	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	
-	// Import PersonaChain modules
-	didmodule "github.com/personahq/personachain/x/did"
-	credentialmodule "github.com/personahq/personachain/x/credential"
-	zkproofmodule "github.com/personahq/personachain/x/zkproof"
-	
-	// Import PersonaChain keepers
-	didkeeper "github.com/personahq/personachain/x/did/keeper"
-	credentialkeeper "github.com/personahq/personachain/x/credential/keeper"
-	zkproofkeeper "github.com/personahq/personachain/x/zkproof/keeper"
+	// Import our custom modules
+	didmodule "github.com/PersonaPass-ID/personachain/x/did"
+	didkeeper "github.com/PersonaPass-ID/personachain/x/did/keeper"
+	didtypes "github.com/PersonaPass-ID/personachain/x/did/types"
+
+	credentialmodule "github.com/PersonaPass-ID/personachain/x/credential"
+	credentialkeeper "github.com/PersonaPass-ID/personachain/x/credential/keeper"
+	credentialtypes "github.com/PersonaPass-ID/personachain/x/credential/types"
+
+	zkproofmodule "github.com/PersonaPass-ID/personachain/x/zkproof"
+	zkproofkeeper "github.com/PersonaPass-ID/personachain/x/zkproof/keeper"
+	zkprooftypes "github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 const (
-	// Bech32MainPrefix is the main bech32 prefix for PersonaChain addresses
-	Bech32MainPrefix = "persona"
-	
-	// PrefixAccount is the prefix for account keys
-	PrefixAccount = "acc"
-	// PrefixValidator is the prefix for validator keys
-	PrefixValidator = "val"
-	// PrefixConsensus is the prefix for consensus keys
-	PrefixConsensus = "cons"
-	// PrefixPublic is the prefix for public keys
-	PrefixPublic = "pub"
-	// PrefixOperator is the prefix for operator keys
-	PrefixOperator = "oper"
-
-	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
-	Bech32PrefixAccAddr = Bech32MainPrefix
-	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
-	Bech32PrefixAccPub = Bech32MainPrefix + PrefixPublic
-	// Bech32PrefixValAddr defines the Bech32 prefix of a validator's operator address
-	Bech32PrefixValAddr = Bech32MainPrefix + PrefixValidator + PrefixOperator
-	// Bech32PrefixValPub defines the Bech32 prefix of a validator's operator public key
-	Bech32PrefixValPub = Bech32MainPrefix + PrefixValidator + PrefixOperator + PrefixPublic
-	// Bech32PrefixConsAddr defines the Bech32 prefix of a consensus node address
-	Bech32PrefixConsAddr = Bech32MainPrefix + PrefixValidator + PrefixConsensus
-	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key
-	Bech32PrefixConsPub = Bech32MainPrefix + PrefixValidator + PrefixConsensus + PrefixPublic
+	AccountAddressPrefix = "persona"
+	Name                 = "personachain"
 )
 
 var (
-	// DefaultNodeHome default home directories for PersonaChain
 	DefaultNodeHome string
 
-	// ModuleBasics defines the module BasicManager that is in charge of setting up basic,
-	// non-dependant module elements, such as codec registration and genesis verification.
+	// module account permissions
+	maccPerms = map[string][]string{
+		authtypes.FeeCollectorName:     nil,
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		didtypes.ModuleName:            {},
+		credentialtypes.ModuleName:     {},
+		zkprooftypes.ModuleName:        {},
+	}
+
+	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
+	// non-dependant module elements, such as codec registration
+	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
@@ -101,9 +103,9 @@ func init() {
 	DefaultNodeHome = filepath.Join(userHomeDir, ".personachain")
 }
 
-// PersonaChainApp extends an ABCI application with PersonaChain modules
-type PersonaChainApp struct {
-	*runtime.App
+// PersonaChainAppNew extends an ABCI application, built with the Cosmos SDK's ABCI framework.
+type PersonaChainAppNew struct {
+	*baseapp.BaseApp
 
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -116,59 +118,241 @@ type PersonaChainApp struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AuthKeeper         authkeeper.AccountKeeper
-	BankKeeper         bankkeeper.Keeper
-	StakingKeeper      *stakingkeeper.Keeper
-	UpgradeKeeper      *upgradekeeper.Keeper
-	// PersonaChain keepers
-	DIDKeeper          *didkeeper.Keeper
-	CredentialKeeper   *credentialkeeper.Keeper
-	ZKProofKeeper      *zkproofkeeper.Keeper
+	AuthKeeper       authkeeper.AccountKeeper
+	BankKeeper       bankkeeper.Keeper
+	StakingKeeper    *stakingkeeper.Keeper
+	UpgradeKeeper    *upgradekeeper.Keeper
+	ConsensusKeeper  consensuskeeper.Keeper
 
-	// module manager
+	// PersonaChain custom keepers
+	DIDKeeper        didkeeper.Keeper
+	CredentialKeeper credentialkeeper.Keeper
+	ZKProofKeeper    zkproofkeeper.Keeper
+
+	// the module manager
 	ModuleManager *module.Manager
 
-	// configurator
+	// simulation manager
 	configurator module.Configurator
 }
 
 // NewPersonaChainApp returns a reference to an initialized PersonaChain application.
-func NewPersonaChainApp(
+func NewPersonaChainAppNew(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) *PersonaChainApp {
+) *PersonaChainAppNew {
 
-	var (
-		app        = &PersonaChainApp{}
-		appBuilder *runtime.AppBuilder
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	legacyAmino := codec.NewLegacyAmino()
+	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+
+	// Register standard interfaces
+	std.RegisterLegacyAminoCodec(legacyAmino)
+	std.RegisterInterfaces(interfaceRegistry)
+
+	// Register module basics
+	ModuleBasics.RegisterLegacyAminoCodec(legacyAmino)
+	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+
+	bApp := baseapp.NewBaseApp(Name, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp.SetCommitMultiStoreTracer(traceStore)
+	bApp.SetVersion(version.Version)
+	bApp.SetInterfaceRegistry(interfaceRegistry)
+	bApp.SetTxEncoder(txConfig.TxEncoder())
+
+	keys := storetypes.NewKVStoreKeys(
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		upgradetypes.StoreKey, consensustypes.StoreKey,
+		// PersonaChain store keys - disabled for now
+		// didtypes.StoreKey, credentialtypes.StoreKey, zkprooftypes.StoreKey,
 	)
 
-	// PersonaChain application configuration using depinject
-	if err := depinject.Inject(
-		AppConfig,
-		&appBuilder,
-		&app.appCodec,
-		&app.legacyAmino,
-		&app.txConfig,
-		&app.interfaceRegistry,
-		&app.AuthKeeper,
-		&app.BankKeeper,
-		&app.StakingKeeper,
-		&app.UpgradeKeeper,
+	tkeys := storetypes.NewTransientStoreKeys(
+		stakingtypes.TStoreKey,
+	)
+	memKeys := storetypes.NewMemoryStoreKeys()
+
+	app := &PersonaChainAppNew{
+		BaseApp:           bApp,
+		legacyAmino:       legacyAmino,
+		appCodec:          appCodec,
+		txConfig:          txConfig,
+		interfaceRegistry: interfaceRegistry,
+		keys:              keys,
+		tkeys:             tkeys,
+		memKeys:           memKeys,
+	}
+
+	authority := authtypes.NewModuleAddress("gov")
+
+	// Initialize keepers  
+	app.AuthKeeper = authkeeper.NewAccountKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
+		authtypes.ProtoBaseAccount,
+		maccPerms,
+		address.NewBech32Codec(AccountAddressPrefix),
+		AccountAddressPrefix,
+		authority.String(),
+	)
+
+	app.BankKeeper = bankkeeper.NewBaseKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
+		app.AuthKeeper,
+		BlockedModuleAccountAddrs(),
+		authority.String(),
+		logger,
+	)
+
+	app.StakingKeeper = stakingkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
+		app.AuthKeeper,
+		app.BankKeeper,
+		authority.String(),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		address.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+	)
+
+	app.UpgradeKeeper = upgradekeeper.NewKeeper(
+		make(map[int64]bool),
+		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
+		appCodec,
+		DefaultNodeHome,
+		app.BaseApp,
+		authority.String(),
+	)
+
+	app.ConsensusKeeper = consensuskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[consensustypes.StoreKey]),
+		authority.String(),
+		runtime.EventService{},
+	)
+
+	// Initialize PersonaChain keepers
+	app.DIDKeeper = *didkeeper.NewKeeper(
+		appCodec,
+		keys[didtypes.StoreKey],
+		logger,
+		app.BankKeeper,
+		app.AuthKeeper,
+		authority.String(),
+	)
+
+	app.CredentialKeeper = *credentialkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[credentialtypes.StoreKey]),
+		authority.String(),
+		app.AuthKeeper,
+		app.BankKeeper,
+	)
+
+	app.ZKProofKeeper = *zkproofkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[zkprooftypes.StoreKey]),
+		authority.String(),
+		app.AuthKeeper,
+		app.BankKeeper,
 		&app.DIDKeeper,
-		&app.CredentialKeeper,
-		&app.ZKProofKeeper,
-	); err != nil {
+	)
+
+	/****  Module Managers ****/
+	app.ModuleManager = module.NewManager(
+		// SDK modules
+		genutil.NewAppModule(
+			app.AuthKeeper,
+			app.StakingKeeper,
+			app,
+			txConfig,
+		),
+		auth.NewAppModule(appCodec, app.AuthKeeper, nil, app.txConfig),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AuthKeeper, nil),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AuthKeeper, app.BankKeeper, nil),
+		upgrade.NewAppModule(app.UpgradeKeeper, app.AuthKeeper),
+		consensus.NewAppModule(appCodec, app.ConsensusKeeper),
+		// PersonaChain modules
+		didmodule.NewAppModule(appCodec, app.DIDKeeper),
+		credentialmodule.NewAppModule(appCodec, app.CredentialKeeper),
+		zkproofmodule.NewAppModule(appCodec, app.ZKProofKeeper),
+	)
+
+	// Set order of init genesis
+	app.ModuleManager.SetOrderInitGenesis(
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		stakingtypes.ModuleName,
+		genutiltypes.ModuleName,
+		upgradetypes.ModuleName,
+		consensustypes.ModuleName,
+		didtypes.ModuleName,
+		credentialtypes.ModuleName,
+		zkprooftypes.ModuleName,
+	)
+
+	app.ModuleManager.SetOrderExportGenesis(
+		zkprooftypes.ModuleName,
+		credentialtypes.ModuleName,
+		didtypes.ModuleName,
+		consensustypes.ModuleName,
+		upgradetypes.ModuleName,
+		stakingtypes.ModuleName,
+		banktypes.ModuleName,
+		authtypes.ModuleName,
+		genutiltypes.ModuleName,
+	)
+
+	// Sets the order of set begin blocker calls
+	app.ModuleManager.SetOrderBeginBlockers(
+		upgradetypes.ModuleName,
+		stakingtypes.ModuleName,
+		didtypes.ModuleName,
+		credentialtypes.ModuleName,
+		zkprooftypes.ModuleName,
+	)
+
+	// Sets the order of set end blocker calls
+	app.ModuleManager.SetOrderEndBlockers(
+		stakingtypes.ModuleName,
+		didtypes.ModuleName,
+		credentialtypes.ModuleName,
+		zkprooftypes.ModuleName,
+	)
+
+	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
+	app.ModuleManager.RegisterServices(app.configurator)
+
+	// initialize stores
+	app.MountKVStores(keys)
+	app.MountTransientStores(tkeys)
+	app.MountMemoryStores(memKeys)
+
+	// initialize BaseApp
+	app.SetInitChainer(app.InitChainer)
+	app.SetBeginBlocker(app.BeginBlocker)
+	
+	anteHandler, err := ante.NewAnteHandler(
+		ante.HandlerOptions{
+			AccountKeeper:   app.AuthKeeper,
+			BankKeeper:      app.BankKeeper,
+			SignModeHandler: txConfig.SignModeHandler(),
+			FeegrantKeeper:  nil,
+			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+		},
+	)
+	if err != nil {
 		panic(err)
 	}
 
-	app.App = appBuilder.Build(db, traceStore, baseAppOptions...)
+	app.SetAnteHandler(anteHandler)
+	app.SetEndBlocker(app.EndBlocker)
 
-	// Load the app
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			panic(err)
@@ -179,81 +363,77 @@ func NewPersonaChainApp(
 }
 
 // Name returns the name of the App
-func (app *PersonaChainApp) Name() string { return "personachain" }
+func (app *PersonaChainAppNew) Name() string { return app.BaseApp.Name() }
 
-// LegacyAmino returns PersonaChain's amino codec.
-func (app *PersonaChainApp) LegacyAmino() *codec.LegacyAmino {
+// BeginBlocker application updates every begin block
+func (app *PersonaChainAppNew) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	return app.ModuleManager.BeginBlock(ctx)
+}
+
+// EndBlocker application updates every end block
+func (app *PersonaChainAppNew) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	return app.ModuleManager.EndBlock(ctx)
+}
+
+// InitChainer application update at chain initialization  
+func (app *PersonaChainAppNew) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	var genesisState GenesisState
+	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		panic(err)
+	}
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap())
+	return app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
+}
+
+// LoadHeight loads a particular height
+func (app *PersonaChainAppNew) LoadHeight(height int64) error {
+	return app.LoadVersion(height)
+}
+
+// LegacyAmino returns legacy amino codec.
+func (app *PersonaChainAppNew) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
 
-// AppCodec returns PersonaChain's app codec.
-func (app *PersonaChainApp) AppCodec() codec.Codec {
+// AppCodec returns an app codec.
+func (app *PersonaChainAppNew) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
-// InterfaceRegistry returns PersonaChain's InterfaceRegistry
-func (app *PersonaChainApp) InterfaceRegistry() codectypes.InterfaceRegistry {
+// InterfaceRegistry returns an InterfaceRegistry
+func (app *PersonaChainAppNew) InterfaceRegistry() codectypes.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
-// TxConfig returns PersonaChain's TxConfig
-func (app *PersonaChainApp) TxConfig() client.TxConfig {
+// TxConfig returns an TxConfig
+func (app *PersonaChainAppNew) TxConfig() client.TxConfig {
 	return app.txConfig
 }
 
-// GetKey returns the KVStoreKey for the provided store key.
-func (app *PersonaChainApp) GetKey(storeKey string) *storetypes.KVStoreKey {
-	sk := app.UnsafeFindStoreKey(storeKey)
-	kvStoreKey, ok := sk.(*storetypes.KVStoreKey)
-	if !ok {
-		return nil
-	}
-	return kvStoreKey
+// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+func (app *PersonaChainAppNew) DefaultGenesis() map[string]json.RawMessage {
+	return ModuleBasics.DefaultGenesis(app.appCodec)
 }
 
-// GetTKey returns the TransientStoreKey for the provided store key.
-func (app *PersonaChainApp) GetTKey(storeKey string) *storetypes.TransientStoreKey {
-	sk := app.UnsafeFindStoreKey(storeKey)
-	transientStoreKey, ok := sk.(*storetypes.TransientStoreKey)
-	if !ok {
-		return nil
-	}
-	return transientStoreKey
+// GetSubspace returns a param subspace for a given module name.
+func (app *PersonaChainAppNew) GetSubspace(moduleName string) interface{} {
+	return nil
 }
 
-// GetMemKey returns the MemStoreKey for the provided mem key.
-func (app *PersonaChainApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
-	sk := app.UnsafeFindStoreKey(storeKey)
-	memoryStoreKey, ok := sk.(*storetypes.MemoryStoreKey)
-	if !ok {
-		return nil
-	}
-	return memoryStoreKey
-}
-
-// RegisterAPIRoutes registers all application module routes with the provided
-// API server.
-func (app *PersonaChainApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
-	app.App.RegisterAPIRoutes(apiSvr, apiConfig)
-	// register swagger API from root so that other applications can override easily
-	if err := server.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, false); err != nil {
-		panic(err)
-	}
+// RegisterAPIRoutes registers all application module routes with the provided API server.
+func (app *PersonaChainAppNew) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+	// Register legacy routes
+	ModuleBasics.RegisterGRPCGatewayRoutes(apiSvr.ClientCtx, apiSvr.GRPCGatewayRouter)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
-func (app *PersonaChainApp) RegisterTxService(clientCtx client.Context) {
-	app.App.RegisterTxService(clientCtx)
+func (app *PersonaChainAppNew) RegisterTxService(clientCtx client.Context) {
+	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
-func (app *PersonaChainApp) RegisterTendermintService(clientCtx client.Context) {
-	app.App.RegisterTendermintService(clientCtx)
-}
-
-// RegisterNodeService registers the node service.
-func (app *PersonaChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
-	app.App.RegisterNodeService(clientCtx, cfg)
+func (app *PersonaChainAppNew) RegisterTendermintService(clientCtx client.Context) {
+	// Implementation if needed
 }
 
 // GetMaccPerms returns a copy of the module account permissions
@@ -265,36 +445,36 @@ func GetMaccPerms() map[string][]string {
 	return dupMaccPerms
 }
 
-// GetSubspace returns a param subspace for a given module name.
-func (app *PersonaChainApp) GetSubspace(moduleName string) *storetypes.KVStoreKey {
-	return app.GetKey(moduleName)
-}
-
-// SimulationManager implements the SimulationApp interface
-func (app *PersonaChainApp) SimulationManager() *module.SimulationManager {
-	return nil // For production, we don't need simulation
-}
-
-// LoadHeight loads a particular height
-func (app *PersonaChainApp) LoadHeight(height int64) error {
-	return app.App.LoadVersion(height)
+// BlockedModuleAccountAddrs returns all the app's blocked module account addresses.
+func BlockedModuleAccountAddrs() map[string]bool {
+	blockedAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	}
+	return blockedAddrs
 }
 
 // ExportAppStateAndValidators exports the state of the application for a genesis file.
-func (app *PersonaChainApp) ExportAppStateAndValidators(
-	forZeroHeight bool, jailAllowedAddrs, modulesToExport []string,
+func (app *PersonaChainAppNew) ExportAppStateAndValidators(
+	forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
-	
-	// create context and multistore for export at current height
-	ctx := app.NewContext(true)
+	// as if they could withdraw from the start of the next block
+	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
 
-	// Skip module initialization for export
+	// We export at last height + 1, because that's the height at which
+	// Tendermint will start InitChain.
+	height := app.LastBlockHeight() + 1
+	if forZeroHeight {
+		height = 0
+		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
+	}
 
 	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
-	appState, err := codec.MarshalJSONIndent(app.legacyAmino, genState)
+
+	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -303,37 +483,19 @@ func (app *PersonaChainApp) ExportAppStateAndValidators(
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Validators:      validators,
-		Height:          app.LastBlockHeight(),
+		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, err
 }
 
-// EncodingConfig specifies the concrete encoding types to use for a given app.
-// This is provided for compatibility between protobuf and amino implementations.
-type EncodingConfig struct {
-	InterfaceRegistry codectypes.InterfaceRegistry
-	Codec             codec.Codec
-	TxConfig          client.TxConfig
-	Amino             *codec.LegacyAmino
+// prepare for fresh start at zero height
+func (app *PersonaChainAppNew) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
+	// Implementation for zero height genesis prep if needed
 }
 
-// MakeEncodingConfig creates an EncodingConfig for PersonaChain.
-func MakeEncodingConfig() EncodingConfig {
-	amino := codec.NewLegacyAmino()
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	protoCodec := codec.NewProtoCodec(interfaceRegistry)
-	txCfg := authtx.NewTxConfig(protoCodec, authtx.DefaultSignModes)
+type GenesisState map[string]json.RawMessage
 
-	std.RegisterLegacyAminoCodec(amino)
-	std.RegisterInterfaces(interfaceRegistry)
-	ModuleBasics.RegisterLegacyAminoCodec(amino)
-	ModuleBasics.RegisterInterfaces(interfaceRegistry)
-
-	return EncodingConfig{
-		InterfaceRegistry: interfaceRegistry,
-		Codec:             protoCodec,
-		TxConfig:          txCfg,
-		Amino:             amino,
-	}
+// NewDefaultGenesisState generates the default state for the application.
+func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
+	return ModuleBasics.DefaultGenesis(cdc)
 }
-

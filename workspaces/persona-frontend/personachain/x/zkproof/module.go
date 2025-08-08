@@ -19,8 +19,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/personahq/personachain/x/zkproof/keeper"
-	"github.com/personahq/personachain/x/zkproof/types"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/keeper"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 // ConsensusVersion defines the current module consensus version.

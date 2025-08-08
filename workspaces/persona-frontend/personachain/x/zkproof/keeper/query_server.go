@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/personahq/personachain/x/zkproof/types"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 var _ types.QueryServer = queryServer{}

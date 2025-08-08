@@ -67,6 +67,7 @@ func (msg MsgCreateDID) GetSignBytes() []byte {
 func (m *MsgCreateDID) ProtoMessage()  {}
 func (m *MsgCreateDID) Reset()         { *m = MsgCreateDID{} }
 func (m *MsgCreateDID) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreateDID) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgCreateDID" }
 
 // MsgCreateDIDResponse defines the response for MsgCreateDID
 type MsgCreateDIDResponse struct {
@@ -76,6 +77,7 @@ type MsgCreateDIDResponse struct {
 func (m *MsgCreateDIDResponse) ProtoMessage()  {}
 func (m *MsgCreateDIDResponse) Reset()         { *m = MsgCreateDIDResponse{} }
 func (m *MsgCreateDIDResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgCreateDIDResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgCreateDIDResponse" }
 
 // MsgUpdateDID defines the message for updating a DID
 type MsgUpdateDID struct {
@@ -118,12 +120,14 @@ func (msg MsgUpdateDID) GetSignBytes() []byte {
 func (m *MsgUpdateDID) ProtoMessage()  {}
 func (m *MsgUpdateDID) Reset()         { *m = MsgUpdateDID{} }
 func (m *MsgUpdateDID) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateDID) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateDID" }
 
 type MsgUpdateDIDResponse struct{}
 
 func (m *MsgUpdateDIDResponse) ProtoMessage()  {}
 func (m *MsgUpdateDIDResponse) Reset()         { *m = MsgUpdateDIDResponse{} }
 func (m *MsgUpdateDIDResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateDIDResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateDIDResponse" }
 
 // MsgDeactivateDID defines the message for deactivating a DID
 type MsgDeactivateDID struct {
@@ -164,12 +168,14 @@ func (msg MsgDeactivateDID) GetSignBytes() []byte {
 func (m *MsgDeactivateDID) ProtoMessage()  {}
 func (m *MsgDeactivateDID) Reset()         { *m = MsgDeactivateDID{} }
 func (m *MsgDeactivateDID) String() string { return proto.CompactTextString(m) }
+func (m *MsgDeactivateDID) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgDeactivateDID" }
 
 type MsgDeactivateDIDResponse struct{}
 
 func (m *MsgDeactivateDIDResponse) ProtoMessage()  {}
 func (m *MsgDeactivateDIDResponse) Reset()         { *m = MsgDeactivateDIDResponse{} }
 func (m *MsgDeactivateDIDResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgDeactivateDIDResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgDeactivateDIDResponse" }
 
 // MsgUpdateParams defines the message for updating parameters
 type MsgUpdateParams struct {
@@ -207,9 +213,11 @@ func (msg MsgUpdateParams) GetSignBytes() []byte {
 func (m *MsgUpdateParams) ProtoMessage()  {}
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
 func (m *MsgUpdateParams) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateParams) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateParams" }
 
 type MsgUpdateParamsResponse struct{}
 
 func (m *MsgUpdateParamsResponse) ProtoMessage()  {}
 func (m *MsgUpdateParamsResponse) Reset()         { *m = MsgUpdateParamsResponse{} }
 func (m *MsgUpdateParamsResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateParamsResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateParamsResponse" }

@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/personahq/personachain/x/zkproof/types"
+	"github.com/PersonaPass-ID/personachain/x/zkproof/types"
 )
 
 // EndBlocker is called at the end of each block to perform module-specific operations.

@@ -121,6 +121,11 @@ func (msg *MsgCreateCircuit) ValidateBasic() error {
 	return nil
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgCreateCircuit) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgCreateCircuit"
+}
+
 // MsgSubmitProof submits a zero-knowledge proof for verification.
 type MsgSubmitProof struct {
 	Prover           string            `json:"prover"`
@@ -211,6 +216,11 @@ func (msg *MsgSubmitProof) ValidateBasic() error {
 	return nil
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgSubmitProof) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgSubmitProof"
+}
+
 // MsgVerifyProof verifies a submitted proof.
 type MsgVerifyProof struct {
 	Verifier string `json:"verifier"`
@@ -258,6 +268,11 @@ func (msg *MsgVerifyProof) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgVerifyProof) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgVerifyProof"
 }
 
 // MsgCreateProofRequest creates a request for a zero-knowledge proof.
@@ -339,6 +354,11 @@ func (msg *MsgCreateProofRequest) ValidateBasic() error {
 	return nil
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgCreateProofRequest) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgCreateProofRequest"
+}
+
 // MsgUpdateCircuit updates an existing circuit.
 type MsgUpdateCircuit struct {
 	Creator     string `json:"creator"`
@@ -394,6 +414,11 @@ func (msg *MsgUpdateCircuit) ValidateBasic() error {
 	return nil
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgUpdateCircuit) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgUpdateCircuit"
+}
+
 // Response types
 
 // MsgCreateCircuitResponse is the response for MsgCreateCircuit.
@@ -401,9 +426,19 @@ type MsgCreateCircuitResponse struct {
 	CircuitId string `json:"circuitId"`
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgCreateCircuitResponse) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgCreateCircuitResponse"
+}
+
 // MsgSubmitProofResponse is the response for MsgSubmitProof.
 type MsgSubmitProofResponse struct {
 	ProofId string `json:"proofId"`
+}
+
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgSubmitProofResponse) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgSubmitProofResponse"
 }
 
 // MsgVerifyProofResponse is the response for MsgVerifyProof.
@@ -412,14 +447,29 @@ type MsgVerifyProofResponse struct {
 	Valid  bool   `json:"valid"`
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgVerifyProofResponse) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgVerifyProofResponse"
+}
+
 // MsgCreateProofRequestResponse is the response for MsgCreateProofRequest.
 type MsgCreateProofRequestResponse struct {
 	RequestId string `json:"requestId"`
 }
 
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgCreateProofRequestResponse) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgCreateProofRequestResponse"
+}
+
 // MsgUpdateCircuitResponse is the response for MsgUpdateCircuit.
 type MsgUpdateCircuitResponse struct {
 	Success bool `json:"success"`
+}
+
+// XXX_MessageName returns the unique type URL for this message type.
+func (msg *MsgUpdateCircuitResponse) XXX_MessageName() string {
+	return "personahq.personachain.zkproof.v1.MsgUpdateCircuitResponse"
 }
 
 // ProtoMessage methods for all message types

@@ -6,7 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/personahq/personachain/x/credential/types"
+	"github.com/PersonaPass-ID/personachain/x/credential/types"
 )
 
 type msgServer struct {

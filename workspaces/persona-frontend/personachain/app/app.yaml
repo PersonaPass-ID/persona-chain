@@ -4,10 +4,10 @@ modules:
       "@type": cosmos.app.runtime.v1alpha1.Module
       app_name: PersonaChain
       
-      begin_blockers: [upgrade, staking, did, credential, zkproof]
-      end_blockers: [staking, did, credential, zkproof]
-      init_genesis: [auth, bank, staking, genutil, upgrade, consensus, did, credential, zkproof]
-      export_genesis: [zkproof, credential, did, consensus, upgrade, staking, bank, auth, genutil]
+      begin_blockers: [upgrade, staking]
+      end_blockers: [staking]
+      init_genesis: [auth, bank, staking, genutil, upgrade, consensus]
+      export_genesis: [consensus, upgrade, staking, bank, auth, genutil]
       
       override_store_keys:
         - module_name: auth
@@ -23,9 +23,6 @@ modules:
           permissions: [burner, staking]
         - account: not_bonded_tokens_pool
           permissions: [burner, staking]
-        - account: did
-        - account: credential  
-        - account: zkproof
       authority: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
 
   - name: bank
@@ -53,22 +50,3 @@ modules:
       "@type": cosmos.consensus.module.v1.Module
       authority: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
 
-  - name: did
-    config:
-      "@type": personahq.personachain.did.v1.Module
-      authority: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
-
-  - name: credential
-    config:
-      "@type": personahq.personachain.credential.v1.Module
-      authority: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
-
-  - name: zkproof
-    config:
-      "@type": personahq.personachain.zkproof.v1.Module
-      authority: cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
-
-begin_blockers: [upgrade, staking, did, credential, zkproof]
-end_blockers: [staking, did, credential, zkproof]
-init_genesis: [auth, bank, staking, genutil, upgrade, consensus, did, credential, zkproof]
-export_genesis: [zkproof, credential, did, consensus, upgrade, staking, bank, auth, genutil]

@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/personahq/personachain/x/did/types"
+	"github.com/PersonaPass-ID/personachain/x/did/types"
 )
 
 type Keeper struct {
