@@ -329,3 +329,31 @@ func (k Keeper) GetStoreKey() storetypes.StoreKey {
 func (k Keeper) GetCodec() codec.BinaryCodec {
 	return k.cdc
 }
+
+// ValidateDID checks if a DID exists and is active (for ZK proof keeper interface)
+func (k Keeper) ValidateDID(ctx context.Context, did string) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	didDoc, found := k.GetDID(sdkCtx, did)
+	if !found {
+		return types.ErrDIDNotFound
+	}
+	if didDoc.Deactivated {
+		return types.ErrDIDDeactivated
+	}
+	return nil
+}
+
+// GetDIDDocument retrieves a DID document (for ZK proof keeper interface)
+func (k Keeper) GetDIDDocument(ctx context.Context, did string) (interface{}, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	didDoc, found := k.GetDID(sdkCtx, did)
+	if !found {
+		return nil, types.ErrDIDNotFound
+	}
+	return didDoc, nil
+}
+
+// ResolveDID resolves a DID to its document (for ZK proof keeper interface)
+func (k Keeper) ResolveDID(ctx context.Context, did string) (interface{}, error) {
+	return k.GetDIDDocument(ctx, did)
+}

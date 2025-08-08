@@ -1,13 +1,12 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
 
-	"cosmossdk.io/core/address"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/upgrade"
@@ -15,7 +14,6 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -168,12 +166,12 @@ func NewPersonaChainAppNew(
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		upgradetypes.StoreKey, consensustypes.StoreKey,
-		// PersonaChain store keys - disabled for now
-		// didtypes.StoreKey, credentialtypes.StoreKey, zkprooftypes.StoreKey,
+		// PersonaChain store keys
+		didtypes.StoreKey, credentialtypes.StoreKey, zkprooftypes.StoreKey,
 	)
 
 	tkeys := storetypes.NewTransientStoreKeys(
-		stakingtypes.TStoreKey,
+		// stakingtypes.TStoreKey,
 	)
 	memKeys := storetypes.NewMemoryStoreKeys()
 
@@ -196,7 +194,7 @@ func NewPersonaChainAppNew(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		address.NewBech32Codec(AccountAddressPrefix),
+		authcodec.NewBech32Codec(AccountAddressPrefix),
 		AccountAddressPrefix,
 		authority.String(),
 	)
@@ -216,8 +214,8 @@ func NewPersonaChainAppNew(
 		app.AuthKeeper,
 		app.BankKeeper,
 		authority.String(),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
@@ -236,7 +234,10 @@ func NewPersonaChainAppNew(
 		runtime.EventService{},
 	)
 
-	// Initialize PersonaChain keepers
+	// Initialize PersonaChain keepers - temporarily use traditional keepers and uncomment store keys
+	// Uncomment PersonaChain store keys
+	// didtypes.StoreKey, credentialtypes.StoreKey, zkprooftypes.StoreKey,
+
 	app.DIDKeeper = *didkeeper.NewKeeper(
 		appCodec,
 		keys[didtypes.StoreKey],
@@ -272,10 +273,10 @@ func NewPersonaChainAppNew(
 			app,
 			txConfig,
 		),
-		auth.NewAppModule(appCodec, app.AuthKeeper, nil, app.txConfig),
+		auth.NewAppModule(appCodec, app.AuthKeeper, nil, nil),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AuthKeeper, nil),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AuthKeeper, app.BankKeeper, nil),
-		upgrade.NewAppModule(app.UpgradeKeeper, app.AuthKeeper),
+		upgrade.NewAppModule(app.UpgradeKeeper, nil),
 		consensus.NewAppModule(appCodec, app.ConsensusKeeper),
 		// PersonaChain modules
 		didmodule.NewAppModule(appCodec, app.DIDKeeper),
@@ -436,6 +437,11 @@ func (app *PersonaChainAppNew) RegisterTendermintService(clientCtx client.Contex
 	// Implementation if needed
 }
 
+// RegisterNodeService implements the servertypes.Application interface
+func (app *PersonaChainAppNew) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	// Register node service endpoints
+}
+
 // GetMaccPerms returns a copy of the module account permissions
 func GetMaccPerms() map[string][]string {
 	dupMaccPerms := make(map[string][]string)
@@ -459,7 +465,7 @@ func (app *PersonaChainAppNew) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	// as if they could withdraw from the start of the next block
-	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
+	ctx := app.NewContext(true)
 
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
@@ -498,4 +504,27 @@ type GenesisState map[string]json.RawMessage
 // NewDefaultGenesisState generates the default state for the application.
 func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
 	return ModuleBasics.DefaultGenesis(cdc)
+}
+
+// EncodingConfig specifies the concrete encoding types to use for a given app.
+type EncodingConfig struct {
+	InterfaceRegistry codectypes.InterfaceRegistry
+	Codec             codec.Codec
+	TxConfig          client.TxConfig
+	Amino             *codec.LegacyAmino
+}
+
+// MakeEncodingConfig creates an EncodingConfig for PersonaChain.
+func MakeEncodingConfig() EncodingConfig {
+	amino := codec.NewLegacyAmino()
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	codec := codec.NewProtoCodec(interfaceRegistry)
+	txConfig := authtx.NewTxConfig(codec, authtx.DefaultSignModes)
+
+	return EncodingConfig{
+		InterfaceRegistry: interfaceRegistry,
+		Codec:             codec,
+		TxConfig:          txConfig,
+		Amino:             amino,
+	}
 }
