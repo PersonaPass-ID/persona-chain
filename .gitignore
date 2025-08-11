@@ -39,3 +39,36 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+.terraform.lock.hcl
+
+# Large binaries and downloads
+*.tar.gz
+*.zip
+hermes
+hermes-v*
+cloudflared
+ignite
+
+# Blockchain data
+persona-chain/
+*.wasm
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Workspace node_modules
+workspaces/**/node_modules/
+workspaces/**/.cache/
+workspaces/**/build/
+workspaces/**/dist/
+
+# Serena cache
+.serena/cache/

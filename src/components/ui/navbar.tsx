@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { forwardRef, type ReactNode } from 'react'
+import { forwardRef } from 'react'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 const Navbar = forwardRef<
