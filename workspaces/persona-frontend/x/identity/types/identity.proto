@@ -1,0 +1,55 @@
+syntax = "proto3";
+package personachain.identity;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/PersonaPass-ID/persona-chain/x/identity/types";
+
+// Identity represents a DID record on PersonaChain
+message Identity {
+  string address = 1;
+  string did_document = 2;
+  google.protobuf.Timestamp created_at = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp updated_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// Credential represents a verifiable credential on PersonaChain
+message Credential {
+  string id = 1;
+  string issuer = 2;
+  string subject_did = 3;
+  string credential_type = 4;
+  string credential_data = 5;
+  google.protobuf.Timestamp issued_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp expiry = 7 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  string status = 8; // active, revoked, expired
+}
+
+// Revocation represents a credential revocation record
+message Revocation {
+  string credential_id = 1;
+  string issuer = 2;
+  string reason = 3;
+  google.protobuf.Timestamp revoked_at = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// Verification represents a verification event
+message Verification {
+  string id = 1;
+  string verifier = 2;
+  string credential_id = 3;
+  string proof_data = 4;
+  bool verified = 5;
+  google.protobuf.Timestamp verified_at = 6 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+// Params defines the parameters for the identity module
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  uint32 max_credentials_per_did = 1;
+  cosmos.base.v1beta1.Coin credential_fee = 2 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin verification_fee = 3 [(gogoproto.nullable) = false];
+}

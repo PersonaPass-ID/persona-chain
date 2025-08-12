@@ -1,0 +1,84 @@
+syntax = "proto3";
+package personahq.personachain.did.v1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "personahq/personachain/did/v1/tx.proto";
+
+option go_package = "github.com/PersonaPass-ID/personachain/x/did/types";
+
+service Query {
+  // DID queries a DID document by ID
+  rpc DID(QueryDIDRequest) returns (QueryDIDResponse) {
+    option (google.api.http).get = "/personahq/personachain/did/v1/did/{id}";
+  }
+
+  // DIDs queries all DID documents with optional pagination
+  rpc DIDs(QueryDIDsRequest) returns (QueryDIDsResponse) {
+    option (google.api.http).get = "/personahq/personachain/did/v1/dids";
+  }
+
+  // DIDsByController queries DIDs by controller address
+  rpc DIDsByController(QueryDIDsByControllerRequest) returns (QueryDIDsByControllerResponse) {
+    option (google.api.http).get = "/personahq/personachain/did/v1/dids/controller/{controller}";
+  }
+
+  // Params queries the DID module parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/personahq/personachain/did/v1/params";
+  }
+}
+
+// QueryDIDRequest is the request type for the Query/DID RPC method
+message QueryDIDRequest {
+  string id = 1;
+}
+
+// QueryDIDResponse is the response type for the Query/DID RPC method
+message QueryDIDResponse {
+  DIDDocument did_document = 1 [(gogoproto.jsontag) = "didDocument"];
+  DIDMetadata metadata = 2;
+}
+
+// QueryDIDsRequest is the request type for the Query/DIDs RPC method
+message QueryDIDsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryDIDsResponse is the response type for the Query/DIDs RPC method
+message QueryDIDsResponse {
+  repeated DIDDocument did_documents = 1 [(gogoproto.jsontag) = "didDocuments"];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryDIDsByControllerRequest is the request type for the Query/DIDsByController RPC method
+message QueryDIDsByControllerRequest {
+  string controller = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryDIDsByControllerResponse is the response type for the Query/DIDsByController RPC method
+message QueryDIDsByControllerResponse {
+  repeated DIDDocument did_documents = 1 [(gogoproto.jsontag) = "didDocuments"];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// DIDMetadata contains metadata about a DID
+message DIDMetadata {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string version_id = 1 [(gogoproto.jsontag) = "versionId"];
+  google.protobuf.Timestamp created = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  google.protobuf.Timestamp updated = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  bool deactivated = 4;
+}

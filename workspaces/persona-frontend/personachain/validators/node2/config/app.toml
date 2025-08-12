@@ -1,0 +1,20 @@
+# PersonaChain Node 2 Configuration
+minimum-gas-prices = "0persona"
+
+[api]
+enable = true
+swagger = true
+address = "tcp://localhost:1312"
+max-open-connections = 1000
+rpc-read-timeout = 10
+rpc-write-timeout = 0
+rpc-max-body-bytes = 1000000
+enabled-unsafe-cors = true
+
+[grpc]
+enable = true
+address = "localhost:9082"
+
+[state-sync]
+snapshot-interval = 0
+snapshot-keep-recent = 2

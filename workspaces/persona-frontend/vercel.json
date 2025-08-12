@@ -1,0 +1,23 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "regions": ["iad1"],
+  "cleanUrls": true,
+  "env": {
+    "NEXT_PUBLIC_REOWN_PROJECT_ID": "946b25b33d5bf1a42b32971e742ce05d",
+    "NEXT_PUBLIC_RPC_URL": "https://personachain-rpc-lb-1471567419.us-east-1.elb.amazonaws.com",
+    "NEXT_PUBLIC_API_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
+    "NEXT_PUBLIC_AUTH_API_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
+    "NEXT_PUBLIC_COMPUTE_URL": "https://lgx05f1fwg.execute-api.us-east-1.amazonaws.com/prod",
+    "NEXT_PUBLIC_ENVIRONMENT": "production",
+    "NEXTAUTH_URL": "https://personapass.xyz"
+  },
+  "functions": {
+    "pages/api/**/*.js": {
+      "maxDuration": 10
+    }
+  }
+}

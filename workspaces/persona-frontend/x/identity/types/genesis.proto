@@ -1,0 +1,16 @@
+syntax = "proto3";
+package personachain.identity;
+
+import "gogoproto/gogo.proto";
+import "personachain/identity/identity.proto";
+
+option go_package = "github.com/PersonaPass-ID/persona-chain/x/identity/types";
+
+// GenesisState defines the identity module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated Identity identities = 2 [(gogoproto.nullable) = false];
+  repeated Credential credentials = 3 [(gogoproto.nullable) = false];
+  repeated Revocation revocations = 4 [(gogoproto.nullable) = false];
+  repeated Verification verifications = 5 [(gogoproto.nullable) = false];
+}

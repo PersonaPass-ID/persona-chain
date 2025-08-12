@@ -1,0 +1,21 @@
+name = "PersonaPass Age Gate"
+type = "checkout_ui_extension"
+
+[[metafields]]
+namespace = "personapass"
+key = "verified"
+
+[settings]
+  [[settings.fields]]
+  key = "minimum_age"
+  type = "number"
+  name = "Minimum Age"
+  description = "Minimum age required for checkout"
+  default = 21
+  
+  [[settings.fields]]
+  key = "enabled"
+  type = "boolean"
+  name = "Enable Age Verification"
+  description = "Require age verification at checkout"
+  default = true

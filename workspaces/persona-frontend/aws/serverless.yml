@@ -1,0 +1,173 @@
+service: persona-identity-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'prod'}
+  environment:
+    # Supabase Configuration (replaces DynamoDB)
+    SUPABASE_URL: ${env:SUPABASE_URL, 'https://your-project.supabase.co'}
+    SUPABASE_SERVICE_ROLE_KEY: ${env:SUPABASE_SERVICE_ROLE_KEY, 'your-service-role-key'}
+    # PersonaChain Configuration  
+    BLOCKCHAIN_RPC_URL: https://rpc.personachain.io
+    # Authentication
+    JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY, 'persona-32-char-encryption-key-123'}
+    # Email/SMS Services
+    SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'your-sendgrid-api-key'}
+    SENDGRID_FROM_EMAIL: noreply@personapass.xyz
+    SNS_ACCESS_KEY_ID: ${env:SNS_ACCESS_KEY_ID, 'your-sns-access-key-id'}
+    SNS_SECRET_ACCESS_KEY: ${env:SNS_SECRET_ACCESS_KEY, 'your-sns-secret-access-key'}
+    AWS_SNS_REGION: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - sns:Publish
+          Resource: "*"
+
+functions:
+  createDID:
+    handler: src/lambda/create-did.handler
+    events:
+      - http:
+          path: /api/did/create
+          method: post
+          cors: true
+          
+  verifyCredential:
+    handler: src/lambda/verify-credential.handler
+    events:
+      - http:
+          path: /api/verify
+          method: post
+          cors: true
+          
+  issueCredential:
+    handler: src/lambda/issue-credential.handler
+    events:
+      - http:
+          path: /api/issue
+          method: post
+          cors: true
+          
+  getCredentials:
+    handler: src/lambda/get-credentials.handler
+    events:
+      - http:
+          path: /api/credentials/{walletAddress}
+          method: get
+          cors: true
+
+  healthCheck:
+    handler: src/lambda/health.handler
+    events:
+      - http:
+          path: /health
+          method: get
+          cors: true
+
+  # Email Verification Endpoints
+  startEmailVerification:
+    handler: src/lambda/email-verification-start.handler
+    events:
+      - http:
+          path: /issue-vc/email/start
+          method: post
+          cors: true
+
+  verifyEmailCode:
+    handler: src/lambda/email-verification-verify.handler
+    events:
+      - http:
+          path: /issue-vc/email/verify
+          method: post
+          cors: true
+
+  # Phone Verification Endpoints  
+  startPhoneVerification:
+    handler: src/lambda/phone-verification-start.handler
+    events:
+      - http:
+          path: /issue-vc/phone/start
+          method: post
+          cors: true
+
+  verifyPhoneCode:
+    handler: src/lambda/phone-verification-verify.handler
+    events:
+      - http:
+          path: /issue-vc/phone/verify
+          method: post
+          cors: true
+
+  # Password Authentication Endpoints
+  createAccount:
+    handler: src/lambda/auth-create-account.handler
+    events:
+      - http:
+          path: /auth/create-account
+          method: post
+          cors: true
+
+  loginAccount:
+    handler: src/lambda/auth-login.handler
+    events:
+      - http:
+          path: /auth/login
+          method: post
+          cors: true
+
+  verifyToken:
+    handler: src/lambda/auth-verify-token.handler
+    events:
+      - http:
+          path: /auth/verify-token
+          method: post
+          cors: true
+
+  # Wallet-based DID Operations
+  createWalletDID:
+    handler: src/lambda/create-wallet-did.handler
+    events:
+      - http:
+          path: /api/wallet/did/create
+          method: post
+          cors: true
+
+  getWalletCredentials:
+    handler: src/lambda/get-wallet-credentials.handler
+    events:
+      - http:
+          path: /api/wallet/credentials/{walletAddress}
+          method: get
+          cors: true
+
+  # Enhanced Credential Operations
+  enhancedCredentialOps:
+    handler: src/lambda/enhanced-credential-operations.handler
+    events:
+      - http:
+          path: /api/credentials/store
+          method: post
+          cors: true
+      - http:
+          path: /api/credentials/{walletAddress}/{credentialId}
+          method: get
+          cors: true
+      - http:
+          path: /api/credentials/analytics/{walletAddress}
+          method: get
+          cors: true
+      - http:
+          path: /api/credentials/backup/{walletAddress}
+          method: post
+          cors: true
+
+# DynamoDB resources removed - now using Supabase PostgreSQL
+# No AWS resources needed for database operations
+
+plugins:
+  - serverless-plugin-typescript

@@ -1,0 +1,16 @@
+{
+  "network": {
+    "name": "hardhat",
+    "chainId": 31337
+  },
+  "timestamp": "2025-08-06T19:02:03.415Z",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "pidToken": {
+    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "deploymentTx": "0x563cab6abd7520949f9e0fbab0eb9d0c4a2a3a8d36d1e18d935ce3185b3c9538",
+    "name": "PersonaID Token",
+    "symbol": "PID",
+    "decimals": 18,
+    "totalSupply": "100000000.0"
+  }
+}

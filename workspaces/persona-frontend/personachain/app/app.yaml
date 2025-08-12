@@ -1,0 +1,68 @@
+modules:
+  - name: runtime
+    config:
+      "@type": cosmos.app.runtime.v1alpha1.Module
+      app_name: PersonaChain
+      
+      begin_blockers: [upgrade, staking, did, credential, zkproof]
+      end_blockers: [staking, did, credential, zkproof]
+      init_genesis: [auth, bank, staking, genutil, upgrade, consensus, did, credential, zkproof]
+      export_genesis: [zkproof, credential, did, consensus, upgrade, staking, bank, auth, genutil]
+      
+      override_store_keys:
+        - module_name: auth
+          kv_store_key: acc
+      
+  - name: auth
+    config:
+      "@type": cosmos.auth.module.v1.Module
+      bech32_prefix: persona
+      module_account_permissions:
+        - account: fee_collector
+        - account: bonded_tokens_pool
+          permissions: [burner, staking]
+        - account: not_bonded_tokens_pool
+          permissions: [burner, staking]
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: bank
+    config:
+      "@type": cosmos.bank.module.v1.Module
+      blocked_module_accounts_override: [fee_collector, bonded_tokens_pool, not_bonded_tokens_pool]
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: staking
+    config:
+      "@type": cosmos.staking.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: genutil
+    config:
+      "@type": cosmos.genutil.module.v1.Module
+
+  - name: upgrade
+    config:
+      "@type": cosmos.upgrade.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: consensus
+    config:
+      "@type": cosmos.consensus.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  # PersonaChain Custom Modules
+  - name: did
+    config:
+      "@type": personahq.personachain.did.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: credential
+    config:
+      "@type": personahq.personachain.credential.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+
+  - name: zkproof
+    config:
+      "@type": personahq.personachain.zkproof.module.v1.Module
+      # Authority is handled programmatically via authtypes.NewModuleAddress("gov") in app.go
+

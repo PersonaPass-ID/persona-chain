@@ -1,0 +1,29 @@
+
+> @persona-hq/issuer-service@1.0.0 start:prod
+> node dist/main
+
+
+  #  node[99763]: void node::fs::InternalModuleStat(const v8::FunctionCallbackInfo<v8::Value>&) at ../src/node_file.cc:1050
+  #  Assertion failed: (args.Length()) >= (2)
+
+----- Native stack trace -----
+
+ 1: 0xf6ea57 node::Assert(node::AssertionInfo const&) [node]
+ 2: 0xf752d7  [node]
+ 3: 0x7ae577e0f5e2 
+
+----- JavaScript stack trace -----
+
+1: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:34535
+2: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:34176
+3: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:34506
+4: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:173374
+5: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:173420
+6: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:173521
+7: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:258942
+8: /home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:261569
+9: e (/home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:262673)
+10: get (/home/rocz/persona-hq/workspaces/issuer-service/node_modules/esm/esm.js:1:262740)
+
+
+Aborted (core dumped)

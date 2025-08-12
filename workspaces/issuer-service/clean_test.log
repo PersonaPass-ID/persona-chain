@@ -1,0 +1,17 @@
+
+> @persona-hq/issuer-service@1.0.0 start:prod
+> node dist/main
+
+[32m[Nest] 103241  - [39m07/27/2025, 5:57:58 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[31m[Nest] 103241  - [39m07/27/2025, 5:57:58 PM [31m  ERROR[39m [38;5;3m[ExceptionHandler] [39m[31mConfig validation error: "VERAMO_DB_ENCRYPTION_KEY" is required[39m
+Error: Config validation error: "VERAMO_DB_ENCRYPTION_KEY" is required
+    at ConfigModule.forRoot (/home/rocz/persona-hq/workspaces/issuer-service/node_modules/@nestjs/config/dist/config.module.js:86:23)
+    at Object.<anonymous> (/home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:164:35)
+    at __webpack_require__ (/home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:3016:42)
+    at Object.<anonymous> (/home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:18:22)
+    at __webpack_require__ (/home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:3016:42)
+    at /home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:3027:37
+    at Object.<anonymous> (/home/rocz/persona-hq/workspaces/issuer-service/dist/main.js:3029:12)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)

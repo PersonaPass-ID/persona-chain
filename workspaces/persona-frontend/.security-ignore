@@ -1,0 +1,10 @@
+# Security check ignore patterns
+# These are false positives that should be ignored
+
+# API key interface definitions and props (not actual secrets)
+src/components/merchant-dashboard.tsx:apiKey prop
+src/lib/personapass-sdk.ts:apiKey interface
+
+# Example/demo code
+**/examples/**
+**/demo/**

@@ -1,0 +1,75 @@
+# PersonaPass Minimal Lambda Deployment - TOTP ONLY
+service: personapass-minimal
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: prod
+  memorySize: 512
+  timeout: 30
+  environment:
+    SUPABASE_URL: ${env:SUPABASE_URL}
+    SUPABASE_SERVICE_ROLE_KEY: ${env:SUPABASE_SERVICE_ROLE_KEY}
+    SESSION_SECRET: ${env:SESSION_SECRET}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY}
+    RATE_LIMIT_MAX_REQUESTS: 100
+    RATE_LIMIT_WINDOW_MS: 900000
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: '*'
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    target: 'node18'
+    exclude:
+      - '@aws-sdk/*'
+      - speakeasy
+      - qrcode
+      - node-forge
+      - uuid
+    external:
+      - '@aws-sdk/*'
+      - speakeasy
+      - qrcode
+      - node-forge
+      - uuid
+
+functions:
+  # TOTP Setup Function
+  totpSetup:
+    handler: src/lambda/totp-setup.handler
+    name: personapass-totp-setup-${self:provider.stage}
+    description: Generate TOTP secrets and QR codes for Google Authenticator
+    url: true
+    events:
+      - http:
+          path: totp/setup
+          method: post
+          cors: true
+    environment:
+      FUNCTION_NAME: totp-setup
+
+package:
+  exclude:
+    - node_modules/**
+    - .git/**
+    - .gitignore
+    - README.md
+    - .env*
+    - test/**
+    - tests/**
+    - '*.test.js'
+    - '*.test.ts'
