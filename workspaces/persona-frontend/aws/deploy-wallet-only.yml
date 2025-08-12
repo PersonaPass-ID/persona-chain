@@ -1,0 +1,143 @@
+# PersonaPass AWS Lambda Deployment - WALLET ONLY (NO OAUTH)
+service: personapass-wallet-auth
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: prod
+  memorySize: 512
+  timeout: 30
+  environment:
+    SUPABASE_URL: ${env:SUPABASE_URL}
+    SUPABASE_SERVICE_ROLE_KEY: ${env:SUPABASE_SERVICE_ROLE_KEY}
+    SESSION_SECRET: ${env:SESSION_SECRET}
+    ENCRYPTION_KEY: ${env:ENCRYPTION_KEY}
+    RATE_LIMIT_MAX_REQUESTS: 100
+    RATE_LIMIT_WINDOW_MS: 900000
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: '*'
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    target: 'node18'
+    exclude:
+      - '@aws-sdk/*'
+    external:
+      - '@aws-sdk/*'
+      - speakeasy
+      - qrcode
+      - node-forge
+      - uuid
+
+functions:
+  # TOTP Setup Function
+  totpSetup:
+    handler: src/lambda/totp-setup.handler
+    name: personapass-totp-setup-${self:provider.stage}
+    description: Generate TOTP secrets and QR codes for Google Authenticator
+    url: true
+    cors:
+      origin: '*'
+      headers:
+        - Content-Type
+        - Authorization
+      methods:
+        - POST
+        - OPTIONS
+    environment:
+      FUNCTION_NAME: totp-setup
+
+  # TOTP Verification Function (Updated name to match our file)
+  totpVerifySetup:
+    handler: src/lambda/totp-verify-setup.handler
+    name: personapass-totp-verify-${self:provider.stage}
+    description: Verify TOTP codes from Google Authenticator
+    url: true
+    cors:
+      origin: '*'
+      headers:
+        - Content-Type
+        - Authorization
+      methods:
+        - POST
+        - OPTIONS
+    environment:
+      FUNCTION_NAME: totp-verify-setup
+
+  # Session Create Function
+  sessionCreate:
+    handler: src/lambda/session-create.handler
+    name: personapass-session-create-${self:provider.stage}
+    description: Create authenticated sessions for users
+    url: true
+    cors:
+      origin: '*'
+      headers:
+        - Content-Type
+        - Authorization
+      methods:
+        - POST
+        - OPTIONS
+    environment:
+      FUNCTION_NAME: session-create
+
+  # Session Validate Function
+  sessionValidate:
+    handler: src/lambda/session-validate.handler
+    name: personapass-session-validate-${self:provider.stage}
+    description: Validate and refresh user sessions
+    url: true
+    cors:
+      origin: '*'
+      headers:
+        - Content-Type
+        - Authorization
+      methods:
+        - POST
+        - OPTIONS
+    environment:
+      FUNCTION_NAME: session-validate
+
+  # Session Revoke Function
+  sessionRevoke:
+    handler: src/lambda/session-revoke.handler
+    name: personapass-session-revoke-${self:provider.stage}
+    description: Revoke user sessions and handle logout
+    url: true
+    cors:
+      origin: '*'
+      headers:
+        - Content-Type
+        - Authorization
+      methods:
+        - POST
+        - OPTIONS
+    environment:
+      FUNCTION_NAME: session-revoke
+
+package:
+  exclude:
+    - node_modules/**
+    - .git/**
+    - .gitignore
+    - README.md
+    - .env*
+    - test/**
+    - tests/**
+    - '*.test.js'
+    - '*.test.ts'

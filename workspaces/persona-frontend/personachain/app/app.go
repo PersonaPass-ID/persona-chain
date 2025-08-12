@@ -61,6 +61,22 @@ import (
 const (
 	AccountAddressPrefix = "persona"
 	Name                 = "personachain"
+
+	// Bech32MainPrefix defines the main SDK Bech32 prefix of an account's address
+	Bech32MainPrefix = "persona"
+
+	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
+	Bech32PrefixAccAddr = Bech32MainPrefix
+	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
+	Bech32PrefixAccPub = Bech32MainPrefix + "pub"
+	// Bech32PrefixValAddr defines the Bech32 prefix of a validator's operator address
+	Bech32PrefixValAddr = Bech32MainPrefix + "valoper"
+	// Bech32PrefixValPub defines the Bech32 prefix of a validator's operator public key
+	Bech32PrefixValPub = Bech32MainPrefix + "valoperpub"
+	// Bech32PrefixConsAddr defines the Bech32 prefix of a consensus node address
+	Bech32PrefixConsAddr = Bech32MainPrefix + "valcons"
+	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key
+	Bech32PrefixConsPub = Bech32MainPrefix + "valconspub"
 )
 
 var (
@@ -186,7 +202,9 @@ func NewPersonaChainAppNew(
 		memKeys:           memKeys,
 	}
 
-	authority := authtypes.NewModuleAddress("gov")
+	// Create authority address with proper bech32 encoding
+	govModuleAddr := authtypes.NewModuleAddress("gov")
+	authority := sdk.MustBech32ifyAddressBytes(AccountAddressPrefix, govModuleAddr)
 
 	// Initialize keepers  
 	app.AuthKeeper = authkeeper.NewAccountKeeper(
@@ -196,7 +214,7 @@ func NewPersonaChainAppNew(
 		maccPerms,
 		authcodec.NewBech32Codec(AccountAddressPrefix),
 		AccountAddressPrefix,
-		authority.String(),
+		authority,
 	)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
@@ -204,7 +222,7 @@ func NewPersonaChainAppNew(
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AuthKeeper,
 		BlockedModuleAccountAddrs(),
-		authority.String(),
+		authority,
 		logger,
 	)
 
@@ -213,7 +231,7 @@ func NewPersonaChainAppNew(
 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
 		app.AuthKeeper,
 		app.BankKeeper,
-		authority.String(),
+		authority,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
@@ -224,13 +242,13 @@ func NewPersonaChainAppNew(
 		appCodec,
 		DefaultNodeHome,
 		app.BaseApp,
-		authority.String(),
+		authority,
 	)
 
 	app.ConsensusKeeper = consensuskeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[consensustypes.StoreKey]),
-		authority.String(),
+		authority,
 		runtime.EventService{},
 	)
 
@@ -244,13 +262,13 @@ func NewPersonaChainAppNew(
 		logger,
 		app.BankKeeper,
 		app.AuthKeeper,
-		authority.String(),
+		authority,
 	)
 
 	app.CredentialKeeper = *credentialkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[credentialtypes.StoreKey]),
-		authority.String(),
+		authority,
 		app.AuthKeeper,
 		app.BankKeeper,
 	)
@@ -258,7 +276,7 @@ func NewPersonaChainAppNew(
 	app.ZKProofKeeper = *zkproofkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[zkprooftypes.StoreKey]),
-		authority.String(),
+		authority,
 		app.AuthKeeper,
 		app.BankKeeper,
 		&app.DIDKeeper,

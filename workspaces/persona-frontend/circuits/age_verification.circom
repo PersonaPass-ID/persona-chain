@@ -1,12 +1,10 @@
-pragma circom 2.0.0;
-
 // PersonaPass Enhanced Zero-Knowledge Age Verification Circuit
 // Proves age >= minimum without revealing exact birthdate or current date
 // Includes nullifier to prevent double-spending and privacy-preserving commitment
 
-include "circomlib/circuits/comparators.circom";
-include "circomlib/circuits/mimc.circom";
-include "circomlib/circuits/poseidon.circom";
+include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/mimc.circom";
+include "../node_modules/circomlib/circuits/poseidon.circom";
 
 template AgeVerification() {
     // Private inputs (never revealed on-chain)

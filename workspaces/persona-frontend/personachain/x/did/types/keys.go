@@ -22,6 +22,10 @@ const (
 
 	// DIDCountKey is the key for storing the total count of DIDs
 	DIDCountKey = "did_count"
+
+	// Authentication method prefixes
+	AuthMethodPrefix = "auth_method:"
+	AuthMethodByDIDPrefix = "auth_method_by_did:"
 )
 
 // DIDKey creates a store key for a DID by ID
@@ -133,4 +137,49 @@ func ExtractHashFromDID(didID string) string {
 		return parts[2]
 	}
 	return ""
+}
+
+// Authentication method key functions
+
+// AuthMethodKey creates a store key for an authentication method
+func AuthMethodKey(did, methodID string) []byte {
+	return []byte(AuthMethodPrefix + did + ":" + methodID)
+}
+
+// AuthMethodByDIDKey creates a prefix key for all auth methods of a DID
+func AuthMethodByDIDKey(did string) []byte {
+	return []byte(AuthMethodByDIDPrefix + did + ":")
+}
+
+// AuthMethodByDIDPrefixKey returns the prefix for auth method iteration by DID
+func AuthMethodByDIDPrefixKey(did string) []byte {
+	return []byte(AuthMethodByDIDPrefix + did + ":")
+}
+
+// GetAuthMethodDIDFromKey extracts the DID from an auth method key
+func GetAuthMethodDIDFromKey(key []byte) string {
+	prefixLen := len(AuthMethodPrefix)
+	if len(key) <= prefixLen {
+		return ""
+	}
+	keyStr := string(key[prefixLen:])
+	parts := strings.Split(keyStr, ":")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[0]
+}
+
+// GetAuthMethodIDFromKey extracts the method ID from an auth method key
+func GetAuthMethodIDFromKey(key []byte) string {
+	prefixLen := len(AuthMethodPrefix)
+	if len(key) <= prefixLen {
+		return ""
+	}
+	keyStr := string(key[prefixLen:])
+	parts := strings.Split(keyStr, ":")
+	if len(parts) < 2 {
+		return ""
+	}
+	return parts[1]
 }

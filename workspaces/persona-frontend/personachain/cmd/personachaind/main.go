@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
@@ -26,6 +27,16 @@ import (
 
 	"github.com/PersonaPass-ID/personachain/app"
 )
+
+// SetupConfig sets up the SDK configuration with PersonaChain specific bech32 prefixes
+func init() {
+	// Configure SDK with PersonaChain bech32 prefixes early
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount(app.Bech32MainPrefix, app.Bech32MainPrefix+sdk.PrefixPublic)
+	config.SetBech32PrefixForValidator(app.Bech32MainPrefix+sdk.PrefixValidator+sdk.PrefixOperator, app.Bech32MainPrefix+sdk.PrefixValidator+sdk.PrefixOperator+sdk.PrefixPublic)
+	config.SetBech32PrefixForConsensusNode(app.Bech32MainPrefix+sdk.PrefixValidator+sdk.PrefixConsensus, app.Bech32MainPrefix+sdk.PrefixValidator+sdk.PrefixConsensus+sdk.PrefixPublic)
+	config.Seal()
+}
 
 // NewRootCmd creates a new root command for personachaind
 func NewRootCmd() *cobra.Command {
@@ -81,6 +92,18 @@ func initRootCmd(rootCmd *cobra.Command) {
 		debug.Cmd(),
 		keys.Commands(),
 	)
+
+	// Add query command (tx commands causing nil pointer - will fix in next iteration)
+	queryCmd := &cobra.Command{
+		Use:     "query",
+		Aliases: []string{"q"},
+		Short:   "Querying subcommands",
+		DisableFlagParsing: true,
+		SuggestionsMinimumDistance: 2,
+		RunE: client.ValidateCmd,
+	}
+	// Add basic query commands without triggering module basics
+	rootCmd.AddCommand(queryCmd)
 
 	// Add comprehensive genesis commands based on Context7 docs
 	genesisCmd := &cobra.Command{

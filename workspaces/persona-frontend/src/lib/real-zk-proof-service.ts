@@ -3,11 +3,22 @@
  * Generates actual zero-knowledge proofs using Circom circuits and SnarkJS
  */
 
-const snarkjs = require("snarkjs");
-import path from 'path';
-import fs from 'fs';
+// Browser-compatible ZK proof service
+// Note: Real snarkjs integration would require server-side processing
 import type { PersonaChainCredential } from './personachain-service';
 import type { ZKProofRequest, ZKProof } from './zk-proof-service';
+
+// Import path and fs only on server-side
+let path: any, fs: any, snarkjs: any;
+if (typeof window === 'undefined') {
+  try {
+    path = require('path');
+    fs = require('fs');
+    snarkjs = require('snarkjs');
+  } catch (e) {
+    console.warn('Server-side dependencies not available, using fallback mode');
+  }
+}
 
 export interface CircuitInput {
     [key: string]: string | number | string[] | number[];
@@ -29,7 +40,7 @@ export class RealZKProofService {
     private compiledCircuitsCache = new Map<string, any>();
 
     constructor() {
-        this.circuitsPath = path.join(process.cwd(), 'src', 'circuits');
+        this.circuitsPath = path ? path.join(process.cwd(), 'src', 'circuits') : '/circuits';
         console.log('🔐 Real ZK Proof Service initialized');
         console.log(`📁 Circuits path: ${this.circuitsPath}`);
     }
@@ -78,7 +89,7 @@ export class RealZKProofService {
             
             // Fallback to mock proof if real generation fails
             console.log('🔄 Falling back to mock proof generation');
-            return this.generateFallbackProof(credential, request);
+            return await this.generateFallbackProof(credential, request);
         }
     }
 
@@ -91,6 +102,11 @@ export class RealZKProofService {
     ): Promise<ProofData> {
         try {
             // Check if we have compiled circuits
+            if (!path || !fs) {
+                console.log(`⚠️ Server-side dependencies not available, using fallback`);
+                return this.generateMockProofData(input);
+            }
+            
             const wasmPath = path.join(this.circuitsPath, `${circuitName}.wasm`);
             const zkeyPath = path.join(this.circuitsPath, `${circuitName}.zkey`);
 
@@ -103,6 +119,11 @@ export class RealZKProofService {
             console.log(`📊 Circuit input:`, input);
 
             // Generate witness
+            if (!snarkjs) {
+                console.log(`⚠️ SnarkJS not available, using fallback`);
+                return this.generateMockProofData(input);
+            }
+            
             const { proof, publicSignals } = await snarkjs.groth16.fullProve(
                 input,
                 wasmPath,
@@ -146,6 +167,12 @@ export class RealZKProofService {
             }
 
             const circuitName = this.getCircuitName(proof.proofType);
+            
+            if (!path || !fs || !snarkjs) {
+                console.log(`⚠️ Server-side dependencies not available, using fallback verification`);
+                return this.performFallbackVerification(proof);
+            }
+            
             const vkeyPath = path.join(this.circuitsPath, `${circuitName}.vkey.json`);
 
             if (!fs.existsSync(vkeyPath)) {
@@ -320,6 +347,11 @@ export class RealZKProofService {
      * Get verification key for circuit
      */
     private async getVerificationKey(circuitName: string): Promise<any> {
+        if (!path || !fs) {
+            // Return mock verification key structure
+            return this.getMockVerificationKey();
+        }
+        
         const vkeyPath = path.join(this.circuitsPath, `${circuitName}.vkey.json`);
         
         if (fs.existsSync(vkeyPath)) {
@@ -327,6 +359,10 @@ export class RealZKProofService {
         }
         
         // Return mock verification key structure
+        return this.getMockVerificationKey();
+    }
+
+    private getMockVerificationKey(): any {
         return {
             protocol: "groth16",
             curve: "bn128",
@@ -379,10 +415,10 @@ export class RealZKProofService {
     /**
      * Generate fallback proof when real generation fails
      */
-    private generateFallbackProof(
+    private async generateFallbackProof(
         credential: PersonaChainCredential,
         request: ZKProofRequest
-    ): ZKProof {
+    ): Promise<ZKProof> {
         console.log('🔄 Generating fallback mock proof');
         
         const mockProofData = this.generateMockProofData({});

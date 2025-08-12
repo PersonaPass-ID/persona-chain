@@ -7,10 +7,13 @@ import (
 )
 
 const (
-	TypeMsgCreateDID     = "create_did"
-	TypeMsgUpdateDID     = "update_did"
-	TypeMsgDeactivateDID = "deactivate_did"
-	TypeMsgUpdateParams  = "update_params"
+	TypeMsgCreateDID       = "create_did"
+	TypeMsgUpdateDID       = "update_did"
+	TypeMsgDeactivateDID   = "deactivate_did"
+	TypeMsgUpdateParams    = "update_params"
+	TypeMsgLinkAuthMethod  = "link_auth_method"
+	TypeMsgUnlinkAuthMethod = "unlink_auth_method"
+	TypeMsgUpdateAuthMethod = "update_auth_method"
 )
 
 var (
@@ -18,6 +21,9 @@ var (
 	_ sdk.Msg = &MsgUpdateDID{}
 	_ sdk.Msg = &MsgDeactivateDID{}
 	_ sdk.Msg = &MsgUpdateParams{}
+	_ sdk.Msg = &MsgLinkAuthMethod{}
+	_ sdk.Msg = &MsgUnlinkAuthMethod{}
+	_ sdk.Msg = &MsgUpdateAuthMethod{}
 )
 
 // MsgCreateDID defines the message for creating a new DID
@@ -221,3 +227,182 @@ func (m *MsgUpdateParamsResponse) ProtoMessage()  {}
 func (m *MsgUpdateParamsResponse) Reset()         { *m = MsgUpdateParamsResponse{} }
 func (m *MsgUpdateParamsResponse) String() string { return proto.CompactTextString(m) }
 func (m *MsgUpdateParamsResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateParamsResponse" }
+
+// MsgLinkAuthMethod defines the message for linking an authentication method to a DID
+type MsgLinkAuthMethod struct {
+	DID            string `json:"did"`
+	MethodID       string `json:"method_id"`
+	MethodType     string `json:"method_type"`     // "totp", "oauth_microsoft", etc.
+	PublicKeyHash  string `json:"public_key_hash"` // SHA-256 hash of secret or OAuth attestation
+	Attestation    string `json:"attestation"`     // Optional: signed attestation for OAuth
+	IsPrimary      bool   `json:"is_primary"`      // Whether this is the primary auth method
+	Signer         string `json:"signer"`          // Must be DID controller
+}
+
+func NewMsgLinkAuthMethod(did, methodID, methodType, publicKeyHash, attestation string, isPrimary bool, signer string) *MsgLinkAuthMethod {
+	return &MsgLinkAuthMethod{
+		DID:           did,
+		MethodID:      methodID,
+		MethodType:    methodType,
+		PublicKeyHash: publicKeyHash,
+		Attestation:   attestation,
+		IsPrimary:     isPrimary,
+		Signer:        signer,
+	}
+}
+
+func (msg MsgLinkAuthMethod) Route() string { return RouterKey }
+func (msg MsgLinkAuthMethod) Type() string  { return TypeMsgLinkAuthMethod }
+
+func (msg MsgLinkAuthMethod) ValidateBasic() error {
+	if msg.DID == "" {
+		return ErrInvalidDID
+	}
+	if msg.MethodID == "" {
+		return ErrInvalidMethodID
+	}
+	if msg.MethodType == "" {
+		return ErrInvalidMethodType
+	}
+	if msg.PublicKeyHash == "" {
+		return ErrInvalidPublicKeyHash
+	}
+	if msg.Signer == "" {
+		return ErrInvalidController
+	}
+	return nil
+}
+
+func (msg MsgLinkAuthMethod) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.Signer)
+	return []sdk.AccAddress{addr}
+}
+
+func (msg MsgLinkAuthMethod) GetSignBytes() []byte {
+	bz, _ := json.Marshal(msg)
+	return sdk.MustSortJSON(bz)
+}
+
+func (m *MsgLinkAuthMethod) ProtoMessage()  {}
+func (m *MsgLinkAuthMethod) Reset()         { *m = MsgLinkAuthMethod{} }
+func (m *MsgLinkAuthMethod) String() string { return proto.CompactTextString(m) }
+func (m *MsgLinkAuthMethod) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgLinkAuthMethod" }
+
+type MsgLinkAuthMethodResponse struct {
+	MethodID string `json:"method_id"`
+}
+
+func (m *MsgLinkAuthMethodResponse) ProtoMessage()  {}
+func (m *MsgLinkAuthMethodResponse) Reset()         { *m = MsgLinkAuthMethodResponse{} }
+func (m *MsgLinkAuthMethodResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgLinkAuthMethodResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgLinkAuthMethodResponse" }
+
+// MsgUnlinkAuthMethod defines the message for unlinking an authentication method from a DID
+type MsgUnlinkAuthMethod struct {
+	DID      string `json:"did"`
+	MethodID string `json:"method_id"`
+	Signer   string `json:"signer"` // Must be DID controller
+}
+
+func NewMsgUnlinkAuthMethod(did, methodID, signer string) *MsgUnlinkAuthMethod {
+	return &MsgUnlinkAuthMethod{
+		DID:      did,
+		MethodID: methodID,
+		Signer:   signer,
+	}
+}
+
+func (msg MsgUnlinkAuthMethod) Route() string { return RouterKey }
+func (msg MsgUnlinkAuthMethod) Type() string  { return TypeMsgUnlinkAuthMethod }
+
+func (msg MsgUnlinkAuthMethod) ValidateBasic() error {
+	if msg.DID == "" {
+		return ErrInvalidDID
+	}
+	if msg.MethodID == "" {
+		return ErrInvalidMethodID
+	}
+	if msg.Signer == "" {
+		return ErrInvalidController
+	}
+	return nil
+}
+
+func (msg MsgUnlinkAuthMethod) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.Signer)
+	return []sdk.AccAddress{addr}
+}
+
+func (msg MsgUnlinkAuthMethod) GetSignBytes() []byte {
+	bz, _ := json.Marshal(msg)
+	return sdk.MustSortJSON(bz)
+}
+
+func (m *MsgUnlinkAuthMethod) ProtoMessage()  {}
+func (m *MsgUnlinkAuthMethod) Reset()         { *m = MsgUnlinkAuthMethod{} }
+func (m *MsgUnlinkAuthMethod) String() string { return proto.CompactTextString(m) }
+func (m *MsgUnlinkAuthMethod) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUnlinkAuthMethod" }
+
+type MsgUnlinkAuthMethodResponse struct{}
+
+func (m *MsgUnlinkAuthMethodResponse) ProtoMessage()  {}
+func (m *MsgUnlinkAuthMethodResponse) Reset()         { *m = MsgUnlinkAuthMethodResponse{} }
+func (m *MsgUnlinkAuthMethodResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgUnlinkAuthMethodResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUnlinkAuthMethodResponse" }
+
+// MsgUpdateAuthMethod defines the message for updating an authentication method
+type MsgUpdateAuthMethod struct {
+	DID       string `json:"did"`
+	MethodID  string `json:"method_id"`
+	IsPrimary bool   `json:"is_primary"`
+	IsActive  bool   `json:"is_active"`
+	Signer    string `json:"signer"` // Must be DID controller
+}
+
+func NewMsgUpdateAuthMethod(did, methodID string, isPrimary, isActive bool, signer string) *MsgUpdateAuthMethod {
+	return &MsgUpdateAuthMethod{
+		DID:       did,
+		MethodID:  methodID,
+		IsPrimary: isPrimary,
+		IsActive:  isActive,
+		Signer:    signer,
+	}
+}
+
+func (msg MsgUpdateAuthMethod) Route() string { return RouterKey }
+func (msg MsgUpdateAuthMethod) Type() string  { return TypeMsgUpdateAuthMethod }
+
+func (msg MsgUpdateAuthMethod) ValidateBasic() error {
+	if msg.DID == "" {
+		return ErrInvalidDID
+	}
+	if msg.MethodID == "" {
+		return ErrInvalidMethodID
+	}
+	if msg.Signer == "" {
+		return ErrInvalidController
+	}
+	return nil
+}
+
+func (msg MsgUpdateAuthMethod) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.Signer)
+	return []sdk.AccAddress{addr}
+}
+
+func (msg MsgUpdateAuthMethod) GetSignBytes() []byte {
+	bz, _ := json.Marshal(msg)
+	return sdk.MustSortJSON(bz)
+}
+
+func (m *MsgUpdateAuthMethod) ProtoMessage()  {}
+func (m *MsgUpdateAuthMethod) Reset()         { *m = MsgUpdateAuthMethod{} }
+func (m *MsgUpdateAuthMethod) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateAuthMethod) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateAuthMethod" }
+
+type MsgUpdateAuthMethodResponse struct{}
+
+func (m *MsgUpdateAuthMethodResponse) ProtoMessage()  {}
+func (m *MsgUpdateAuthMethodResponse) Reset()         { *m = MsgUpdateAuthMethodResponse{} }
+func (m *MsgUpdateAuthMethodResponse) String() string { return proto.CompactTextString(m) }
+func (m *MsgUpdateAuthMethodResponse) XXX_MessageName() string { return "personahq.personachain.did.v1.MsgUpdateAuthMethodResponse" }

@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -169,6 +170,7 @@ type ModuleInputs struct {
 	Cdc          codec.Codec
 	StoreService store.KVStoreService
 	Logger       log.Logger
+	Authority    string `optional:"true"`
 
 	AccountKeeper types.AccountKeeper
 	BankKeeper    types.BankKeeper
@@ -185,7 +187,12 @@ type ModuleOutputs struct {
 
 // ProvideModule provides the zkproof module for dependency injection.
 func ProvideModule(in ModuleInputs) ModuleOutputs {
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn" // TODO: get from governance module
+	// Use provided authority or default to governance module address
+	authority := in.Authority
+	if authority == "" {
+		// Default to governance module authority - will be provided by app wiring
+		authority = authtypes.NewModuleAddress("gov").String()
+	}
 
 	k := keeper.NewKeeper(
 		in.Cdc,

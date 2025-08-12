@@ -47,6 +47,17 @@ type Service struct {
 	ServiceEndpoint []string `json:"serviceEndpoint"`
 }
 
+// AuthMethod represents an authentication method linked to a DID
+type AuthMethod struct {
+	MethodID      string    `json:"method_id"`
+	MethodType    string    `json:"method_type"`    // "totp", "oauth_microsoft", etc.
+	PublicKeyHash string    `json:"public_key_hash"` // SHA-256 hash of secret or OAuth attestation
+	Attestation   string    `json:"attestation"`     // Optional: signed attestation for OAuth
+	LinkedAt      time.Time `json:"linked_at"`
+	IsActive      bool      `json:"is_active"`
+	IsPrimary     bool      `json:"is_primary"`
+}
+
 
 // DIDMetadata contains metadata about a DID
 type DIDMetadata struct {
@@ -68,6 +79,10 @@ func (m *VerificationMethod) String() string { return proto.CompactTextString(m)
 func (m *Service) ProtoMessage()  {}
 func (m *Service) Reset()         { *m = Service{} }
 func (m *Service) String() string { return proto.CompactTextString(m) }
+
+func (m *AuthMethod) ProtoMessage()  {}
+func (m *AuthMethod) Reset()         { *m = AuthMethod{} }
+func (m *AuthMethod) String() string { return proto.CompactTextString(m) }
 
 
 func (m *DIDMetadata) ProtoMessage()  {}

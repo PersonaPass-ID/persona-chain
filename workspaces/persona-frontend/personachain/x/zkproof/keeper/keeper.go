@@ -47,6 +47,9 @@ type Keeper struct {
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
 	didKeeper     types.DIDKeeper
+
+	// ZK Verification Service
+	zkVerificationService *ZKVerificationService
 }
 
 func NewKeeper(
@@ -87,6 +90,9 @@ func NewKeeper(
 		// Parameters
 		Params: collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
+
+	// Initialize ZK verification service
+	k.zkVerificationService = NewZKVerificationService(k)
 
 	schema, err := sb.Build()
 	if err != nil {
@@ -130,6 +136,11 @@ func (k Keeper) GetStoreKey() store.KVStoreService {
 // GetCodec returns the codec.
 func (k Keeper) GetCodec() codec.BinaryCodec {
 	return k.cdc
+}
+
+// GetZKVerificationService returns the ZK verification service.
+func (k Keeper) GetZKVerificationService() *ZKVerificationService {
+	return k.zkVerificationService
 }
 
 // Circuit operations
@@ -271,24 +282,54 @@ func (k Keeper) GetProof(ctx context.Context, id string) (types.ZKProof, error) 
 	return k.Proofs.Get(ctx, id)
 }
 
-// performProofVerification performs the actual proof verification logic.
+// performProofVerification performs the actual proof verification logic using cryptographic verification.
 func (k Keeper) performProofVerification(ctx context.Context, proof types.ZKProof, circuit types.Circuit) (bool, error) {
-	// This is where we would implement the actual zero-knowledge proof verification
-	// For now, we'll do basic checks and assume verification passes
-	
-	// Check proof data is not empty
-	if len(proof.ProofData) == 0 {
-		return false, types.ErrInvalidProof.Wrap("proof data is empty")
+	logger := k.Logger(ctx)
+	logger.Info("starting cryptographic proof verification",
+		"proof_id", proof.Id,
+		"circuit_id", circuit.Id,
+		"proof_type", proof.ProofType,
+	)
+
+	// Pre-verification compatibility check
+	if err := k.zkVerificationService.ValidateCircuitCompatibility(proof, circuit); err != nil {
+		logger.Error("circuit compatibility validation failed", "error", err)
+		return false, err
 	}
 
-	// Check public inputs are provided if required
-	if circuit.RequiresPublicInputs && len(proof.PublicInputs) == 0 {
-		return false, types.ErrInvalidProof.Wrap("public inputs required but not provided")
-	}
+	// Perform cryptographic verification based on proof type
+	switch proof.ProofType {
+	case types.ProofTypeGroth16:
+		logger.Info("performing Groth16 verification", "proof_id", proof.Id)
+		verified, err := k.zkVerificationService.VerifyGroth16Proof(ctx, proof, circuit)
+		if err != nil {
+			logger.Error("Groth16 verification failed", "error", err, "proof_id", proof.Id)
+			return false, err
+		}
+		
+		if verified {
+			logger.Info("Groth16 proof verification successful", "proof_id", proof.Id)
+		} else {
+			logger.Warn("Groth16 proof verification failed", "proof_id", proof.Id)
+		}
+		return verified, nil
 
-	// For demo purposes, we'll consider all proofs valid if they pass basic checks
-	// In a real implementation, this would use cryptographic verification libraries
-	return true, nil
+	case types.ProofTypePLONK:
+		logger.Warn("PLONK verification not yet implemented", "proof_id", proof.Id)
+		return false, types.ErrInvalidProofType.Wrap("PLONK verification not yet implemented")
+
+	case types.ProofTypeSTARK:
+		logger.Warn("STARK verification not yet implemented", "proof_id", proof.Id)
+		return false, types.ErrInvalidProofType.Wrap("STARK verification not yet implemented")
+
+	case types.ProofTypeBulletproof:
+		logger.Warn("Bulletproof verification not yet implemented", "proof_id", proof.Id)
+		return false, types.ErrInvalidProofType.Wrap("Bulletproof verification not yet implemented")
+
+	default:
+		logger.Error("unknown proof type", "proof_type", proof.ProofType, "proof_id", proof.Id)
+		return false, types.ErrInvalidProofType.Wrapf("unsupported proof type: %s", proof.ProofType)
+	}
 }
 
 // Proof Request operations

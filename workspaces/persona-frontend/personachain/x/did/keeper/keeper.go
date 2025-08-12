@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -356,4 +357,228 @@ func (k Keeper) GetDIDDocument(ctx context.Context, did string) (interface{}, er
 // ResolveDID resolves a DID to its document (for ZK proof keeper interface)
 func (k Keeper) ResolveDID(ctx context.Context, did string) (interface{}, error) {
 	return k.GetDIDDocument(ctx, did)
+}
+
+// Authentication method operations
+
+// LinkAuthMethod links an authentication method to a DID
+func (k Keeper) LinkAuthMethod(ctx context.Context, msg *types.MsgLinkAuthMethod) (*types.MsgLinkAuthMethodResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Validate DID exists and is active
+	didDoc, found := k.GetDID(sdkCtx, msg.DID)
+	if !found {
+		return nil, types.ErrDIDNotFound
+	}
+	if didDoc.Deactivated {
+		return nil, types.ErrDIDDeactivated
+	}
+
+	// Validate signer is DID controller
+	_, err := sdk.AccAddressFromBech32(msg.Signer)
+	if err != nil {
+		return nil, types.ErrInvalidController
+	}
+
+	// Check if auth method already exists
+	store := sdkCtx.KVStore(k.storeKey)
+	authMethodKey := types.AuthMethodKey(msg.DID, msg.MethodID)
+	if store.Has(authMethodKey) {
+		return nil, types.ErrAuthMethodExists
+	}
+
+	// Check auth method limit per DID (prevent spam)
+	existingMethods := k.GetAuthMethodsByDID(sdkCtx, msg.DID)
+	if len(existingMethods) >= 10 { // Max 10 auth methods per DID
+		return nil, types.ErrTooManyAuthMethods
+	}
+
+	// If this is marked as primary, unset other primary methods
+	if msg.IsPrimary {
+		for _, method := range existingMethods {
+			if method.IsPrimary {
+				method.IsPrimary = false
+				k.setAuthMethod(sdkCtx, msg.DID, method)
+			}
+		}
+	}
+
+	// Create auth method
+	authMethod := types.AuthMethod{
+		MethodID:      msg.MethodID,
+		MethodType:    msg.MethodType,
+		PublicKeyHash: msg.PublicKeyHash,
+		Attestation:   msg.Attestation,
+		LinkedAt:      sdkCtx.BlockTime(),
+		IsActive:      true,
+		IsPrimary:     msg.IsPrimary,
+	}
+
+	// Store auth method
+	k.setAuthMethod(sdkCtx, msg.DID, authMethod)
+
+	// Create index for DID -> auth methods
+	indexKey := types.AuthMethodByDIDKey(msg.DID)
+	store.Set(append(indexKey, []byte(msg.MethodID)...), []byte(msg.MethodID))
+
+	// Emit event
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"link_auth_method",
+			sdk.NewAttribute("did", msg.DID),
+			sdk.NewAttribute("method_id", msg.MethodID),
+			sdk.NewAttribute("method_type", msg.MethodType),
+			sdk.NewAttribute("is_primary", fmt.Sprintf("%t", msg.IsPrimary)),
+		),
+	)
+
+	return &types.MsgLinkAuthMethodResponse{
+		MethodID: msg.MethodID,
+	}, nil
+}
+
+// UnlinkAuthMethod removes an authentication method from a DID
+func (k Keeper) UnlinkAuthMethod(ctx context.Context, msg *types.MsgUnlinkAuthMethod) (*types.MsgUnlinkAuthMethodResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Validate DID exists
+	didDoc, found := k.GetDID(sdkCtx, msg.DID)
+	if !found {
+		return nil, types.ErrDIDNotFound
+	}
+	if didDoc.Deactivated {
+		return nil, types.ErrDIDDeactivated
+	}
+
+	// Get auth method
+	authMethod, found := k.GetAuthMethod(sdkCtx, msg.DID, msg.MethodID)
+	if !found {
+		return nil, types.ErrAuthMethodNotFound
+	}
+
+	// Prevent removing primary auth method if it's the only one
+	if authMethod.IsPrimary {
+		existingMethods := k.GetAuthMethodsByDID(sdkCtx, msg.DID)
+		if len(existingMethods) <= 1 {
+			return nil, types.ErrPrimaryAuthMethod
+		}
+		
+		// If removing primary, set another method as primary
+		for _, method := range existingMethods {
+			if method.MethodID != msg.MethodID && method.IsActive {
+				method.IsPrimary = true
+				k.setAuthMethod(sdkCtx, msg.DID, method)
+				break
+			}
+		}
+	}
+
+	// Remove auth method
+	store := sdkCtx.KVStore(k.storeKey)
+	authMethodKey := types.AuthMethodKey(msg.DID, msg.MethodID)
+	store.Delete(authMethodKey)
+
+	// Remove from index
+	indexKey := append(types.AuthMethodByDIDKey(msg.DID), []byte(msg.MethodID)...)
+	store.Delete(indexKey)
+
+	// Emit event
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"unlink_auth_method",
+			sdk.NewAttribute("did", msg.DID),
+			sdk.NewAttribute("method_id", msg.MethodID),
+		),
+	)
+
+	return &types.MsgUnlinkAuthMethodResponse{}, nil
+}
+
+// UpdateAuthMethod updates an authentication method
+func (k Keeper) UpdateAuthMethod(ctx context.Context, msg *types.MsgUpdateAuthMethod) (*types.MsgUpdateAuthMethodResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Validate DID exists
+	didDoc, found := k.GetDID(sdkCtx, msg.DID)
+	if !found {
+		return nil, types.ErrDIDNotFound
+	}
+	if didDoc.Deactivated {
+		return nil, types.ErrDIDDeactivated
+	}
+
+	// Get existing auth method
+	authMethod, found := k.GetAuthMethod(sdkCtx, msg.DID, msg.MethodID)
+	if !found {
+		return nil, types.ErrAuthMethodNotFound
+	}
+
+	// If setting as primary, unset other primary methods
+	if msg.IsPrimary && !authMethod.IsPrimary {
+		existingMethods := k.GetAuthMethodsByDID(sdkCtx, msg.DID)
+		for _, method := range existingMethods {
+			if method.IsPrimary {
+				method.IsPrimary = false
+				k.setAuthMethod(sdkCtx, msg.DID, method)
+			}
+		}
+	}
+
+	// Update auth method
+	authMethod.IsPrimary = msg.IsPrimary
+	authMethod.IsActive = msg.IsActive
+	k.setAuthMethod(sdkCtx, msg.DID, authMethod)
+
+	// Emit event
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"update_auth_method",
+			sdk.NewAttribute("did", msg.DID),
+			sdk.NewAttribute("method_id", msg.MethodID),
+			sdk.NewAttribute("is_primary", fmt.Sprintf("%t", msg.IsPrimary)),
+			sdk.NewAttribute("is_active", fmt.Sprintf("%t", msg.IsActive)),
+		),
+	)
+
+	return &types.MsgUpdateAuthMethodResponse{}, nil
+}
+
+// GetAuthMethod retrieves an authentication method
+func (k Keeper) GetAuthMethod(ctx sdk.Context, did, methodID string) (types.AuthMethod, bool) {
+	store := ctx.KVStore(k.storeKey)
+	authMethodKey := types.AuthMethodKey(did, methodID)
+	bz := store.Get(authMethodKey)
+	if bz == nil {
+		return types.AuthMethod{}, false
+	}
+
+	var authMethod types.AuthMethod
+	k.cdc.MustUnmarshal(bz, &authMethod)
+	return authMethod, true
+}
+
+// GetAuthMethodsByDID retrieves all authentication methods for a DID
+func (k Keeper) GetAuthMethodsByDID(ctx sdk.Context, did string) []types.AuthMethod {
+	store := ctx.KVStore(k.storeKey)
+	prefix := types.AuthMethodByDIDPrefixKey(did)
+	iterator := storetypes.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+
+	var methods []types.AuthMethod
+	for ; iterator.Valid(); iterator.Next() {
+		methodID := string(iterator.Value())
+		if method, found := k.GetAuthMethod(ctx, did, methodID); found {
+			methods = append(methods, method)
+		}
+	}
+
+	return methods
+}
+
+// setAuthMethod is a private helper to store an auth method
+func (k Keeper) setAuthMethod(ctx sdk.Context, did string, authMethod types.AuthMethod) {
+	store := ctx.KVStore(k.storeKey)
+	authMethodKey := types.AuthMethodKey(did, authMethod.MethodID)
+	bz := k.cdc.MustMarshal(&authMethod)
+	store.Set(authMethodKey, bz)
 }

@@ -94,7 +94,7 @@ func (gs GenesisState) Validate() error {
 	// Validate proof requests
 	for i, request := range gs.ProofRequests {
 		if err := request.Validate(); err != nil {
-			return fmt.Errorf("invalid proof request at index %d: %w", i, request)
+			return fmt.Errorf("invalid proof request at index %d: %w", i, err)
 		}
 
 		if requestIDs[request.Id] {
