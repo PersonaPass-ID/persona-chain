@@ -6,10 +6,15 @@ provider:
   region: us-east-1
   stage: ${opt:stage, 'prod'}
   environment:
-    DYNAMODB_TABLE_NAME: persona-credentials-${self:provider.stage}
-    BLOCKCHAIN_RPC_URL: http://161.35.2.88:26657
+    # Supabase Configuration (replaces DynamoDB)
+    SUPABASE_URL: ${env:SUPABASE_URL, 'https://your-project.supabase.co'}
+    SUPABASE_SERVICE_ROLE_KEY: ${env:SUPABASE_SERVICE_ROLE_KEY, 'your-service-role-key'}
+    # PersonaChain Configuration  
+    BLOCKCHAIN_RPC_URL: https://rpc.personachain.io
+    # Authentication
     JWT_SECRET: ${env:JWT_SECRET, 'persona-super-secure-jwt-secret-key'}
     ENCRYPTION_KEY: ${env:ENCRYPTION_KEY, 'persona-32-char-encryption-key-123'}
+    # Email/SMS Services
     SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, 'your-sendgrid-api-key'}
     SENDGRID_FROM_EMAIL: noreply@personapass.xyz
     SNS_ACCESS_KEY_ID: ${env:SNS_ACCESS_KEY_ID, 'your-sns-access-key-id'}
@@ -18,17 +23,6 @@ provider:
   iam:
     role:
       statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-          Resource: 
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}"
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NAME}/index/*"
         - Effect: Allow
           Action:
             - sns:Publish
@@ -134,32 +128,46 @@ functions:
           method: post
           cors: true
 
-resources:
-  Resources:
-    PersonaCredentialsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: persona-credentials-${self:provider.stage}
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: PK
-            AttributeType: S
-          - AttributeName: SK
-            AttributeType: S
-          - AttributeName: walletAddress
-            AttributeType: S
-        KeySchema:
-          - AttributeName: PK
-            KeyType: HASH
-          - AttributeName: SK
-            KeyType: RANGE
-        GlobalSecondaryIndexes:
-          - IndexName: WalletAddressIndex
-            KeySchema:
-              - AttributeName: walletAddress
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+  # Wallet-based DID Operations
+  createWalletDID:
+    handler: src/lambda/create-wallet-did.handler
+    events:
+      - http:
+          path: /api/wallet/did/create
+          method: post
+          cors: true
+
+  getWalletCredentials:
+    handler: src/lambda/get-wallet-credentials.handler
+    events:
+      - http:
+          path: /api/wallet/credentials/{walletAddress}
+          method: get
+          cors: true
+
+  # Enhanced Credential Operations
+  enhancedCredentialOps:
+    handler: src/lambda/enhanced-credential-operations.handler
+    events:
+      - http:
+          path: /api/credentials/store
+          method: post
+          cors: true
+      - http:
+          path: /api/credentials/{walletAddress}/{credentialId}
+          method: get
+          cors: true
+      - http:
+          path: /api/credentials/analytics/{walletAddress}
+          method: get
+          cors: true
+      - http:
+          path: /api/credentials/backup/{walletAddress}
+          method: post
+          cors: true
+
+# DynamoDB resources removed - now using Supabase PostgreSQL
+# No AWS resources needed for database operations
 
 plugins:
   - serverless-plugin-typescript

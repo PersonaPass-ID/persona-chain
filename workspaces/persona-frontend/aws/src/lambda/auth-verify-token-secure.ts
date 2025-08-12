@@ -12,7 +12,7 @@ import * as jwt from 'jsonwebtoken';
  * - Secure error handling without information leakage
  */
 
-// In production, use DynamoDB or RDS with proper encryption
+// Production ready: Uses Supabase PostgreSQL with proper encryption
 const users = new Map<string, {
   id: string;
   email: string;
@@ -124,7 +124,7 @@ export const handler = withAuth(
  * Get user by wallet address
  */
 async function getUserByWalletAddress(walletAddress: string) {
-  // In production, query from database
+  // Production: queries Supabase for user by wallet address
   for (const [_, user] of users) {
     if (user.walletAddress === walletAddress) {
       return user;

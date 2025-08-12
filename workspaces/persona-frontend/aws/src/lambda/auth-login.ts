@@ -1,18 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import * as bcrypt from 'bcryptjs'; // Use bcryptjs instead of bcrypt for Lambda compatibility
+import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const users = new Map<string, {
-  id: string;
-  email: string;
-  passwordHash: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  createdAt: Date;
-  verified: boolean;
-}>();
+import { supabaseService } from '../lib/supabase-service';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -69,8 +58,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
-    // Find user
-    const user = users.get(email.toLowerCase());
+    // Find user in Supabase
+    const user = await supabaseService.getUserByEmail(email);
     if (!user) {
       return {
         statusCode: 400,
@@ -83,7 +72,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Verify password
-    const passwordValid = await bcrypt.compare(password, user.passwordHash);
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
     if (!passwordValid) {
       console.warn(`Invalid password attempt for ${maskEmail(email)}`);
       return {
@@ -121,8 +110,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.first_name,
+          lastName: user.last_name,
           username: user.username
         }
       }),

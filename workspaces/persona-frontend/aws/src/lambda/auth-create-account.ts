@@ -1,18 +1,20 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import * as bcrypt from 'bcryptjs'; // Use bcryptjs instead of bcrypt for Lambda compatibility
+import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { supabaseService } from '../lib/supabase-service';
 
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const users = new Map<string, {
-  id: string;
+// User interface for Supabase
+interface UserAccount {
+  id?: string;
   email: string;
-  passwordHash: string;
-  firstName: string;
-  lastName: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
   username: string;
-  createdAt: Date;
   verified: boolean;
-}>();
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -96,7 +98,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Check if user already exists
-    if (users.has(email.toLowerCase())) {
+    const existingUser = await supabaseService.getUserByEmail(email);
+    if (existingUser) {
       return {
         statusCode: 400,
         headers,
@@ -108,9 +111,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Check if username is taken
-    const existingUsername = Array.from(users.values()).find(
-      user => user.username.toLowerCase() === username.toLowerCase()
-    );
+    const existingUsername = await supabaseService.getUserByUsername(username);
     if (existingUsername) {
       return {
         statusCode: 400,
@@ -125,20 +126,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
     
-    // Create user
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    const user = {
-      id: userId,
+    // Create user in Supabase
+    const userData: UserAccount = {
       email: email.toLowerCase(),
-      passwordHash,
-      firstName,
-      lastName,
+      password_hash: passwordHash,
+      first_name: firstName,
+      last_name: lastName,
       username,
-      createdAt: new Date(),
       verified: false
     };
 
-    users.set(email.toLowerCase(), user);
+    const user = await supabaseService.createUserAccount(userData);
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'persona-super-secure-jwt-secret-key';
@@ -165,8 +163,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.first_name,
+          lastName: user.last_name,
           username: user.username
         }
       }),

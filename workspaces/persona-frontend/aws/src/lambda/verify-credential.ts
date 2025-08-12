@@ -1,9 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
-
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(client);
+import { supabaseService } from '../lib/supabase-service';
 
 interface VerifyCredentialRequest {
   did: string;
@@ -46,18 +42,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
-    // Query DynamoDB for the DID
-    const queryParams = {
-      TableName: process.env.DYNAMODB_TABLE_NAME!,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'SK = :did',
-      ExpressionAttributeValues: {
-        ':did': `DID#${did}`,
-      },
-    };
-
-    const result = await docClient.send(new QueryCommand(queryParams));
-    const credential = result.Items?.[0];
+    // Query Supabase for the DID
+    const credential = await supabaseService.getDIDDocument(did);
 
     if (!credential) {
       return {
@@ -71,16 +57,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
+    // Parse encrypted content to get credential data
+    const credentialData = JSON.parse(credential.encrypted_content);
+    
     // Simulate blockchain verification
     const blockchainVerification = {
-      txHashExists: credential.txHash ? true : false,
-      blockchainHeight: credential.blockchainHeight || 0,
+      txHashExists: credential.blockchain_tx_hash ? true : false,
+      blockchainHeight: credential.blockchain_anchor?.blockHeight || 0,
       networkStatus: 'active',
       consensusConfirmations: Math.floor(Math.random() * 100) + 10
     };
 
-    // Verify credential status
-    const isValid = credential.status === 'active' && blockchainVerification.txHashExists;
+    // Verify credential status - check both record and parsed data
+    const recordStatus = credential.metadata?.status || 'active';
+    const isValid = recordStatus === 'active' && blockchainVerification.txHashExists;
 
     // Generate verification response
     return {
@@ -91,29 +81,29 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         timestamp: new Date().toISOString(),
         did: credential.did,
         verification: {
-          method: credential.authMethod,
-          level: credential.verificationLevel || 'basic',
-          createdAt: credential.createdAt,
-          status: credential.status
+          method: credentialData.authMethod,
+          level: credential.metadata?.verificationLevel || 'basic',
+          createdAt: credential.created_at,
+          status: recordStatus
         },
         blockchain: {
-          network: 'persona-testnet',
-          nodeUrl: process.env.BLOCKCHAIN_RPC_URL,
-          txHash: credential.txHash,
+          network: 'personachain-1',
+          nodeUrl: process.env.BLOCKCHAIN_RPC_URL || 'https://rpc.personachain.io',
+          txHash: credential.blockchain_tx_hash,
           blockHeight: blockchainVerification.blockchainHeight,
           confirmations: blockchainVerification.consensusConfirmations
         },
         credentialSubject: {
           id: credential.did,
-          firstName: credential.firstName,
-          lastName: credential.lastName,
-          verificationMethod: credential.authMethod
+          firstName: credentialData.firstName,
+          lastName: credentialData.lastName,
+          verificationMethod: credentialData.authMethod
         },
         proof: {
           type: 'PersonaBlockchainProof2024',
-          created: credential.createdAt,
+          created: credential.created_at,
           proofPurpose: 'assertionMethod',
-          blockchainTxHash: credential.txHash
+          blockchainTxHash: credential.blockchain_tx_hash
         }
       }),
     };

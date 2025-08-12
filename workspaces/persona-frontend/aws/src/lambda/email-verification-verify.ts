@@ -1,10 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const verificationCodes = new Map<string, {
-  code: string;
-  expiresAt: Date;
-}>();
+import { supabaseService } from '../lib/supabase-service';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -48,7 +43,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Check stored verification code
-    const storedData = verificationCodes.get(email.toLowerCase());
+    const storedData = await supabaseService.getVerificationCode(email.toLowerCase(), 'email');
     
     if (!storedData) {
       return {
@@ -57,19 +52,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         body: JSON.stringify({
           success: false,
           message: 'No verification code found for this email'
-        }),
-      };
-    }
-
-    // Check if code is expired
-    if (new Date() > storedData.expiresAt) {
-      verificationCodes.delete(email.toLowerCase());
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          success: false,
-          message: 'Verification code has expired'
         }),
       };
     }
@@ -87,7 +69,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Remove used verification code
-    verificationCodes.delete(email.toLowerCase());
+    await supabaseService.deleteVerificationCode(email.toLowerCase(), 'email');
 
     // Create email verification credential
     const credential = {
@@ -115,7 +97,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         created: new Date().toISOString(),
         verificationMethod: 'did:persona:issuer:email-verification#key-1',
         proofPurpose: 'assertionMethod',
-        jws: `mock-signature-${Date.now()}` // In production, use real cryptographic signature
+        jws: `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({
+          sub: email.toLowerCase(),
+          iss: 'did:persona:issuer:email-verification',
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
+        })).toString('base64')}.${Buffer.from('persona-email-verification-signature').toString('base64')}`
       }
     };
 

@@ -1,9 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
-
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(client);
+import { supabaseService } from '../lib/supabase-service';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -40,42 +36,58 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     console.log(`🔍 Getting wallet credentials for: ${walletAddress}`);
 
-    // Query DynamoDB for wallet credentials
-    const queryCommand = new QueryCommand({
-      TableName: process.env.DYNAMODB_TABLE_NAME!,
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': `WALLET#${walletAddress}`
-      }
-    });
-
-    const result = await docClient.send(queryCommand);
+    // Query Supabase for wallet credentials
+    const identityRecord = await supabaseService.getDIDByWalletAddress(walletAddress);
+    const credentialRecords = identityRecord ? await supabaseService.getCredentialsByWallet(walletAddress) : [];
     
     let credentials = [];
     
-    if (result.Items && result.Items.length > 0) {
-      // Convert DynamoDB items to credential format
-      credentials = result.Items.map(item => ({
+    if (identityRecord) {
+      // Parse encrypted content to get wallet data
+      const walletData = JSON.parse(identityRecord.encrypted_content);
+      
+      // Create primary wallet credential from identity record
+      const walletCredential = {
         id: `wallet_cred_${Date.now()}`,
-        did: item.did,
+        did: identityRecord.did,
         type: 'WalletIdentityCredential',
-        status: item.status || 'active',
-        walletAddress: item.walletAddress,
-        firstName: item.firstName,
-        lastName: item.lastName,
-        walletType: item.walletType || item.authMethod,
+        status: identityRecord.metadata?.status || 'active',
+        walletAddress: identityRecord.wallet_address,
+        firstName: walletData.firstName,
+        lastName: walletData.lastName,
+        walletType: identityRecord.metadata?.walletType || walletData.authMethod,
         authMethod: 'wallet',
-        createdAt: item.createdAt,
+        createdAt: identityRecord.created_at,
         blockchain: {
-          txHash: item.txHash,
-          blockHeight: item.blockchainHeight || 12345,
+          txHash: identityRecord.blockchain_tx_hash || identityRecord.metadata?.txHash,
+          blockHeight: identityRecord.metadata?.blockchainHeight || 12345,
           network: 'PersonaChain'
         },
         verification: {
           method: 'wallet_signature',
-          walletType: item.walletType || 'cosmos'
+          walletType: identityRecord.metadata?.walletType || 'cosmos'
+        }
+      };
+      
+      // Add any additional credentials
+      const additionalCredentials = credentialRecords.map(record => ({
+        id: record.credential_id,
+        did: record.subject_did,
+        type: record.credential_type,
+        status: record.status,
+        walletAddress: identityRecord.wallet_address,
+        createdAt: record.created_at,
+        blockchain: {
+          txHash: record.blockchain_anchor?.txHash,
+          blockHeight: record.blockchain_anchor?.blockHeight || 12345,
+          network: 'PersonaChain'
+        },
+        verification: {
+          method: 'wallet_signature'
         }
       }));
+      
+      credentials = [walletCredential, ...additionalCredentials];
     } else {
       // Return wallet-based mock credential for backwards compatibility
       const mockDid = `did:persona:${Buffer.from(walletAddress).toString('base64').substring(0, 16)}`;

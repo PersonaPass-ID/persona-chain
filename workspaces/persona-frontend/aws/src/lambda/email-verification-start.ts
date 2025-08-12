@@ -1,10 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const verificationCodes = new Map<string, {
-  code: string;
-  expiresAt: Date;
-}>();
+import { supabaseService } from '../lib/supabase-service';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -64,11 +59,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Store verification code (in production, use DynamoDB)
-    verificationCodes.set(email.toLowerCase(), {
-      code: verificationCode,
-      expiresAt
-    });
+    // Store verification code in Supabase
+    await supabaseService.storeVerificationCode(email.toLowerCase(), verificationCode, 'email', expiresAt);
 
     console.log(`Email verification code for ${email}: ${verificationCode}`);
 

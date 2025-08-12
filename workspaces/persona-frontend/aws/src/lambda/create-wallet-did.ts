@@ -1,9 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(client);
+import { supabaseService } from '../lib/supabase-service';
 
 interface CreateWalletDIDRequest {
   walletAddress: string;
@@ -101,35 +97,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
     };
 
-    // Store in DynamoDB
-    const credentialData = {
-      PK: `WALLET#${walletAddress}`,
-      SK: `DID#${did}`,
+    // Store wallet DID in Supabase
+    const didDocumentData = {
       walletAddress,
       did,
       firstName,
       lastName,
       authMethod,
-      walletType: authMethod,
       identifier,
-      txHash,
       status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      blockchainHeight: Math.floor(Math.random() * 1000) + 12345,
       verificationLevel: 'wallet_verified',
       metadata: {
         version: '1.0',
         network: 'PersonaChain',
-        nodeUrl: process.env.BLOCKCHAIN_RPC_URL,
-        authType: 'wallet-only'
+        nodeUrl: process.env.BLOCKCHAIN_RPC_URL || 'https://rpc.personachain.io',
+        authType: 'wallet-only',
+        walletType: authMethod,
+        txHash: txHash,
+        blockchainHeight: Math.floor(Math.random() * 1000) + 12345
       }
     };
 
-    await docClient.send(new PutCommand({
-      TableName: process.env.DYNAMODB_TABLE_NAME!,
-      Item: credentialData,
-    }));
+    const storedRecord = await supabaseService.storeDIDDocument(didDocumentData);
 
     console.log(`✅ Wallet DID created successfully: ${did}`);
 

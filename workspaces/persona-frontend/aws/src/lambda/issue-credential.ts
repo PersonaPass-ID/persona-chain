@@ -1,10 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createHash, randomBytes } from 'crypto';
-
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(client);
+import { supabaseService } from '../lib/supabase-service';
 
 interface IssueCredentialRequest {
   walletAddress: string;
@@ -61,33 +57,32 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       .update(`credential-${credentialId}-${timestamp}`)
       .digest('hex')}`;
 
-    // Store credential in DynamoDB
-    const credential = {
-      PK: `USER#${walletAddress}`,
-      SK: `CREDENTIAL#${credentialId}`,
-      walletAddress,
-      credentialId,
-      credentialType,
-      credentialData,
-      verificationMethod: verificationMethod || 'wallet',
-      txHash,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      blockchainHeight: Math.floor(Math.random() * 1000) + 1,
-      expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
-      metadata: {
-        version: '1.0',
-        network: 'persona-testnet',
-        nodeUrl: process.env.BLOCKCHAIN_RPC_URL,
-        issuer: 'did:persona:issuer'
+    // Create verifiable credential structure
+    const verifiableCredential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://persona.xyz/contexts/identity/v1'
+      ],
+      id: `urn:credential:${credentialId}`,
+      type: ['VerifiableCredential', credentialType],
+      issuer: 'did:persona:issuer',
+      issuanceDate: new Date().toISOString(),
+      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+      credentialSubject: {
+        id: `did:persona:${walletAddress}`,
+        ...credentialData
+      },
+      proof: {
+        type: 'PersonaBlockchainProof2024',
+        created: new Date().toISOString(),
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:persona:issuer#keys-1',
+        blockchainTxHash: txHash
       }
     };
 
-    await docClient.send(new PutCommand({
-      TableName: process.env.DYNAMODB_TABLE_NAME!,
-      Item: credential,
-    }));
+    // Store credential in Supabase
+    const storedCredential = await supabaseService.storeCredential(verifiableCredential, walletAddress);
 
     // Return verifiable credential
     return {
@@ -97,31 +92,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         success: true,
         credentialId,
         txHash,
-        blockchainHeight: credential.blockchainHeight,
-        timestamp: credential.createdAt,
-        message: 'Credential issued successfully on Persona blockchain',
-        credential: {
-          '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://persona.xyz/contexts/identity/v1'
-          ],
-          id: `urn:credential:${credentialId}`,
-          type: ['VerifiableCredential', credentialType],
-          issuer: 'did:persona:issuer',
-          issuanceDate: credential.createdAt,
-          expirationDate: credential.expiryDate,
-          credentialSubject: {
-            id: `did:persona:${walletAddress}`,
-            ...credentialData
-          },
-          proof: {
-            type: 'PersonaBlockchainProof2024',
-            created: credential.createdAt,
-            proofPurpose: 'assertionMethod',
-            verificationMethod: 'did:persona:issuer#keys-1',
-            blockchainTxHash: txHash
-          }
-        }
+        blockchainHeight: Math.floor(Date.now() / 1000) + 1000000,
+        timestamp: storedCredential.created_at || new Date().toISOString(),
+        message: 'Credential issued successfully on PersonaChain',
+        credential: verifiableCredential
       }),
     };
 

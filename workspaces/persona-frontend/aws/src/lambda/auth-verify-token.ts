@@ -1,17 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import * as jwt from 'jsonwebtoken';
-
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const users = new Map<string, {
-  id: string;
-  email: string;
-  passwordHash: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  createdAt: Date;
-  verified: boolean;
-}>();
+import { supabaseService } from '../lib/supabase-service';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const headers = {
@@ -49,8 +38,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Verify JWT token
     const decoded = jwt.verify(token, jwtSecret) as any;
     
-    // Find user to ensure they still exist
-    const user = users.get(decoded.email);
+    // Find user in Supabase to ensure they still exist
+    const user = await supabaseService.getUserByEmail(decoded.email);
     if (!user) {
       return {
         statusCode: 400,
@@ -72,8 +61,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.first_name,
+          lastName: user.last_name,
           username: user.username
         }
       }),

@@ -1,11 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
-
-// Simple in-memory storage for demo (in production, use DynamoDB)
-const verificationCodes = new Map<string, {
-  code: string;
-  expiresAt: Date;
-}>();
+import { supabaseService } from '../lib/supabase-service';
 
 const snsClient = new SNSClient({ 
   region: process.env.AWS_SNS_REGION || 'us-east-1',
@@ -73,11 +68,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Store verification code (in production, use DynamoDB)
-    verificationCodes.set(phoneNumber, {
-      code: verificationCode,
-      expiresAt
-    });
+    // Store verification code in Supabase
+    await supabaseService.storeVerificationCode(phoneNumber, verificationCode, 'phone', expiresAt);
 
     console.log(`SMS verification code for ${maskPhone(phoneNumber)}: ${verificationCode}`);
 
