@@ -1,0 +1,129 @@
+Initializing logger
+Registering providers
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84)
+  Registering resolver for simple type codec.Codec
+  Registering resolver for simple type *codec.LegacyAmino
+  Registering resolver for simple type *runtime.AppBuilder
+  Registering resolver for simple type *baseapp.MsgServiceRouter
+  Registering resolver for simple type *baseapp.GRPCQueryRouter
+  Registering resolver for one-per-module type appmodule.AppModule
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+  Registering resolver for simple type protodesc.Resolver
+  Registering resolver for simple type protoregistry.MessageTypeResolver
+ Registering resolver for many-per-container type signing.CustomGetSigner
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164)
+  Registering resolver for simple type types.InterfaceRegistry
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreKey (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:201)
+  Registering resolver for module-scoped type *types.KVStoreKey
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideTransientStoreKey (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:216)
+  Registering resolver for module-scoped type *types.TransientStoreKey
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideMemoryStoreKey (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:222)
+  Registering resolver for module-scoped type *types.MemoryStoreKey
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideGenesisTxHandler (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:229)
+  Registering resolver for simple type genesis.TxHandler
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232)
+  Registering resolver for module-scoped type store.KVStoreService
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideMemoryStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:237)
+  Registering resolver for module-scoped type store.MemoryStoreService
+ Registering module-scoped provider: github.com/cosmos/cosmos-sdk/runtime.ProvideTransientStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:242)
+  Registering resolver for module-scoped type store.TransientStoreService
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideEventService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:247)
+  Registering resolver for simple type event.Service
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideHeaderInfoService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:256)
+  Registering resolver for simple type header.Service
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideCometInfoService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:252)
+  Registering resolver for simple type comet.BlockInfoService
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideBasicManager (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:260)
+  Registering resolver for simple type module.BasicManager
+ Registering github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284)
+  Registering resolver for simple type address.Codec
+  Registering resolver for simple type runtime.ValidatorAddressCodec
+  Registering resolver for simple type runtime.ConsensusAddressCodec
+ Registering github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+  Registering resolver for simple type keeper.AccountKeeper
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+ Implicitly registering resolver keeper.AccountKeeper for interface type types.AccountKeeper
+ Registering github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227)
+  Registering resolver for simple type keeper.BaseKeeper
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+ Implicitly registering resolver keeper.AccountKeeper for interface type types.AccountKeeper
+ Implicitly registering resolver keeper.BaseKeeper for interface type types.BankKeeper
+ Registering github.com/cosmos/cosmos-sdk/x/staking.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/staking/module.go:221)
+  Registering resolver for simple type *keeper.Keeper
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+ Implicitly registering resolver keeper.AccountKeeper for interface type types.AccountKeeper
+ Implicitly registering resolver *keeper.Keeper for interface type types.StakingKeeper
+ Registering github.com/cosmos/cosmos-sdk/x/genutil.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/genutil/module.go:138)
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+ Registering cosmossdk.io/x/upgrade.ProvideModule (/home/rocz/go/pkg/mod/cosmossdk.io/x/upgrade@v0.1.4/module.go:196)
+  Registering resolver for simple type *keeper.Keeper
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+  Registering resolver for many-per-container type runtime.BaseAppOption
+  Found resolver for runtime.BaseAppOption: *depinject.groupResolver
+ Registering github.com/cosmos/cosmos-sdk/x/consensus.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/consensus/module.go:117)
+  Registering resolver for simple type keeper.Keeper
+  Found resolver for appmodule.AppModule: *depinject.onePerModuleResolver
+  Found resolver for runtime.BaseAppOption: *depinject.groupResolver
+Registering outputs
+ Implicitly registering resolver keeper.BaseKeeper for interface type keeper.Keeper
+ Registering github.com/personahq/personachain/app.NewPersonaChainApp (/home/rocz/persona-hq/workspaces/persona-frontend/personachain/app/app.go:151)
+Building container
+Resolving dependencies for github.com/personahq/personachain/app.NewPersonaChainApp (/home/rocz/persona-hq/workspaces/persona-frontend/personachain/app/app.go:151)
+ Providing *runtime.AppBuilder from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Resolving dependencies for github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84)
+  Providing types.InterfaceRegistry from github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164) to github.com/cosmos/cosmos-sdk/runtime.ProvideApp
+  Resolving dependencies for github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164)
+   Providing address.Codec from github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284) to github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry
+   Resolving dependencies for github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284)
+    Supplying *modulev1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec
+    Supplying *modulev1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec
+    Providing zero value for optional dependency func() address.Codec
+    Providing zero value for optional dependency func() runtime.ValidatorAddressCodec
+    Providing zero value for optional dependency func() runtime.ConsensusAddressCodec
+   Calling github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284)
+   Providing runtime.ValidatorAddressCodec from github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284) to github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry
+   Providing many-per-container type slice []signing.CustomGetSigner to github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry from:
+  Calling github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164)
+ Calling github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84)
+ Providing codec.Codec from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Providing *codec.LegacyAmino from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Providing types.InterfaceRegistry from github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Providing keeper.AccountKeeper from github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Resolving dependencies for github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+  Supplying *modulev1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/x/auth.ProvideModule
+  Providing store.KVStoreService from github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232) to github.com/cosmos/cosmos-sdk/x/auth.ProvideModule
+  Resolving dependencies for github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232)
+   Supplying *runtimev1alpha1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService
+   Providing ModuleKey auth
+   Providing *runtime.AppBuilder from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService
+  Calling github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232)
+  Providing codec.Codec from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/cosmos/cosmos-sdk/x/auth.ProvideModule
+  Providing address.Codec from github.com/cosmos/cosmos-sdk/runtime.ProvideAddressCodec (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:284) to github.com/cosmos/cosmos-sdk/x/auth.ProvideModule
+  Providing zero value for optional dependency types.RandomGenesisAccountsFn
+  Providing zero value for optional dependency func() types.AccountI
+  Providing zero value for optional dependency exported.Subspace
+ Calling github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+ Providing keeper.BaseKeeper from github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227) to github.com/personahq/personachain/app.NewPersonaChainApp
+ Resolving dependencies for github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227)
+  Supplying *modulev1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/x/bank.ProvideModule
+  Providing codec.Codec from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/cosmos/cosmos-sdk/x/bank.ProvideModule
+  Providing store.KVStoreService from github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232) to github.com/cosmos/cosmos-sdk/x/bank.ProvideModule
+  Resolving dependencies for github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232)
+   Supplying *runtimev1alpha1.Module from cosmossdk.io/depinject/appconfig.Compose (/home/rocz/go/pkg/mod/cosmossdk.io/depinject@v1.0.0/appconfig/config.go:144) to github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService
+   Providing ModuleKey bank
+   Providing *runtime.AppBuilder from github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84) to github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService
+  Calling github.com/cosmos/cosmos-sdk/runtime.ProvideKVStoreService (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:232)
+  Error: can't resolve type cosmossdk.io/log/log.Logger for github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227):
+	while resolving:
+		log.Logger for github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227)
+		store.KVStoreService for github.com/cosmos/cosmos-sdk/x/bank.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/bank/module.go:227)
+		keeper.Keeper for github.com/personahq/personachain/app.NewPersonaChainApp (/home/rocz/persona-hq/workspaces/persona-frontend/personachain/app/app.go:151)
+		func() types.AccountI for github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+		types.RandomGenesisAccountsFn for github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+		store.KVStoreService for github.com/cosmos/cosmos-sdk/x/auth.ProvideModule (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/x/auth/module.go:209)
+		keeper.AccountKeeper for github.com/personahq/personachain/app.NewPersonaChainApp (/home/rocz/persona-hq/workspaces/persona-frontend/personachain/app/app.go:151)
+		address.Codec for github.com/cosmos/cosmos-sdk/runtime.ProvideInterfaceRegistry (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:164)
+		types.InterfaceRegistry for github.com/cosmos/cosmos-sdk/runtime.ProvideApp (/home/rocz/go/pkg/mod/github.com/cosmos/cosmos-sdk@v0.50.10/runtime/module.go:84)
+		*runtime.AppBuilder for github.com/personahq/personachain/app.NewPersonaChainApp (/home/rocz/persona-hq/workspaces/persona-frontend/personachain/app/app.go:151)
+
+  Saved graph of container to /home/rocz/persona-hq/workspaces/persona-frontend/personachain/debug_container.dot
