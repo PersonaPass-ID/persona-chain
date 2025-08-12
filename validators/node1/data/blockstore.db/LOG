@@ -1,0 +1,15 @@
+=============== Aug 11, 2025 (PDT) ===============
+21:03:18.744218 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:03:18.753286 db@open opening
+21:03:18.753913 version@stat F·[] S·0B[] Sc·[]
+21:03:18.758259 db@janitor F·2 G·0
+21:03:18.758307 db@open done T·4.993081ms
+=============== Aug 11, 2025 (PDT) ===============
+21:03:41.377401 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:03:41.377572 version@stat F·[] S·0B[] Sc·[]
+21:03:41.377610 db@open opening
+21:03:41.377650 journal@recovery F·1
+21:03:41.377890 journal@recovery recovering @1
+21:03:41.380354 version@stat F·[] S·0B[] Sc·[]
+21:03:41.393388 db@janitor F·2 G·0
+21:03:41.393445 db@open done T·15.826168ms

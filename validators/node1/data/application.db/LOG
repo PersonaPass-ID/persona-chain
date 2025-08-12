@@ -1,0 +1,29 @@
+=============== Aug 11, 2025 (PDT) ===============
+21:02:46.197486 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:02:46.218906 db@open opening
+21:02:46.225343 version@stat F·[] S·0B[] Sc·[]
+21:02:46.228302 db@janitor F·2 G·0
+21:02:46.228328 db@open done T·9.367831ms
+=============== Aug 11, 2025 (PDT) ===============
+21:03:18.710762 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:03:18.711052 version@stat F·[] S·0B[] Sc·[]
+21:03:18.711099 db@open opening
+21:03:18.711157 journal@recovery F·1
+21:03:18.711243 journal@recovery recovering @1
+21:03:18.711709 version@stat F·[] S·0B[] Sc·[]
+21:03:18.723250 db@janitor F·2 G·0
+21:03:18.723299 db@open done T·12.165692ms
+21:03:18.787070 db@close closing
+21:03:18.787205 db@close done T·133.25µs
+=============== Aug 11, 2025 (PDT) ===============
+21:03:41.339488 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+21:03:41.339698 version@stat F·[] S·0B[] Sc·[]
+21:03:41.339735 db@open opening
+21:03:41.339780 journal@recovery F·1
+21:03:41.339903 journal@recovery recovering @2
+21:03:41.343375 memdb@flush created L0@4 N·8 S·331B "s/k..ion,v8":"s/k..ion,v7"
+21:03:41.343923 version@stat F·[1] S·331B[331B] Sc·[0.25]
+21:03:41.356510 db@janitor F·3 G·0
+21:03:41.356578 db@open done T·16.827892ms
+21:03:41.422353 db@close closing
+21:03:41.422573 db@close done T·212.487µs
