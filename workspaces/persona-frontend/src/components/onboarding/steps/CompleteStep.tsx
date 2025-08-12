@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { StepProps } from './types';
 
 interface ShareOption {
@@ -23,6 +24,7 @@ const CompleteStep: React.FC<StepProps> = ({
   onReset,
   stepData
 }) => {
+  const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -416,10 +418,17 @@ const CompleteStep: React.FC<StepProps> = ({
         className="flex flex-col sm:flex-row gap-4 justify-center"
       >
         <button
-          onClick={() => window.location.href = '/dashboard'}
-          className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+          onClick={() => {
+            const params = new URLSearchParams({
+              address: result.walletAddress || '',
+              email: userData?.email || '',
+              did: result.did || ''
+            });
+            router.push(`/account-setup?${params.toString()}`);
+          }}
+          className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
         >
-          Go to Dashboard 🏠
+          Complete Account Setup 🔐
         </button>
         
         <button

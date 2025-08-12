@@ -34,6 +34,7 @@ function LoginContent() {
   const [rememberDevice, setRememberDevice] = useState(false)
   
   const redirectTo = searchParams.get('redirect') || '/dashboard'
+  const setupComplete = searchParams.get('setup') === 'complete'
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -152,6 +153,16 @@ function LoginContent() {
                 <div>Wallet connected: <strong>{walletUser.walletType}</strong></div>
                 <div className="text-xs font-mono break-all">{walletUser.did}</div>
               </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Setup Complete Success Alert */}
+        {setupComplete && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <strong>Account setup complete!</strong> Your PersonaPass identity is now secure. You can log in with your email and password + 2FA.
             </AlertDescription>
           </Alert>
         )}
