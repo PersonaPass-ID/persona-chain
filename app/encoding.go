@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // EncodingConfig specifies the concrete encoding types to use for a given app.
@@ -17,25 +18,37 @@ type EncodingConfig struct {
 	Amino             *codec.LegacyAmino
 }
 
-// MakeEncodingConfig creates an EncodingConfig for PersonaChain.
+// MakeEncodingConfig creates an EncodingConfig for an amino based test configuration.
 func MakeEncodingConfig() EncodingConfig {
+	amino := codec.NewLegacyAmino()
 	interfaceRegistry := types.NewInterfaceRegistry()
 	codec := codec.NewProtoCodec(interfaceRegistry)
-	txConfig := tx.NewTxConfig(codec, tx.DefaultSignModes)
-	amino := codec.NewLegacyAmino()
+	txCfg := tx.NewTxConfig(codec, tx.DefaultSignModes)
+
+	// Register all SDK interfaces - CRITICAL for BaseAccount type resolution
+	std.RegisterLegacyAminoCodec(amino)
+	std.RegisterInterfaces(interfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(amino)
+	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+	
+	// EXPLICIT BaseAccount type registration for genesis account handling
+	// This resolves the "unable to resolve type URL /cosmos.auth.v1beta1.BaseAccount" error
+	authtypes.RegisterInterfaces(interfaceRegistry)
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Codec:            codec,
-		TxConfig:         txConfig,
-		Amino:           amino,
+		Codec:             codec,
+		TxConfig:          txCfg,
+		Amino:             amino,
 	}
 }
 
-func init() {
-	config := MakeEncodingConfig()
-	std.RegisterLegacyAminoCodec(config.Amino)
-	std.RegisterInterfaces(config.InterfaceRegistry)
-	ModuleBasics.RegisterLegacyAminoCodec(config.Amino)
-	ModuleBasics.RegisterInterfaces(config.InterfaceRegistry)
+// MakeTestEncodingConfig creates an EncodingConfig for testing
+func MakeTestEncodingConfig() EncodingConfig {
+	encodingConfig := MakeEncodingConfig()
+	std.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	std.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	return encodingConfig
 }
